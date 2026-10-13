@@ -52,7 +52,7 @@ function gbPhantomDo(p, lv, act, o = {}) {
 
 /* ---- 被动 ---- */
 defSkill('gb_ghostman', { name: '鬼人化', cls: 'sword', job: 'ghostblade', lvReq: 15, maxLv: 1, mp: 0, cd: 0, type: 'phys', passive: true, col: '#7aa8d8',
-  desc: '【被动】与幻鬼共存一体：普攻变为剑影专属的 4 段斩（第 4 段挑空），跑攻变为 2 段且之后可以直接接技能；鬼斩变为剑影形态（无属性）；三段刃更快更远，施放中可以叠加幻鬼技能；后跳中按 X 可以空中斩（冷却 2 秒）。' });
+  desc: '【被动】与幻鬼共存一体：普攻变为剑影专属的 4 段斩（第 4 段挑空），跑攻一次出手自带 2 下且之后可以直接接技能；鬼斩变为剑影形态（无属性）；三段刃更快更远，施放中可以叠加幻鬼技能；后跳中按 X 可以空中斩（冷却 2 秒）。' });
 defSkill('gb_katana', { name: '剑影太刀精通', cls: 'sword', job: 'ghostblade', lvReq: 16, mp: 0, cd: 0, type: 'phys', passive: true, col: '#8ab0d8',
   desc: '【被动】精通太刀：攻击力、命中率提高。', infoExtra: lv => [['攻击力', '+' + pct(0.03 + 0.006 * lv)]] });
 defSkill('gb_power', { name: '幻鬼之力', cls: 'sword', job: 'ghostblade', lvReq: 17, mp: 0, cd: 0, type: 'phys', passive: true, col: '#6ab8ff',
@@ -65,14 +65,16 @@ defSkill('gb_resonance', { name: '双魂共鸣', cls: 'sword', job: 'ghostblade'
   act: (lv) => ({ name: 'gb_resonance', clip: 'focus', dur: 0.8, superArmor: true, noCounter: true, onStart: e => { const v = 0.2 + 0.02 * lv;   // 官方：只加成普攻、鬼斩、三段刃和转职技能，通用技能不加
     e.buffs.gb_resonance = { t: 9999, get dmg() { const a = e.act, id = a && a.skill; return !a || a.basic || a.gbStep || !id || id === 'ghost' || id === 'triple' || (SKILLS[id] && SKILLS[id].job === 'ghostblade') ? v : 0; } }; sfx.buff(); fxAura(e, GB_COL, 1.2); gbPhantomDo(e, lv, { name: 'pRes', clip: 'pSeal', dur: 0.6 }, { x: e.x - e.face * 40, y: e.y, linger: 0.2 }); } }) });
 
-/* ---- 鬼人化：普攻 4 段、跑攻 2 段、后跳中空中斩 ---- */
+/* ---- 鬼人化：普攻 4 段、跑攻一次 2 下、后跳中空中斩 ---- */
 const SWORD_ACTS_GB = { ...SWORD_ACTS,
   atk1: { name: 'atk1', dur: 0.28, basic: true, speed: 'aspd', chain: [0.1, 0.28], next: 'atk2', move: [[0.02, 0.08, 120]], hits: [HB(0.05, 0.1, [0, 94, 32, 18, 100], 0.95, { stun: 0.3, knock: 45, hs: 0.05 })], events: [slashAt(0.04, { a0: -2.4, a1: 0.7, r: 72, w: 14, off: [14, 58], col: GB_COL })] },
   atk2: { name: 'atk2', dur: 0.28, basic: true, speed: 'aspd', chain: [0.1, 0.28], next: 'atk3', move: [[0.02, 0.08, 110]], hits: [HB(0.05, 0.1, [0, 94, 32, 18, 110], 1.0, { stun: 0.32, knock: 50, hs: 0.05 })], events: [slashAt(0.04, { a0: 1.0, a1: -2.1, r: 72, w: 14, off: [12, 56], col: GB_COL })] },
   atk3: { name: 'atk3', clip: 'rk1', dur: 0.3, basic: true, speed: 'aspd', chain: [0.12, 0.3], next: 'atk4', move: [[0.02, 0.1, 140]], hits: [HB(0.05, 0.12, [0, 100, 34, 10, 110], 1.1, { stun: 0.36, knock: 70, hs: 0.06 })], events: [slashAt(0.04, { a0: -2.6, a1: 0.5, r: 78, w: 16, off: [12, 56], col: GB_COL })] },
   atk4: { name: 'atk4', clip: 'rk3', dur: 0.56, basic: true, speed: 'aspd', move: [[0.04, 0.14, 100]], hits: [HB(0.08, 0.16, [0, 102, 34, 0, 130], 1.4, { launch: 240, knock: 40, hs: 0.08, heavy: true })], events: [slashAt(0.07, { a0: 1.4, a1: -1.9, r: 82, w: 20, off: [10, 50], col: GB_COL, heavy: true })] },
-  dash: { ...SWORD_ACTS.dash, chain: [0.14, 0.45], next: 'dash2' },
-  dash2: { name: 'dash2', clip: 'rk2', dur: 0.4, basic: true, speed: 'aspd', move: [[0.02, 0.12, 200]], hits: [HB(0.05, 0.14, [-10, 106, 34, 10, 110], 1.3, { knock: 200, stun: 0.5, hs: 0.07, heavy: true })], events: [slashAt(0.04, { a0: 0.8, a1: -2.4, r: 84, w: 18, off: [0, 55], col: GB_COL })] },
+  // 官方（namu 검귀/스킬「귀인」）：대쉬 공격이 한번에 2타격 —— 一次跑攻自带两下（冲刺斩 + 回身补斩），不再要多按一次 X；跑攻后直接接技能（普攻本来就可被技能取消）；学了连突刺仍可接通用 dash2
+  dash: { ...SWORD_ACTS.dash, dur: 0.62, chain: [0.14, 0.62], next: SWORD_ACTS.dash.next, move: [[0, 0.26, 420], [0.3, 0.4, 200]],
+    hits: [HB(0.05, 0.26, [0, 74, 30, 30, 90], 0.7, { stun: 0.45, knock: 60, hs: 0.05, heavy: true }), HB(0.34, 0.42, [-10, 106, 34, 10, 110], 1.3, { knock: 200, stun: 0.5, hs: 0.07, heavy: true })],
+    events: [...SWORD_ACTS.dash.events, evAt(0.3, e => e.play('rk2', true)), slashAt(0.34, { a0: 0.8, a1: -2.4, r: 84, w: 18, off: [0, 55], col: GB_COL })] },
   back: { ...SWORD_ACTS.back, update: e => {
     if (e.actT > 0.04 && e.pad.buffered('attack') && !(e.cool.gb_airslash > 0)) { e.pad.consume('attack'); e.cool.gb_airslash = 2;
       e.doAct({ name: 'gb_airslash', clip: 'backslash', dur: 0.42, noCounter: true, lowGrav: 0.7, hits: [HB(0.05, 0.16, [-10, 96, 34, -40, 100], 1.4, { spike: 300, bounce: 0.4, knock: 50, hs: 0.07 })], events: [slashAt(0.04, { a0: -2.6, a1: 1.4, r: 80, w: 18, off: [12, 50], col: GB_COL })], onLand: x => x.endAct() }); return; }
