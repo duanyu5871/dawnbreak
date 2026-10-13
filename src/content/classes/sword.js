@@ -16,7 +16,8 @@ const SWORD_ACTS = {
     events: [slashAt(0.11, { a0: -2.7, a1: 1.1, r: 84, w: 22, off: [10, 56], squash: 0.85, heavy: true })] },
   dash: { name: 'dash', dur: 0.45, basic: true, speed: 'aspd', move: [[0, 0.26, 420]], noCounter: true, chain: [0.14, 0.45], next: p => hasSkill(p, 'dashthrust') ? 'dash2' : null,
     hits: [HB(0.05, 0.26, [0, 74, 30, 30, 90], 1.35, { stun: 0.45, knock: 240, hs: 0.07, shake: 2, heavy: true })],
-    events: [evAt(0.04, e => { fxStreak({ x: e.x, y: e.y, z: e.z + 62, face: e.face, len: 100, w: 12, col: '#8fd8ff' }); sfx.swing(true); })] },
+    events: [evAt(0.04, e => { fxStreak({ x: e.x, y: e.y, z: e.z + 62, face: e.face, len: 100, w: 12, col: '#8fd8ff' }); sfx.swing(true); }),
+      slashAt(0.05, { a0: -0.95, a1: 0.85, r: 78, w: 14, off: [10, 56], squash: 0.5, silent: true })] },
   // 连突刺：跑攻中再按 X（技能）
   dash2: { name: 'dash2', clip: 'flurry', dur: 0.55, basic: true, speed: 'aspd', move: [[0, 0.4, 60]], noCounter: true,
     hits: [HB(0.02, 0.4, [0, 80, 30, 30, 95], 0.45, { rep: 0.08, stun: 0.3, knock: 40, hs: 0.03, snd: 'stab', dmgKey: 'dashthrust' }), HB(0.42, 0.48, [0, 88, 32, 25, 100], 1.3, { knock: 240, stun: 0.5, hs: 0.07, shake: 2, heavy: true, dmgKey: 'dashthrust' })],

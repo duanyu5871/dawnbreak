@@ -106,6 +106,10 @@ const SWORD_ACTS_KAIGA = { ...SWORD_ACTS,
     hits: [sbHit(0.02, 0.24, [-10, 88, 34, 10, 110], 1.4, { stun: 0.5, knock: 160, heavy: true })],
     events: [evAt(0.01, e => { fxAfterimage(e, '#8a8aff'); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 58, face: e.face, len: 160, w: 14, col: '#a89aff', dur: 0.22 }); sfx.swing(true); })] },
 };
+// 凯贾下跳攻 / 空之连刃也是暗属性魔法：判定带 type mag + elem dark，刀光换暗紫
+for (const k of ['jatk', 'jatk2', 'jatk3']) { const a = SWORD_ACTS[k];
+  SWORD_ACTS_KAIGA[k] = { ...a, type: 'mag', hits: a.hits.map(h => ({ ...h, type: 'mag', elem: 'dark' })),
+    events: a.events.map(ev => ({ ...ev, fn: e => { const c0 = e.slashCol; e.slashCol = '#a89aff'; try { ev.fn(e); } finally { e.slashCol = c0; } } })) }; }
 /* ---- 冥炎之卡洛：召唤卡洛飘在身后（持续时间无限）。普攻、跳攻、跑攻出手时卡洛额外发射分身（有凯贾时 3 连发），命中附加冥炎；
    再按一次切换冥炎 / 紫焰：紫焰的分身不附加冥炎（配合冥炎剑、鬼影闪引爆的节奏）。解锁冥炎剑 ---- */
 defSkill('sb_karo', { name: '冥炎之卡洛', cls: 'sword', job: 'soulbender', lvReq: 20, mp: 40, cd: 3, type: 'mag', elem: 'dark', buff: true, col: '#7a3aff',
