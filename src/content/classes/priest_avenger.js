@@ -203,7 +203,9 @@ const PA_ACTS_DEMON = {
     hits: [HB(0.02, 0.6, [0, 150, 56, -60, 100], 4.0, { type: 'mag', max: 1, launch: 300, knock: 60, hs: 0.1, big: 1.8, downHit: true, snd: 'slash', col: '#e0a0ff', onHit: paGainHit(10) })],
     events: [evAt(0.02, e => paClawFx(e.x + e.face * 60, e.y, e.z + 30, e.face, 1.6))] },
 };
-PRIEST_ACT_PICK.push(p => !paOn(p) ? null : paDemon(p) ? { ...pActsOf(p), ...PA_ACTS_DEMON } : paHalf(p) ? { ...pActsOf(p), ...PA_ACTS_HALF } : skLv(p, 'pa_devil') ? { ...pActsOf(p), ...PA_ACTS_HUMAN } : null);
+const PA_FEEL_C = { h: {}, f: {} };
+const paFeelOf = (A, k, p) => { const w = wtypeOf(p); return pFeelActs(A, PRIEST_FEEL[w] || PRIEST_FEEL.cross, PA_FEEL_C[k], w || 'cross'); };
+PRIEST_ACT_PICK.push(p => !paOn(p) ? null : paDemon(p) ? { ...pActsOf(p), ...PA_ACTS_DEMON } : paHalf(p) ? { ...pActsOf(p), ...paFeelOf(PA_ACTS_HALF, 'f', p) } : skLv(p, 'pa_devil') ? { ...pActsOf(p), ...paFeelOf(PA_ACTS_HUMAN, 'h', p) } : null);
 
 /* ---- 恶魔之力：复仇者技能动画中按 Z / X / C 放恶魔残影（耗 30 能量；半魔化不耗、更强）；普攻 / 地狱之门 / 末日浩劫 / 二三觉 / 魔化中不能用 ---- */
 const PA_NODEVIL = new Set(['pa_gate', 'pa_disaster', 'pa_howl', 'pa_smite', 'pa_awaken2', 'pa_stream', 'pa_awaken3', 'pa_awaken', 'pa_execute', 'pa_meta', 'pa_fall']);

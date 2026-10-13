@@ -116,7 +116,9 @@ const PE_ACTS = {
     hits: [HB(0.07, 0.2, [0, 125, 44, -50, 90], 1.1, { stun: 0.36, knock: 40, hs: 0.05, airLift: 150, snd: 'blunt' })],
     events: [slashAt(0.06, { a0: -1.7, a1: 1.4, r: 100, w: 22, off: [10, 40], col: PE_COL.axe, heavy: true })] },
 };
-PRIEST_ACT_PICK.push(p => peOn(p) && skLv(p, 'pe_force') ? { ...pActsOf(p), ...PE_ACTS } : null);
+const PE_ACTS_BY_W = {};
+const peActsOf = p => { const w = wtypeOf(p); return pFeelActs(PE_ACTS, PRIEST_FEEL[w] || PRIEST_FEEL.cross, PE_ACTS_BY_W, w || 'cross'); };
+PRIEST_ACT_PICK.push(p => peOn(p) && skLv(p, 'pe_force') ? { ...pActsOf(p), ...peActsOf(p) } : null);
 
 /* ---- 共鸣（式神之悟）：巨兵系技能施放中瞬发式神（2 次，每 3 秒恢复 1 次）---- */
 function peRes(p) {
