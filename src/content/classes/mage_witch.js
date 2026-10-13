@@ -104,7 +104,10 @@ const WITCH_JATK = { name: 'jatk', clip: 'brAtk', dur: 0.3, basic: true, speed: 
   onStart: e => { if (!e._ride) { e.play('mjatk', true); e.act.lowGrav = 0.75; return; } e.play(e.airAtk % 2 ? 'brAtk' : 'brAtkB', true); e.vz = Math.max(e.vz, -40); },
   hits: [HB(0.07, 0.15, [0, 85, 30, -60, 80], 0.8, { stun: 0.34, knock: 50, airLift: 150, hs: 0.05, snd: 'blunt', type: 'phys', downHit: true })],
   events: [slashAt(0.06, { a0: -1.3, a1: 1.3, r: 62, w: 10, off: [8, 30] })] };
-const WITCH_ACTS = { ...MAGE_ACTS, jatk: WITCH_JATK };
+// 跑攻：骑扫把时是贴地滑行冲刺（拖尾 + 尘土、冲得更远），打空不再摔倒；没骑扫把保持女法的彩蛋（打空“哎哟”扑倒）
+const WITCH_DASH = { ...MAGE_ACTS.dash, dur: 0.45, move: [[0, 0.26, 420]],
+  onStart: e => { e._noTrip = !!e._ride; if (e._ride) { fxStreak({ x: e.x, y: e.y, z: e.z + 40, face: -e.face, len: 100, w: 10, col: '#e0c0ff', dur: 0.2 }); fxDust(e.x, e.y, 3, 4, '#d8c8f0'); } } };
+const WITCH_ACTS = { ...MAGE_ACTS, jatk: WITCH_JATK, dash: WITCH_DASH };
 // 扫把粉末：普攻类（含天击 / 龙牙）改成独立攻击、范围 +25%、硬直 ×2.14，命中附带寒冰（几率冰冻）/ 猛毒（中毒）
 const powderHit = h => ({ ...h, type: 'indep', stun: (h.stun || 0.3) * 2.14, box: h.box && [h.box[0], h.box[1] * 1.25, h.box[2] * 1.2, h.box[3], h.box[4]], powder: true });
 const powderize = A => { const O = {}; for (const k in A) { const a = A[k]; O[k] = a && a.hits && a.basic ? { ...a, hits: a.hits.map(powderHit) } : a; } return O; };
