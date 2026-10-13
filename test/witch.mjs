@@ -37,7 +37,7 @@ const R = await page.evaluate(() => {
   Object.assign(game.skillLv, sv); delete p.buffs.wt_candy;
   // ---- 3. 扫把飞行 ----
   inv.equip.weapon = broom; if (typeof recalcStats === 'function') recalcStats(p); Object.assign(p, { indep: 1000, matk: 1000, atk: 1000, buffs: {}, crit: 0, mcrit: 0, hitRate: 1 }); p._psvT = 0; tickPassives(p, 0.3);
-  out.ride = { ride: p._ride, airMax: airMaxOf(p), acts: p.acts === WITCH_ACTS };
+  out.ride = { ride: p._ride, airMax: airMaxOf(p), acts: p.acts === WITCH_ACTS_B };
   clear(); p.vz = p.jumpV; p.z = 0.5; p.setState('jump'); run(8);
   const fake = (o = {}) => ({ hit: k => k === o.hit, runDir: o.runDir || 0, is: k => !!(o.is && o.is[k]), dx: () => 0, dy: () => 0, buffered: () => false, consume: () => false });
   const z0 = p.z; witchAir(p, fake({ hit: 'right', runDir: 1 }), 1 / 60, false); run(6); out.dash = { dashing: p._airDashT > 0 || Math.abs(p.vx) > 300, vx: Math.round(p.vx), n: p._dashN };

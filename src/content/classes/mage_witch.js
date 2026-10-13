@@ -112,7 +112,9 @@ const WITCH_ACTS = { ...MAGE_ACTS, jatk: WITCH_JATK, dash: WITCH_DASH };
 const powderHit = h => ({ ...h, type: 'indep', stun: (h.stun || 0.3) * 2.14, box: h.box && [h.box[0], h.box[1] * 1.25, h.box[2] * 1.2, h.box[3], h.box[4]], powder: true });
 const powderize = A => { const O = {}; for (const k in A) { const a = A[k]; O[k] = a && a.hits && a.basic ? { ...a, hits: a.hits.map(powderHit) } : a; } return O; };
 const WITCH_ACTS_P = powderize(WITCH_ACTS);
-for (const id of ['mg_sky', 'mg_fang']) { const S = SKILLS[id]; if (!S || !S.act) continue; const f = S.act; S.act = (lv, p) => { const a = f(lv, p); if (p && isWitch(p) && p.buffs && p.buffs.wt_powder && a.hits) a.hits = a.hits.map(powderHit); return a; }; }
+// 官方：마도학자「빗자루 다루기」习得后 기본 공격 = 魔法独立攻击力（namu 마도학자/스킬 2.1.1；见 docs/BASIC_ATTACK_SOURCES_mage.md §7）。只改伤害类型，范围 / 硬直不变（粉末的 +25% / ×2.14 另算）
+const WITCH_ACTS_B = (() => { const O = {}; for (const k in WITCH_ACTS) { const a = WITCH_ACTS[k]; O[k] = a && a.hits && a.basic ? { ...a, hits: a.hits.map(h => ({ ...h, type: 'indep' })) } : a; } return O; })();
+for (const id of ['mg_sky', 'mg_fang']) { const S = SKILLS[id]; if (!S || !S.act) continue; const f = S.act; S.act = (lv, p) => { const a = f(lv, p); if (p && isWitch(p) && a.hits) a.hits = a.hits.map(p.buffs && p.buffs.wt_powder ? powderHit : (id === 'mg_sky' ? (h => ({ ...h, type: 'indep' })) : h => h)); return a; }; }
 { const prev = CLASSES.mage.onHit; CLASSES.mage.onHit = (p, t, h, dmg, act, opt) => { if (prev) prev(p, t, h, dmg, act, opt); if (!h.powder || !isWitch(p)) return; const P = p.buffs.wt_powder; if (!P) return;
   if (P.kind === 'ice') { if (Math.random() < 0.15 + 0.012 * (P.lv || 1)) addStatus(t, 'freeze', 1.5, { src: p }); } else addStatus(t, 'poison', 5, { src: p, dps: atkOf(p, 'indep') * (0.05 + 0.005 * (P.lv || 1)) }); }; }
 /* =====================================================================
@@ -779,8 +781,8 @@ CLASSES.mage.cmds.push(['uu', 'wt_shululu'], ['fdf', 'wt_missile'], ['fd', 'wt_c
 // ---- 被动刷新（每 0.25 秒）----
 CLASSES.mage.passives.push(p => {
   const wt = isWitch(p);
-  if (wt) { const want = p.buffs.wt_powder ? WITCH_ACTS_P : WITCH_ACTS; if (p.acts !== want) p.acts = want; }
-  else if (p.acts === WITCH_ACTS || p.acts === WITCH_ACTS_P) p.acts = MAGE_ACTS;
+  if (wt) { const want = p.buffs.wt_powder ? WITCH_ACTS_P : lvOf(p, 'wt_broom') > 0 ? WITCH_ACTS_B : WITCH_ACTS; if (p.acts !== want) p.acts = want; }
+  else if (p.acts === WITCH_ACTS || p.acts === WITCH_ACTS_P || p.acts === WITCH_ACTS_B) p.acts = MAGE_ACTS;
   p._ride = wt && witchRides(p);
   if (!wt) { p.airBonus = p._wtAir ? 0 : p.airBonus; p._wtAir = false; return; }
   witchModel(p);

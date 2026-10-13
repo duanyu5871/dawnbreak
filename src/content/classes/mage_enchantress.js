@@ -846,11 +846,22 @@ for (const id of CLASSES.mage.jobs.enchantress.skills) { const S = SKILLS[id]; i
     const A = a0(lv, p); return { ...A, clip: EN_STAGE_CLIP[A.clip] || 'bCheer' }; }; }
 // 熊系技能要先学人偶操纵者
 for (const id of CLASSES.mage.jobs.enchantress.skills) { const S = SKILLS[id]; if (S && S.bear) { const r0 = S.req; S.req = p => !p || hasSkill(p, 'en_puppeteer') || !isHuman(p) ? (r0 ? r0(p) : true) : '需要学会人偶操纵者'; } }
+// 官方：흑마법 빗자루（黑魔法扫把）习得后 기본 공격 = 魔法独立攻击力（namu 인챈트리스/스킬 3.1.1；见 docs/BASIC_ATTACK_SOURCES_mage.md §7）。
+// 普攻表（含武器手感包装）的副本，普攻命中的伤害类型改 indep；_base 沿用原表，mage_battle 的武器切换逻辑照旧识别，再由下面的被动改回副本
+const EN_INDEP_CACHE = new Map();
+function enIndepActs(A) {
+  if (A._enIndep) return A;
+  let o = EN_INDEP_CACHE.get(A); if (o) return o;
+  o = { _enIndep: true, _base: A._base || A };
+  for (const k in A) { const a = A[k]; if (k[0] === '_') continue; o[k] = a && a.basic && a.hits ? { ...a, hits: a.hits.map(h => ({ ...h, type: 'indep' })) } : a; }
+  EN_INDEP_CACHE.set(A, o); return o;
+}
 // 被动刷新（每 0.25 秒）
 CLASSES.mage.passives.push(p => {
   if (!enOn(p)) { if (p._enOn) { p._enOn = false; for (const k of ['en_broom', 'en_puppeteer', 'en_curiosity', 'en_girllove', 'en_bloom', 'en_solo']) delete p.buffs[k]; if (p.statusImmune && p.statusImmune.curse && !p.enStage) p.statusImmune = null; } return; }
   p._enOn = true;
   const br = skLv(p, 'en_broom'); setPassive(p, 'en_broom', br > 0, { cspd: 0.3 }); if (br && p.stats) p.hitRate = (p.stats.hitRate || 0) + 0.05;
+  if (br > 0 && !p.enStage && p.acts && p.acts.atk1 && !(p.st === 'act' && p.act && p.act.basic)) p.acts = enIndepActs(p.acts);
   const pu = skLv(p, 'en_puppeteer'); setPassive(p, 'en_puppeteer', pu > 0, { atk: 0.02 + 0.01 * pu });
   if (pu) { if (!p.enStage) p.statusImmune = { ...(p.statusImmune || {}), curse: true }; p.atkElem = 'dark'; }
   const cu = skLv(p, 'en_curiosity'); setPassive(p, 'en_curiosity', cu > 0, { dmg: 0.06 + 0.01 * cu, crit: 0.03 + 0.005 * cu });
