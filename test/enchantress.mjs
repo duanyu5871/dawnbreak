@@ -85,7 +85,7 @@ const R = await page.evaluate(() => {
   castSkill(p, 'mg_orb', false, null); out.stage.blockBase = !(p.act && p.act.skill === 'mg_orb');
   for (let i = 0; i < 180 && (m5.st !== 'idle' || m5.invul > 0); i++) run(1);   // 等怪站起来、起身无敌结束（谢幕命中跳过无敌目标，别让判定卡在起身无敌的帧上）
   const hpMid = m5.hp; st.t = st.dur - 0.05; run(60);
-  out.stage.finale = hpMid - m5.hp > 0; out.stage.restored = !p.enStage && p.model === model0 && p.acts === MAGE_ACTS && !!summonsOf(p, 'en_bear')[0] && summonsOf(p, 'en_bear')[0].model !== EN_EMPTY_MODEL;
+  out.stage.finale = hpMid - m5.hp > 0; out.stage.restored = !p.enStage && p.model === model0 && mageFeelBase(p.acts) === MAGE_ACTS && !!summonsOf(p, 'en_bear')[0] && summonsOf(p, 'en_bear')[0].model !== EN_EMPTY_MODEL;
   // 三觉短篇舞台：剧场中施放 → 延长 20 秒
   fresh(); p.cool = {}; castSkill(p, 'en_awaken', false, null); run(60 * 3.4); const d0 = p.enStage && p.enStage.dur; castSkill(p, 'en_awaken3', false, null); run(60 * 3.6);
   out.short = { d0, d1: p.enStage && p.enStage.dur, extended: !!(p.enStage && p.enStage.dur >= d0 + 19) }; if (p.enStage) enStageEnd(p, false);
