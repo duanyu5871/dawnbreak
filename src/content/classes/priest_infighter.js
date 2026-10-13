@@ -205,9 +205,9 @@ function piFistActs(p) {
   const jab = (n, dmg, len) => ({ name: 'atk' + n, dur: 0.24, basic: true, speed: 'aspd', chain: [0.1, 0.24], next: 'atk' + (n + 1), move: [[0.02, 0.06, 60]],
     hits: [HB(0.04, 0.1, bx(len), dmg, { stun: 0.32, knock: 30, hs: 0.04, snd: 'blunt', col: PI_COL.fist })], events: [evAt(0.03, e => { e.play(n === 3 ? 'piStraight' : 'piJab', true); piPunchFx(e, 70 + len * 0.3, n === 3); })] });
   const A = {
-    atk1: jab(1, 0.7, 84), atk2: jab(2, 0.75, 84), atk3: { ...jab(3, 0.95, 92), dur: 0.3, chain: [0.12, 0.3], hits: [HB(0.05, 0.12, bx(92), 0.95, { stun: 0.4, knock: 70, hs: 0.05, snd: 'blunt', col: PI_COL.fist })] },
-    atk4: { name: 'atk4', dur: 0.42, basic: true, speed: 'aspd', move: [[0.02, 0.08, 90]],
-      hits: [HB(0.06, 0.14, bx(88, low ? -10 : 0, 140), 1.2, { launch: 520, knock: 50, hs: 0.07, shake: 2, downHit: low, snd: 'blunt', col: PI_COL.fist })], events: [evAt(0.04, e => { e.play('piUpper', true); piPunchFx(e, 70, true); fxSlashOn(e, { a0: 1.5, a1: -1.6, r: 60, w: 14, off: [26, 50], col: PI_COL.hot, silent: true }); })] },
+    atk1: jab(1, 0.7, 84), atk2: jab(2, 0.75, 84), atk3: { ...jab(3, 0.95, 98), dur: 0.3, chain: [0.12, 0.3], move: [[0.02, 0.1, 90]], hits: [HB(0.05, 0.12, bx(98), 0.95, { stun: 0.4, knock: 70, hs: 0.05, snd: 'blunt', col: PI_COL.fist })] },
+    atk4: { name: 'atk4', dur: 0.42, basic: true, speed: 'aspd', move: [[0.02, 0.1, 100]],
+      hits: [HB(0.06, 0.14, bx(94, low ? -10 : 0, 140), 1.2, { launch: 520, knock: 50, hs: 0.07, shake: 2, downHit: low, snd: 'blunt', col: PI_COL.fist })], events: [evAt(0.04, e => { e.play('piUpper', true); piPunchFx(e, 70, true); fxSlashOn(e, { a0: 1.5, a1: -1.6, r: 60, w: 14, off: [26, 50], col: PI_COL.hot, silent: true }); })] },
     dash: { name: 'dash', dur: 0.44, basic: true, speed: 'aspd', move: [[0, 0.22, 380]], noCounter: true, keyLinks: { attack: 'p_second' }, linkFrom: 0.12,
       hits: [HB(0.1, 0.22, bx(92, low ? -10 : 0, 120), 1.3, { stun: 0.55, knock: 70, hs: 0.07, shake: 2, downHit: low, snd: 'blunt', col: PI_COL.fist })],
       events: [evAt(0.02, e => { e.play('piHook', true); fxSlashOn(e, { a0: -2.2, a1: 0.6, r: 64, w: 16, off: [28, 56], col: PI_COL.hot, silent: true }); sfx.swing(true); })] },

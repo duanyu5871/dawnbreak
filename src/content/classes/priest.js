@@ -97,6 +97,14 @@ function priestActsFor(F) {
       events: [slashAt(0.06, { a0: -1.6, a1: 1.3, r: 78, w: 16, off: [10, 40] })] },
   };
 }
+// 转职手写的普攻表也按武器手感缩放：前沿 × reach（身后框 / 前沿 0 的不动）、硬直 × stun；按武器缓存（cache / key 由调用方给），返回新表不改原表
+function pFeelActs(A, F, cache, key) {
+  if (cache[key]) return cache[key];
+  if (F.reach === 1 && F.stun === 1) return (cache[key] = A);
+  const R = b => !b || !(b[1] > 0) ? b : [b[0], Math.round(b[1] * F.reach), b[2], b[3], b[4]], out = {};
+  for (const n in A) { const a = A[n]; out[n] = { ...a, hits: (a.hits || []).map(h => ({ ...h, box: R(h.box), ...(h.stun ? { stun: +(h.stun * F.stun).toFixed(3) } : {}) })) }; }
+  return (cache[key] = out);
+}
 const PRIEST_ACTS_BY_W = {}; for (const w in PRIEST_FEEL) PRIEST_ACTS_BY_W[w] = priestActsFor(PRIEST_FEEL[w]);
 const PRIEST_ACTS = PRIEST_ACTS_BY_W.cross;
 const pActsOf = p => (p && PRIEST_ACTS_BY_W[wtypeOf(p)]) || PRIEST_ACTS;

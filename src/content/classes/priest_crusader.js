@@ -415,7 +415,7 @@ PRIEST_HOOKS.onCast.push((p, id, act, how) => {
   }
   if ((id === 'p_cure' || id === 'p_slowheal' || id === 'pc_revenge') && act) pcHolyAdd(p, 1);
   // 圣灵之槌 / 神罚之锤：空斩打震出圣光冲击波（神罚之锤：开头身前、结尾身后各一次）
-  if (id === 'p_launcher' && act && (p.buffs.pc_mace || p.buffs.pc_jupiter)) { const jup = !!p.buffs.pc_jupiter; act.events = [...(act.events || []), { t: 0.14, done: false, fn: e => pcHolyShock(e, jup) }]; if (jup) act.events.push({ t: 0.42, done: false, fn: e => pcHolyShock(e, true, true) }); }
+  if (id === 'p_launcher' && act && (p.buffs.pc_mace || p.buffs.pc_jupiter)) { const jup = !!p.buffs.pc_jupiter; act.events = [...(act.events || []), { t: 0.12, done: false, fn: e => pcHolyShock(e, jup) }, { t: 0.30, done: false, fn: e => pcHolyShock(e, jup, true) }]; }
   // 神罚之锤：落凤锤变成雷霆重击（落地多出三道圣光雷）
   if (id === 'p_phoenix' && act && p.buffs.pc_jupiter) { const o = act.onLand; act.onLand = e => { o(e); if (act.onLand === null && !act._pcTc) { act._pcTc = true; pcThunderCrush(e); } }; }
 });
