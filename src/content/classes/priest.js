@@ -110,13 +110,15 @@ function priestActs(p) { for (const f of PRIEST_ACT_PICK) { const A = f(p); if (
    ===================================================================== */
 // 空斩打：巨兵从下往上挑，身前的敌人挑空、身后的敌人砸倒；整个动作霸体（官方：挑空技能里霸体最长）；圣骑士算独立攻击、驱魔师能蓄力（转职块用 pMod / 包一层）
 defSkill('p_launcher', { name: '空斩打', cls: 'priest', lvReq: 1, lvStep: 3, sp: 20, mp: 0, cd: 2, type: 'phys', col: '#e0b050', req: pReq('p_launcher'),
-  desc: '用巨兵从下往上猛挑，把身前的敌人挑到空中；同时打到身后的敌人，把它们砸倒在地。整个动作霸体。可以在普攻中取消施放。',
+  desc: '用巨兵从下往上猛挑，把身前的敌人挑到空中；随后顺势回扫，把身后的敌人砸倒在地。整个动作霸体。可以在普攻中取消施放。',
   pow: lv => skillDmg(1.8, 0.18, lv), infoExtra: lv => [['身后攻击力', pct(skillDmg(0.9, 0.09, lv))], ['霸体', '整个动作']], ai: { kind: 'launch', r: [0, 110], dy: 24 },
   act: (lv, p) => { const M = pMod(p, 'p_launcher'), F = pFeelOf(p);
-    return { name: 'p_launcher', clip: 'up', dur: 0.5, cancelFrom: 0.3, superArmor: [0, 0.5], move: [[0.02, 0.1, 110]], type: M.type,
+    return { name: 'p_launcher', clip: 'up', dur: 0.62, cancelFrom: 0.4, superArmor: [0, 0.62], move: [[0.02, 0.1, 110]], type: M.type,
       hits: [HB(0.1, 0.19, [0, Math.round(118 * F.reach * M.range), 38, 0, 140], skillDmg(1.8, 0.18, lv) * M.dmg, { launch: 580 + lv * 6, knock: 40, hs: 0.08, shake: 2, big: 1.2, snd: 'blunt' }),
-        HB(0.12, 0.2, [-Math.round(84 * M.range), 0, 36, 0, 120], skillDmg(0.9, 0.09, lv) * M.dmg, { radial: true, down: true, downLift: 120, knock: 60, hs: 0.06, snd: 'blunt' })],
-      events: [slashAt(0.09, { a0: 1.5, a1: -1.9, r: 92, w: 22, off: [10, 52], heavy: true }), evAt(0.1, e => fxDust(e.x - e.face * 30, e.y, 3, 10))] }; } });
+        HB(0.3, 0.38, [-Math.round(84 * M.range), 0, 36, 0, 120], skillDmg(0.9, 0.09, lv) * M.dmg, { radial: true, down: true, downLift: 120, knock: 60, hs: 0.06, snd: 'blunt' })],
+      events: [slashAt(0.09, { a0: 1.5, a1: -1.9, r: 92, w: 22, off: [10, 52], heavy: true }), evAt(0.1, e => fxDust(e.x - e.face * 30, e.y, 3, 10)),
+        // 前挑之后回扫身后：先前后判定（0.10 前挑 → 0.30 回扫），不再同时出现
+        evAt(0.29, e => { fxSlash({ x: e.x, y: e.y, z: e.z, face: -e.face, col: e.slashCol || '#8fd8ff', a0: -1.9, a1: 1.3, r: 84, w: 18, off: [10, 52], heavy: true }); sfx.swing(true); fxDust(e.x - e.face * 50, e.y, 3, 10); })] }; } });
 // 虎袭：抓住身前的敌人推着冲刺，沿路撞到的敌人多段伤害，最后把抓住的敌人扔出去（扔出去的敌人砸到沿路的敌人）；冲刺中按 X 立即扔出、伤害 +20%
 const P_SMASH_R = 130;
 function pSmashThrow(e, lv, M, quick) {

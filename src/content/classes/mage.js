@@ -100,7 +100,7 @@ defSkill('mg_orb', { name: '魔法星弹', cls: 'mage', lvReq: 1, mp: 6, cd: 0.5
   infoExtra: lv => [['穿透几率', pct(Math.min(0.95, 0.7 + 0.025 * (lv - 1)))]],
   act: (lv) => ({ name: 'mg_orb', clip: 'mcast', dur: 0.36, cancelFrom: 0.2,
     events: [evAt(0.1, e => magicOrb(e, { dmg: skillDmg(1.1, 0.11, lv), col: '#ffe070', size: 30, speed: 600, life: 0.9, steer: true, home: true, elem: 'light', pierceP: Math.min(0.95, 0.7 + 0.025 * (lv - 1)) }))] }) });
-defSkill('mg_sky', { name: '天击', cls: 'mage', lvReq: 1, mp: 10, cd: 2, type: 'phys', col: '#5a8ae0',
+defSkill('mg_sky', { name: '天击', cls: 'mage', lvReq: 1, mp: 10, cd: 2, type: 'phys', col: '#5a8ae0', noSA: true,   // 官方：天击滑动、非霸体
   desc: '挥杖向上猛击把敌人打上天。施放时按住 ↑ 或 ↓ 会先向该方向侧滑再攻击。', pow: lv => skillDmg(1.8, 0.18, lv), ai: { kind: 'launch', r: [0, 86], dy: 24 },
   act: (lv) => ({ name: 'mg_sky', clip: 'sky', dur: 0.48, cancelFrom: 0.28,
     onStart: e => { const dy = e.pad ? e.pad.dy() : 0; if (dy) e.act.move = [[0, 0.1, 0, undefined, dy * 420]]; },
