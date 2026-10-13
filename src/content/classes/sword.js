@@ -279,8 +279,9 @@ function swordAwk3Finish(id, ok, consume) {
 function swordAttackIds() { return Object.keys(SKILLS).filter(id => { const S = SKILLS[id]; return S.cls === 'sword' && S.act && !S.passive && !S.buff && !S.awaken; }); }
 // 普攻动作表按转职 / BUFF 挑选（狂战士狂暴之力 = 二刀流等）：各转职文件往 SWORD_ACT_PICK 里登记 p => 动作表 | null
 const SWORD_ACT_PICK = [];
+// X 轴攻击距离排序有 namu 귀검사 '무기별 비교' 佐证：대검 > 광검 ≥ 둔기 >>> 도 ≥ 소검；僵直：둔기普攻有概率眩晕、대검 경직도高（웨펀마스터页）；具体倍率是平衡取值（docs/BASIC_ATTACK_SOURCES_sword_fighter.md）
 // 武器手感（官方：武器只改攻速 / 数值 / 攻击距离 / 僵直，不改普攻动作）：reach 乘判定前沿，stun 乘僵直；攻速、物攻已在 WTYPES
-const SWORD_FEEL = { shortsword: { reach: 1.0, stun: 1.0 }, katana: { reach: 1.0, stun: 1.0 }, club: { reach: 0.95, stun: 1.3 }, greatsword: { reach: 1.15, stun: 1.1 }, lightsaber: { reach: 0.95, stun: 0.9 } };
+const SWORD_FEEL = { shortsword: { reach: 1.0, stun: 1.0 }, katana: { reach: 1.0, stun: 1.0 }, club: { reach: 1.06, stun: 1.3 }, greatsword: { reach: 1.15, stun: 1.1 }, lightsaber: { reach: 1.1, stun: 1.0 } };
 const SWORD_FEEL_CACHE = new Map();
 function swordFeelWrap(T, w) {
   const F = SWORD_FEEL[w]; if (!F || (F.reach === 1 && F.stun === 1)) return T;
