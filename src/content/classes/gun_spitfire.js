@@ -148,7 +148,7 @@ function sfShotMod(e, o) {
       else addStatus(t, 'stun', 2, { src: a }); });
   } else if (mode === 'gs_pierce') { o.pierce = true; o.life = (o.life || 0.52) * 1.2; o.speedMul = 1.5; }
   else if (mode === 'gs_burst' && !o.cannon) {
-    o.pierce = false; const d = o.dmg * 0.6;
+    o.pierce = false; const d = o.dmg * 0.6; if (!el) o.col = '#ff9a3a'; o.sz = 1.35;   // 爆炸弹：橙红弹体、更大的弹头 / 枪口火光
     extra.push((a, t) => { const x = t.x, y = t.y; fxSpr('explosion', x, y, t.z + 30, { w: 90, dur: 0.3, col: el ? sfElemCol(el) : undefined }); sfx.boom(0.25);
       areaHit(a, x, y, 60, 0, { dmg: d, type: H.type || 'phys', elem: el || undefined, knock: 40, stun: 0.2, hs: 0.02, col: sfElemCol(el) }, { zMax: 120 }); });
   }

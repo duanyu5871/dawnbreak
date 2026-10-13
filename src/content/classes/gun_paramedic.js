@@ -150,7 +150,7 @@ const PM_ACTS = {
     hits: [HB(0.04, 0.28, [0, 66, 26, 28, 95], 1.35, { stun: 0.45, knock: 230, hs: 0.07, shake: 2, heavy: true, col: '#bff4ff' })],
     events: [evAt(0.03, e => { fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 90, w: 10, col: '#8fe8ff' }); sfx.pmBlade(); })] },
   jatk: { name: 'jatk', clip: 'pmJatk', dur: 0.3, basic: true, type: 'indep', speed: 'aspd', airOnly: true, lowGrav: 0.6, chain: [0.15, 0.3], next: 'jatk',
-    hits: [HB(0.05, 0.14, [0, 72, 26, -40, 80], 0.9, { stun: 0.3, knock: 40, airLift: 90, hs: 0.05, col: '#bff4ff' })],
+    hits: [HB(0.05, 0.14, [0, 72, 26, -40, 80], 0.9, { stun: 0.3, knock: 40, airLift: 120, hs: 0.05, col: '#bff4ff' })],
     events: [pmSlash(0.04, { a0: -1.6, a1: 1.3, r: 50, w: 12, off: [10, 40], squash: 0.9 }), evAt(0.03, () => sfx.pmBlade())] },
   back: BACKSTEP,
 };

@@ -437,3 +437,16 @@ CLASSES.gun.cmds.push(['ff', 'g_head'], ['hit', 'g_revenge'], ['bf', 'g_chain'],
   ['', 'g_bl_dive']);   // 跳跃中 Z = 俯冲斩（双枪极舞刃）
 // 跳跃中再按 C = 飞燕射击（双枪极舞刃）
 CLASSES.gun.jumpLinks = { jump: 'g_bl_flip' };
+
+/* 漫游枪手普攻 → 体术衔接：握左轮时，一轮连射后的收枪段改成短促的回旋踢 / 枪刃斩（复用 spinkick 帧、枪刃斩弧），
+   滑铲带一道枪刃斩光，滑铲中 Z 仍可接起身斩（g_bl_rush）。伤害控制在约 0.7 倍，不抢技能的输出 */
+{ const A = CLASSES.gun.acts, hol0 = A.holster.onStart, dash0 = A.dash.update;
+  A.holster.onStart = e => {
+    if (hol0) hol0(e);
+    if (jobOf(e) !== 'ranger' || !isRevolver(e)) return;
+    const a = e.act; e.play('spinkick', true);
+    a.hits = [HB(0.02, 0.16, [-50, 85, 34, 0, 100], 0.7 * shotDmgOf(e), { knock: 70, stun: 0.3, hs: 0.03, snd: 'blunt', col: '#ffd0a0' })];
+    a.events = [...(a.events || []), { ...slashAt(0.03, { a0: -2.4, a1: 2.2, r: 60, w: 12, off: [0, 50], col: '#ffb0a0', squash: 0.8 }), done: false }];
+  };
+  A.dash.update = e => { if (dash0) dash0(e); if (jobOf(e) === 'ranger' && !e.act._bl && e.actT > 0.04) { e.act._bl = 1; fxSlash({ x: e.x, y: e.y, z: e.z + 40, face: e.face, col: '#ffb0a0', a0: -0.5, a1: 1.2, r: 50, w: 10, off: [20, 30] }); } };
+}

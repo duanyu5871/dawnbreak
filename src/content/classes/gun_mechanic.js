@@ -1130,3 +1130,7 @@ CLASSES.gun.jobs.mechanic = { art: 'job/mechanic', name: '机械师', role: '远
 CLASSES.gun.cmds.push(['dd', 'gm_ez8'], ['ff', 'gm_robotics', 'buff'], ['bf', 'gm_detonate', 'buff'], ['bf', 'gm_g1'], ['uff', 'gm_g2'], ['fdf', 'gm_viper'], ['ud', 'gm_camo', 'buff'],
   ['udf', 'gm_hold', 'buff'], ['udf', 'gm_g3'], ['udu', 'gm_gale'], ['dff', 'gm_magnet'], ['bdf', 'gm_drop'], ['udd', 'gm_factory'], ['uudd', 'gm_g0'],
   ['fbdf', 'gm_hs12'], ['duf', 'gm_frisbee'], ['fbf', 'gm_falcon'], ['fbuf', 'gm_field'], ['duff', 'gm_bolt'], ['udff', 'gm_hyper'], ['bufd', 'gm_stardust']);
+
+// 机械师：自动手枪普攻带电光色（子弹 + 枪口火光），银弹优先；不盖过元素色
+{ const C = CLASSES.gun, shot0 = C.shotMod;
+  C.shotMod = (e, o) => { if (shot0) o = shot0(e, o) || o; return isMech(e) && o.basic && !o.cannon && !o.col && wtypeOf(e) === 'autopistol' ? { ...o, col: '#8fe8ff' } : o; }; }

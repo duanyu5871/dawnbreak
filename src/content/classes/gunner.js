@@ -44,7 +44,15 @@ const GUN_FEEL = {
   handcannon: { n: 2, draw: 0.2, gap: 0.3, holster: 0.34, life: 0, stun: 0.42, knock: 90, pierce: 1, dmg: 1.15, air: 1, bonus: [2, 4], airGap: 0.3, recoil: 'back', area: 170 },
   bowgun: { n: 7, draw: 0.1, gap: 0.12, holster: 0.24, life: 0.7, stun: 0.2, knock: 12, pierce: 0, dmg: 0.4, air: 7, bonus: [5, 14], airGap: 0.13, recoil: 'sink' },
 };
-const feelOf = p => GUN_FEEL[wtypeOf(p)] || GUN_FEEL.revolver;
+// 枪炮师（launcher）的默认手感偏手炮：没装备武器 = 手炮手感（跳射 2 发）；装了别的枪 = 硬直 / 击退加重、收枪略慢（缓存，避免每次分配）
+const _lcFeel = new Map();
+function launcherFeel(w) {
+  const k = w || '-'; let F = _lcFeel.get(k); if (F) return F;
+  F = w ? { ...(GUN_FEEL[w] || GUN_FEEL.revolver) } : { ...GUN_FEEL.handcannon, air: 2 };
+  if (w && w !== 'handcannon') { F.stun *= 1.25; F.knock *= 1.4; F.holster *= 1.12; }
+  _lcFeel.set(k, F); return F;
+}
+const feelOf = p => { const w = wtypeOf(p); return (typeof jobOf === 'function' && p && jobOf(p) === 'launcher') ? launcherFeel(w) : GUN_FEEL[w] || GUN_FEEL.revolver; };
 const isRevolver = p => !wtypeOf(p) || wtypeOf(p) === 'revolver';   // 没装备武器按左轮算
 const shotsOf = p => feelOf(p).n;
 // 空中射击（Buff）增加的跳射发数：1 级到 10 级之间按等级插值
@@ -57,8 +65,9 @@ function fireBullet(e, o = {}) {
   const sp = 950 * (1 + 0.02 * skLv(e, 'g_revmaster')) * (o.speedMul || 1), dn = o.down, up = o.up, ang = dn || up ? 0.72 : 1, zz = dn ? 52 : up ? 74 : o.low ? 24 : 64;
   muzzle(e);
   { const mx = e.x + e.face * 34, mz = e.z + zz, rot = (dn ? 0.7 : up ? -0.7 : 0) * e.face + (e.face < 0 ? Math.PI : 0);   // 枪口火光
-    addFx({ x: mx, y: e.y + 1, z: mz, dur: 0.07, add: true, rot, draw(c) { drawSpr(c, 'muzzle', sx(this.x), sy(this.y, this.z), 34, 0, { ax: 0.2, rot: this.rot, alpha: 1 - this.t / this.dur }); } }); }
+    addFx({ x: mx, y: e.y + 1, z: mz, dur: 0.07, add: true, rot, draw(c) { drawSpr(c, o.col ? fxTint('muzzle', o.col) : 'muzzle', sx(this.x), sy(this.y, this.z), 34 * (o.sz || 1), 0, { ax: 0.2, rot: this.rot, alpha: 1 - this.t / this.dur }); } }); }   // 枪口火光随子弹染色 / 大小（机械师电光、弹药专家爆炸弹）
   if (!o.quiet) sfx.gun(o.vol || 1);
+  if (o.basic && typeof jobOf === 'function' && jobOf(e) === 'launcher') cam.shake = Math.max(cam.shake, 1.2);   // 枪炮师：普攻枪声更沉、震屏
   // 银弹：按发数计（官方），只有普通射击吃
   const silver = o.basic && e.buffs && e.buffs.g_silver;
   if (silver) { silver.n--; if (silver.n <= 0) delete e.buffs.g_silver; }
@@ -66,7 +75,7 @@ function fireBullet(e, o = {}) {
     pierce: !!o.pierce || (o.basic && isRevolver(e) && Math.random() < 0.04 * skLv(e, 'g_revmaster')),   // 左轮奥义：普攻穿透几率
     hit: o.fx ? null : { dmg: (o.dmg || 0.5) * (silver ? 1 + silver.shot : 1), stun: 0.22, knock: o.knock ?? 25, airLift: o.lift ?? 120, hs: 0.025, snd: 'stab', col: silver ? '#fff6c0' : '#ffe0a0', downHit: !!o.low, elem: silver ? 'light' : undefined, ...(o.hit || {}) },
     update(pr) { if (pr.z <= 0 && pr.vz < 0) { pr.t = pr.life; fxDust(pr.x, pr.y, 2, 4, '#a89878'); } },
-    draw(c, pr) { drawSpr(c, silver ? fxTint('bullet', '#fff8d0') : o.col ? fxTint('bullet', o.col) : 'bullet', sx(pr.x), sy(pr.y, pr.z), 52, 8, { ax: 0.9, rot: Math.atan2(-pr.vz, pr.vx) }); } });
+    draw(c, pr) { drawSpr(c, silver ? fxTint('bullet', '#fff8d0') : o.col ? fxTint('bullet', o.col) : 'bullet', sx(pr.x), sy(pr.y, pr.z), 52 * (o.sz || 1), 8 * (o.sz || 1), { ax: 0.9, rot: Math.atan2(-pr.vz, pr.vx) }); } });
 }
 // 手炮普攻：不是子弹，是前方一小块范围判定（穿透、能穿障碍）；空中的敌人直接被砸到地上
 function cannonBlast(e, dmg, o) {
