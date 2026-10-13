@@ -278,7 +278,21 @@ function swordAwk3Finish(id, ok, consume) {
 function swordAttackIds() { return Object.keys(SKILLS).filter(id => { const S = SKILLS[id]; return S.cls === 'sword' && S.act && !S.passive && !S.buff && !S.awaken; }); }
 // 普攻动作表按转职 / BUFF 挑选（狂战士狂暴之力 = 二刀流等）：各转职文件往 SWORD_ACT_PICK 里登记 p => 动作表 | null
 const SWORD_ACT_PICK = [];
-function swordActs(p) { for (const f of SWORD_ACT_PICK) { const A = f(p); if (A) return A; } return SWORD_ACTS; }
+// 武器手感（官方：武器只改攻速 / 数值 / 攻击距离 / 僵直，不改普攻动作）：reach 乘判定前沿，stun 乘僵直；攻速、物攻已在 WTYPES
+const SWORD_FEEL = { shortsword: { reach: 1.0, stun: 1.0 }, katana: { reach: 1.0, stun: 1.0 }, club: { reach: 0.95, stun: 1.3 }, greatsword: { reach: 1.15, stun: 1.1 }, lightsaber: { reach: 0.95, stun: 0.9 } };
+const SWORD_FEEL_CACHE = new Map();
+function swordFeelWrap(T, w) {
+  const F = SWORD_FEEL[w]; if (!F || (F.reach === 1 && F.stun === 1)) return T;
+  let m = SWORD_FEEL_CACHE.get(T); if (!m) SWORD_FEEL_CACHE.set(T, m = {});
+  if (m[w]) return m[w];
+  const out = {};
+  for (const k in T) {
+    const a = T[k];
+    out[k] = a && a.basic && !a.rk && a.hits ? { ...a, hits: a.hits.map(h => h.box ? { ...h, box: [h.box[0], Math.round(h.box[1] * F.reach), ...h.box.slice(2)], ...(h.stun ? { stun: +(h.stun * F.stun).toFixed(3) } : {}) } : h) } : a;
+  }
+  return m[w] = out;
+}
+function swordActs(p) { for (const f of SWORD_ACT_PICK) { const A = f(p); if (A) return swordFeelWrap(A, wtypeOf(p)); } return swordFeelWrap(SWORD_ACTS, wtypeOf(p)); }
 CLASSES.sword.passives.push(p => {
   if (!(p.st === 'act' && p.act && p.act.basic)) p.acts = swordActs(p);   // 普攻连段中途不切换（next 指向的动作在另一张表里可能不存在）
   p.airBonus = hasSkill(p, 'aircut') ? 2 : 0;                             // 空之连刃：空中最多 3 斩
