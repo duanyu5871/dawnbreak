@@ -32,6 +32,7 @@
 | [`CLASS_PLAN_FIGHTER.md`](CLASS_PLAN_FIGHTER.md) · [`CLASS_PLAN_PRIEST.md`](CLASS_PLAN_PRIEST.md) | 过程记录 | 新增一个职业的完整做法：接入点、任务拆分、美术（格斗家是范例） |
 | [`FIGHTER_ART_SAMPLES.md`](FIGHTER_ART_SAMPLES.md) · [`PRIEST_ART.md`](PRIEST_ART.md) · [`FIGHTER_GEAR_AUDIT.md`](FIGHTER_GEAR_AUDIT.md) | 过程记录 | 格斗家 / 圣职者的原装美术与装备审计 |
 | [`BASIC_ATTACK_SOURCES_priest.md`](BASIC_ATTACK_SOURCES_priest.md) | 过程记录 | 圣职者（男）普攻 / 武器 / 空斩打的官方出处（namu 原文引用）和查不到的部分，issue #3 |
+| [`BASIC_ATTACK_SOURCES_frames.md`](BASIC_ATTACK_SOURCES_frames.md) | 调研记录 | 普攻 / 天击 / 空斩打的帧数据、判定框 px、硬直数值查证（namu 경직页原文、PVF 教程 ani 格式、DFO fandom、GitHub）；结论：无可用硬数字，src 未改，附未找到清单（issue #3） |
 | [`HANDOFF_PRIEST.md`](HANDOFF_PRIEST.md) | 已作废 | 文件内已声明作废，以 `CLASS_PLAN_PRIEST.md` 为准 |
 
 ## 3. 装备、商城与经济
