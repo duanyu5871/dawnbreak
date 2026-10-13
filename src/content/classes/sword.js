@@ -16,7 +16,8 @@ const SWORD_ACTS = {
     events: [slashAt(0.11, { a0: -2.7, a1: 1.1, r: 84, w: 22, off: [10, 56], squash: 0.85, heavy: true })] },
   dash: { name: 'dash', dur: 0.45, basic: true, speed: 'aspd', move: [[0, 0.26, 420]], noCounter: true, chain: [0.14, 0.45], next: p => hasSkill(p, 'dashthrust') ? 'dash2' : null,
     hits: [HB(0.05, 0.26, [0, 74, 30, 30, 90], 1.35, { stun: 0.45, knock: 240, hs: 0.07, shake: 2, heavy: true })],
-    events: [evAt(0.04, e => { fxStreak({ x: e.x, y: e.y, z: e.z + 62, face: e.face, len: 100, w: 12, col: '#8fd8ff' }); sfx.swing(true); })] },
+    events: [evAt(0.04, e => { fxStreak({ x: e.x, y: e.y, z: e.z + 62, face: e.face, len: 100, w: 12, col: '#8fd8ff' }); sfx.swing(true); }),
+      slashAt(0.05, { a0: -0.95, a1: 0.85, r: 78, w: 14, off: [10, 56], squash: 0.5, silent: true })] },
   // 连突刺：跑攻中再按 X（技能）
   dash2: { name: 'dash2', clip: 'flurry', dur: 0.55, basic: true, speed: 'aspd', move: [[0, 0.4, 60]], noCounter: true,
     hits: [HB(0.02, 0.4, [0, 80, 30, 30, 95], 0.45, { rep: 0.08, stun: 0.3, knock: 40, hs: 0.03, snd: 'stab', dmgKey: 'dashthrust' }), HB(0.42, 0.48, [0, 88, 32, 25, 100], 1.3, { knock: 240, stun: 0.5, hs: 0.07, shake: 2, heavy: true, dmgKey: 'dashthrust' })],
@@ -278,9 +279,9 @@ function swordAwk3Finish(id, ok, consume) {
 function swordAttackIds() { return Object.keys(SKILLS).filter(id => { const S = SKILLS[id]; return S.cls === 'sword' && S.act && !S.passive && !S.buff && !S.awaken; }); }
 // 普攻动作表按转职 / BUFF 挑选（狂战士狂暴之力 = 二刀流等）：各转职文件往 SWORD_ACT_PICK 里登记 p => 动作表 | null
 const SWORD_ACT_PICK = [];
+// X 轴攻击距离排序有 namu 귀검사 '무기별 비교' 佐证：대검 > 광검 ≥ 둔기 >>> 도 ≥ 소검；僵直：둔기普攻有概率眩晕、대검 경직도高（웨펀마스터页）；具体倍率是平衡取值（docs/BASIC_ATTACK_SOURCES_sword_fighter.md）
 // 武器手感（官方：武器只改攻速 / 数值 / 攻击距离 / 僵直，不改普攻动作）：reach 乘判定前沿，stun 乘僵直；攻速、物攻已在 WTYPES
-// 注意：reach / stun 的具体倍率没有可查证的网页来源（见 docs/BASIC_ATTACK_SOURCES_sword_fighter.md），只是平衡取值；攻速排序（光剑最快）有 DFO wiki 佐证，数值在 WTYPES
-const SWORD_FEEL = { shortsword: { reach: 1.0, stun: 1.0 }, katana: { reach: 1.0, stun: 1.0 }, club: { reach: 0.95, stun: 1.3 }, greatsword: { reach: 1.15, stun: 1.1 }, lightsaber: { reach: 0.95, stun: 0.9 } };
+const SWORD_FEEL = { shortsword: { reach: 1.0, stun: 1.0 }, katana: { reach: 1.0, stun: 1.0 }, club: { reach: 1.06, stun: 1.3 }, greatsword: { reach: 1.15, stun: 1.1 }, lightsaber: { reach: 1.1, stun: 1.0 } };
 const SWORD_FEEL_CACHE = new Map();
 function swordFeelWrap(T, w) {
   const F = SWORD_FEEL[w]; if (!F || (F.reach === 1 && F.stun === 1)) return T;

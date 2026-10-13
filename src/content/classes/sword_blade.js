@@ -42,9 +42,11 @@ defSkill('wm_mind', { name: '无我剑气', cls: 'sword', job: 'blade', lvReq: 1
 function rkSegs(w) {
   const S = (clip, box, dmg, o, slash) => ({ clip, box, dmg, o, slash });
   switch (w) {
-    case 'shortsword': return [S('rk1', [0, 90, 32, 10, 110], 1.1, { stun: 0.35, knock: 50 }, [-2.4, 0.6]), S('rk2', [0, 90, 32, 10, 110], 1.1, { stun: 0.35, knock: 60 }, [0.8, -2.2]), S('rk1', [0, 96, 34, 10, 110], 1.4, { stun: 0.45, knock: 140 }, [-2.6, 0.9])];
+    case 'shortsword': return [S('rk1', [0, 90, 32, 10, 110], 1.1, { stun: 0.35, knock: 50 }, [-1.3, 0.5]), S('rk2', [0, 90, 32, 10, 110], 1.1, { stun: 0.35, knock: 60 }, [0.6, -1.2]), S('rk1', [0, 96, 34, 10, 110], 1.4, { stun: 0.45, knock: 140 }, [-1.5, 0.7])];   // 短剑：斩弧更平（匕首式横削，比太刀的大弧低）
     case 'greatsword': return [S('rk2', [-40, 124, 42, 0, 120], 1.6, { stun: 0.5, knock: -120, pull: true }, [0.8, -2.6]), S('rk4', [0, 132, 42, 0, 130], 2.6, { launch: 420, knock: 200, heavy: true, shake: 4, big: 1.5 }, [-2.8, 1.2])];
     case 'club': return [S('rk1', [0, 100, 34, 10, 110], 1.1, { stun: 0.45, knock: 140 }, [-2.2, 0.8]), S('rk2', [0, 100, 34, 10, 110], 1.1, { stun: 0.45, knock: 140 }, [0.8, -2.2]), S('rk1', [0, 100, 34, 10, 110], 1.1, { stun: 0.45, knock: 140 }, [-2.2, 0.8]), S('rk4', [0, 112, 36, 0, 120], 1.8, { knock: 320, stun: 0.6, heavy: true, shake: 3, big: 1.3 }, [-2.8, 1.2])];
+    case 'lightsaber': {   // namu 웨펀마스터：광검 리귀검술 3타（太刀 4타、巨剑 2타）→ 光剑去掉第 3 段，前两段二刀流 + 收尾下砍
+      const d = rkSegs('katana'); return [d[0], d[1], d[3]]; }
     default: return [S('rk1', [0, 98, 34, 10, 110], 0.9, { stun: 0.35, knock: 40 }, [-2.4, 0.6]), S('rk2', [-10, 100, 34, 10, 110], 0.9, { stun: 0.35, knock: 50 }, [0.8, -2.4]),   // 太刀 / 光剑：二刀流式的 4 连斩
       S('rk3', [0, 98, 34, 0, 140], 1.1, { launch: 360, knock: 40 }, [1.4, -1.9]), S('rk4', [0, 106, 36, 0, 120], 1.5, { down: true, knock: 180, heavy: true, shake: 3, downHit: true }, [-2.8, 1.2])];
   }
@@ -52,11 +54,11 @@ function rkSegs(w) {
 function rkStage(lv, p, n) {
   const w = swWt(p), segs = rkSegs(w), s = segs[n - 1], last = n === segs.length, light = w === 'lightsaber' || w === 'katana';
   const gsCharge = w === 'greatsword' && last && arcanaLv(p) >= 1;
-  const dmg = skillDmg(s.dmg, s.dmg * 0.1, lv) * (w === 'lightsaber' ? 0.9 : 1), n2 = w === 'katana' || (w === 'lightsaber' && n <= 2) ? 2 : 1;   // 官方：太刀二刀流 4 动作共 8 hit，光剑共 6 hit
+  const dmg = skillDmg(s.dmg, s.dmg * 0.1, lv) * (w === 'lightsaber' ? 0.9 : 1), n2 = w === 'katana' || (w === 'lightsaber' && n <= 2) ? 2 : 1;   // 太刀二刀流 4 动作共 8 hit；光剑 3 动作（namu：光剑里鬼剑术 3 타），前两动作各 2 hit
   const a = { name: 'rk' + n, clip: s.clip, dur: light ? 0.32 : w === 'greatsword' ? 0.5 : 0.4, basic: true, rk: true, speed: 'aspd', move: [[0.02, 0.1, s.o.pull ? 40 : 120]],
     follow: last ? null : () => rkStage(lv, p, n + 1), followWin: [0.1, 0.4], chain: last ? null : [0.12, 0.4], next: last ? null : n === 1 ? 'atk2' : 'atk3',
     hits: [HB(0.06, n2 > 1 ? 0.18 : 0.14, s.box, dmg / n2, { hs: 0.06, ...s.o, pull: undefined, ...(n2 > 1 ? { rep: 0.06, max: 2 } : {}) })],
-    events: [slashAt(0.05, { a0: s.slash[0], a1: s.slash[1], r: w === 'greatsword' ? 100 : 76, w: w === 'greatsword' ? 22 : 16, off: [10, 56], heavy: !!s.o.heavy, col: w === 'lightsaber' ? '#fff0a0' : undefined })] };
+    events: [slashAt(0.05, { a0: s.slash[0], a1: s.slash[1], r: w === 'greatsword' ? 100 : 76, w: w === 'greatsword' ? 22 : 16, off: [10, 56], squash: w === 'shortsword' ? 0.5 : undefined, heavy: !!s.o.heavy, col: w === 'lightsaber' ? '#fff0a0' : undefined })] };
   if (s.o.pull) a.events.push(evAt(0.04, e => { fxSpr('vortex', e.x + e.face * 90, e.y, e.z + 50, { w: 160, dur: 0.35, alpha: 0.7, grow: [0.6, 1.1] }); for (const t of ents) if (hittable(e, t) && !t.boss && Math.abs(t.y - e.y) < 60 && (t.x - e.x) * e.face > 0 && Math.abs(t.x - e.x) < 230) t.x = lerp(t.x, e.x + e.face * 50, 0.6); }));
   if (gsCharge) { a.dur = 0.62; a.superArmor = true; a.charge = { at: 0.04, max: 0.8, min: 0, dmg: 4.2, clip: 'charge', update: e => { if (Math.random() < 0.5) fxCharge(e, '#cfe6ff'); } }; a.hits[0].t0 += 0.04; a.hits[0].t1 += 0.04; }
   if (w === 'shortsword' && arcanaLv(p)) a.events.push(evAt(0.08, e => projWave(e, { speed: 520, life: 0.35, h: 60, hit: { dmg: dmg * 0.5, knock: 60, stun: 0.3 } })));
