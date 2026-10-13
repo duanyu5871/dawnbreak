@@ -172,6 +172,10 @@ function fighterActsFor(F) {
   };
 }
 const FIGHTER_ACTS_BY_W = {}; for (const w in FIGHTER_FEEL) FIGHTER_ACTS_BY_W[w] = fighterActsFor(FIGHTER_FEEL[w]);
+// 臂铠：第 4 段重击更重（只改震屏 / 顿帧 / 动作冲击，数值与动作不变）
+{ const a4 = FIGHTER_ACTS_BY_W.gauntlet.atk4; Object.assign(a4.hits[0], { shake: 6, hs: 0.15, big: 1.7 });
+  a4.events = a4.events.concat(evAt(0.17, e => { fxShock(e.x + e.face * 70, e.y, 90, '#c8d0e0'); fxDust(e.x + e.face * 70, e.y, 5, 18); })); }
+// 爪：普攻命中带一点点血雾（纯视觉）
 const FIGHTER_ACTS = FIGHTER_ACTS_BY_W.knuckle;
 const fActsOf = p => (p && FIGHTER_ACTS_BY_W[wtypeOf(p)]) || FIGHTER_ACTS;
 // 普攻动作表按转职 / BUFF 挑选（气功师 龙虎啸：普攻 / 跑攻 / 跳攻全换）：转职文件往 FIGHTER_ACT_PICK 里登记 p => 动作表 | null
@@ -401,6 +405,10 @@ CLASSES.fighter.passives.push(p => {
    onHit(p, t, h, dmg, act, opt) 命中；onHurt(p, a, h, dmg) 受击后；beforeHurt(p, a, h, opt) → { block, mul, minHp, noStun, noStatus } 受击前（多个结果：mul 相乘、block 优先）；
    onCast(p, id, act, how) 施放后（扣完 MP / 冷却之后；how = 'recast' 是再按）；cancelHook(p, act, id) → true = 允许这次技能取消（散打 柔化肌肉）；softCommit(p, act, id) 真放出来后扣次数 */
 const FIGHTER_HOOKS = { onHit: [], onHurt: [], beforeHurt: [], onCast: [], cancelHook: [], softCommit: [] };
+FIGHTER_HOOKS.onHit.push((p, t, h, dmg, act) => {
+  if (!act || !act.basic || !t || wtypeOf(p) !== 'claw') return;
+  for (let i = 0; i < 3; i++) fxSpr('spark', t.x + rnd(-10, 10), t.y + 1, t.z + rnd(30, 70), { w: 9 + rnd(0, 6), dur: 0.22, col: '#c8242e' });
+});
 CLASSES.fighter.onHit = (p, t, h, dmg, act, opt) => { for (const f of FIGHTER_HOOKS.onHit) f(p, t, h, dmg, act, opt); };
 CLASSES.fighter.onHurt = (p, a, h, dmg) => { for (const f of FIGHTER_HOOKS.onHurt) f(p, a, h, dmg); };
 CLASSES.fighter.beforeHurt = (p, a, h, opt = {}) => {
