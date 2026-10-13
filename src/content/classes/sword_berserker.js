@@ -28,6 +28,10 @@ const SWORD_ACTS_BZ = { ...SWORD_ACTS,
 };
 // 狂暴之力中：连突刺、跳攻、跑攻、空之连刃变为独立攻击
 for (const k of ['dash', 'dash2', 'jatk', 'jatk2', 'jatk3']) SWORD_ACTS_BZ[k] = { ...SWORD_ACTS[k], type: 'indep' };
+// 二刀流：跑攻 / 跳攻在主斩之后补一道反向红斩（silent，只做表现）
+for (const [k, t, o] of [['dash', 0.1, { a0: 0.9, a1: -0.8, r: 74, w: 12, off: [12, 54], squash: 0.5 }], ['jatk', 0.1, { a0: 1.3, a1: -1.9, r: 62, w: 12, off: [12, 40] }],
+  ['jatk2', 0.09, { a0: -2.2, a1: 1.2, r: 66, w: 12, off: [12, 40] }], ['jatk3', 0.1, { a0: 1.6, a1: -1.4, r: 72, w: 14, off: [14, 40] }]])
+  SWORD_ACTS_BZ[k] = { ...SWORD_ACTS_BZ[k], events: [...(SWORD_ACTS_BZ[k].events || []), slashAt(t, { ...o, col: '#ff7a7a', silent: true })] };
 // 暴走：狂暴普攻后摇减半（recMul 0.5，引擎在最后一个判定结束后按倍率缩短动作）
 const SWORD_ACTS_BZR = { ...SWORD_ACTS_BZ };
 for (const k of ['atk1', 'atk2', 'atk3', 'atk4']) SWORD_ACTS_BZR[k] = { ...SWORD_ACTS_BZ[k], recMul: 0.5 };
