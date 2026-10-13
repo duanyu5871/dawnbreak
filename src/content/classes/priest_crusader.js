@@ -378,9 +378,9 @@ function pcHolyLightning(e) {
 }
 function pcActsFor(w, jup) {
   const key = (w || 'cross') + (jup ? '|j' : '|m'); if (PC_ACTS[key]) return PC_ACTS[key];
-  const F = PRIEST_FEEL[w] || PRIEST_FEEL.cross, B = priestActsFor({ reach: F.reach * 1.2, stun: F.stun }), A = {};
+  const F = pFeelFor(w, 'crusader'), B = priestSwingActsFor({ reach: F.reach * 1.2, stun: F.stun }), A = {};
   const sw = h => jup ? { ...h, type: 'indep', elem: 'light', col: '#fff38a' } : h;
-  for (const n in B) A[n] = { ...B[n], hits: B[n].hits.map(sw), events: [...(B[n].events || [])] };
+  for (const n in B) if (B[n]) A[n] = { ...B[n], hits: B[n].hits.map(sw), events: [...(B[n].events || [])] };
   A.atk3.events.push(evAt(0.22, e => pcHolyShock(e, jup)));
   if (jup) { A.dash.events.push(evAt(0.1, e => pcHolyLightning(e))); A.jatk.hits = A.jatk.hits.map(h => ({ ...h, box: [h.box[0], Math.round(h.box[1] * 1.3), Math.round(h.box[2] * 1.3), h.box[3], h.box[4]] })); }
   return (PC_ACTS[key] = A);
