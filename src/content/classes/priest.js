@@ -27,15 +27,20 @@ const PRIEST_IDS = {
   awaken: { crusader: ['pc_awaken', 'pc_awaken2', 'pc_awaken3'], monk: ['pi_awaken', 'pi_awaken2', 'pi_awaken3'], exorcist: ['pe_awaken', 'pe_awaken2', 'pe_awaken3'], avenger: ['pa_awaken', 'pa_awaken2', 'pa_awaken3'] },
 };
 
-/* ---- 武器手感（官方：巨兵只改速度 / 距离 / 数值，不改普攻动作；攻速 / 施放速度本身在 WTYPES.aspd / cspd）：reach 普攻 / 部分技能判定前沿的倍率，stun 硬直倍率。不装武器按十字架算 ---- */
+/* ---- 武器手感（官方 namu：巨兵只改速度 / 硬直 / 数值，不改普攻动作；攻速 / 施放速度本身在 WTYPES.aspd / cspd）：
+   stun 硬直倍率（镰刀逆硬直很少、战斧逆硬直很大）；reach 判定前沿倍率——namu 武器页脚注：“只有驱魔师（和异端审判者）才计较纯武器距离，其余职业武器距离没有意义”，
+   所以 reach 只给驱魔师用（pFeelOf 对非驱魔师返回 reach 1）；镰刀距离略大于战斧，十字架 / 念珠 / 图腾 namu 没写距离差异，一律 1.0。不装武器按十字架算 ---- */
 const PRIEST_FEEL = {
   cross: { reach: 1.0, stun: 1.0 },
-  rosary: { reach: 0.9, stun: 1.0 },
-  totem: { reach: 0.95, stun: 1.05 },
-  scythe: { reach: 1.15, stun: 0.8 },
+  rosary: { reach: 1.0, stun: 1.0 },
+  totem: { reach: 1.0, stun: 1.0 },
+  scythe: { reach: 1.2, stun: 0.8 },
   battleaxe: { reach: 1.15, stun: 1.2 },
 };
-const pFeelOf = p => PRIEST_FEEL[wtypeOf(p)] || PRIEST_FEEL.cross;
+// 非驱魔师：武器距离无意义 → reach 固定 1；驱魔师保留武器距离
+const pNoReach = F => F.reach === 1 ? F : { ...F, reach: 1 };
+const pFeelFor = (w, job) => { const F = PRIEST_FEEL[w] || PRIEST_FEEL.cross; return job === 'exorcist' ? F : pNoReach(F); };
+const pFeelOf = p => pFeelFor(wtypeOf(p), jobOf(p));
 
 /* ---- 职业钩子：基础 / 各转职往这里登记（照 FIGHTER_HOOKS）----
    onHit(p, t, h, dmg, act, opt) 命中；onHurt(p, a, h, dmg) 受击后；beforeHurt(p, a, h, opt) → { block, mul, minHp, noStun, noStatus }（多个结果：mul 相乘、block 优先）；
@@ -73,20 +78,24 @@ const pPunch = (e, len, heavy) => { fxStreak({ x: e.x + e.face * 20, y: e.y, z: 
 // 祈祷光：头顶小十字 + 脚下光环
 function pPrayFx(e, col) { fxSpr('crossx', e.x, e.y, e.z + 120, { w: 46, dur: 0.5, col, grow: [0.5, 1] }); fxAura(e, col, 0.5); }
 
-/* ---- 普攻：按武器手感生成（判定前沿 × reach、硬直 × stun），每种武器一张，passives 每 0.25 秒按武器 / BUFF 挑表 ----
-   巨兵 3 连击：横扫 → 回扫 → 重砸（击退）；跑攻 滑步猛击（后半段按 X = 勾拳追击）；跳攻 空中下劈 */
+/* ---- 普攻：按武器手感生成（硬直 × stun；判定前沿 × reach 只有驱魔师 / 战斧 / 镰刀才有意义，见 PRIEST_FEEL），每种武器一张，passives 每 0.25 秒按武器 / BUFF 挑表 ----
+    官方（namu 프리스트(던전앤파이터) / 퇴마사 스킬）：基础圣职者普攻 4 段，只有最后一击（막타）挥巨兵，前面是拳；
+    本表：拳 → 拳 → 直拳 → 巨兵重砸（击退）；跑攻 滑步猛击（后半段按 X = 勾拳追击）；跳攻 空中下劈（出处和未查到的部分见 docs/BASIC_ATTACK_SOURCES_priest.md） */
 function priestActsFor(F) {
   const R = b => [b[0], Math.round(b[1] * F.reach), b[2], b[3], b[4]], S = s => +(s * F.stun).toFixed(3);
   return {
-    atk1: { name: 'atk1', dur: 0.36, basic: true, speed: 'aspd', chain: [0.14, 0.36], next: 'atk2', move: [[0.02, 0.08, 90]],
-      hits: [HB(0.08, 0.14, R([0, 112, 36, 20, 115]), 1.0, { stun: S(0.32), knock: 50, hs: 0.055, snd: 'blunt' })],
-      events: [slashAt(0.07, { a0: -2.2, a1: 0.9, r: 82, w: 18, off: [12, 56] })] },
-    atk2: { name: 'atk2', dur: 0.38, basic: true, speed: 'aspd', chain: [0.15, 0.38], next: 'atk3', move: [[0.02, 0.08, 90]],
-      hits: [HB(0.08, 0.15, R([0, 116, 36, 16, 115]), 1.1, { stun: S(0.34), knock: 55, hs: 0.055, snd: 'blunt' })],
-      events: [slashAt(0.07, { a0: 0.9, a1: -2.2, r: 84, w: 18, off: [12, 54] })] },
-    // 重砸：巨兵从头顶砸下，击退
-    atk3: { name: 'atk3', dur: 0.56, basic: true, speed: 'aspd', move: [[0.04, 0.16, 150]],
-      hits: [HB(0.16, 0.24, R([0, 126, 40, 0, 135]), 1.6, { stun: S(0.55), knock: 220, hs: 0.09, shake: 3, heavy: true, big: 1.3, snd: 'blunt' })],
+    atk1: { name: 'atk1', clip: 'jab', dur: 0.3, basic: true, speed: 'aspd', chain: [0.12, 0.3], next: 'atk2', move: [[0.02, 0.08, 80]],
+      hits: [HB(0.05, 0.11, [0, 100, 36, 25, 115], 0.65, { stun: S(0.3), knock: 30, hs: 0.045, snd: 'blunt' })],
+      events: [evAt(0.04, e => pPunch(e, 70))] },
+    atk2: { name: 'atk2', clip: 'jab', dur: 0.32, basic: true, speed: 'aspd', chain: [0.13, 0.32], next: 'atk3', move: [[0.02, 0.08, 80]],
+      hits: [HB(0.05, 0.11, [0, 104, 36, 25, 115], 0.7, { stun: S(0.32), knock: 35, hs: 0.045, snd: 'blunt' })],
+      events: [evAt(0.04, e => pPunch(e, 74))] },
+    atk3: { name: 'atk3', clip: 'straight', dur: 0.36, basic: true, speed: 'aspd', chain: [0.15, 0.36], next: 'atk4', move: [[0.02, 0.1, 90]],
+      hits: [HB(0.07, 0.14, [0, 112, 36, 25, 115], 0.8, { stun: S(0.36), knock: 55, hs: 0.055, snd: 'blunt' })],
+      events: [evAt(0.06, e => pPunch(e, 96, true))] },
+    // 막타：巨兵从头顶砸下，击退（四段里唯一挥巨兵的一下，武器距离只在这一下起作用）
+    atk4: { name: 'atk4', clip: 'atk3', dur: 0.56, basic: true, speed: 'aspd', move: [[0.04, 0.16, 150]],
+      hits: [HB(0.16, 0.24, R([0, 126, 40, 0, 135]), 1.55, { stun: S(0.55), knock: 220, hs: 0.09, shake: 3, heavy: true, big: 1.3, snd: 'blunt' })],
       events: [slashAt(0.14, { a0: -2.7, a1: 1.1, r: 94, w: 24, off: [12, 60], squash: 0.85, heavy: true }), evAt(0.2, e => fxDust(e.x + e.face * 80, e.y, 4, 14))] },
     // 跑攻 滑步猛击：不击倒（官方接勾拳追击），后半段按 X 派生勾拳追击（keyLinks）
     dash: { name: 'dash', dur: 0.46, basic: true, speed: 'aspd', move: [[0, 0.26, 400]], noCounter: true, keyLinks: { attack: 'p_second' }, linkFrom: 0.12,
@@ -97,6 +106,20 @@ function priestActsFor(F) {
       events: [slashAt(0.06, { a0: -1.6, a1: 1.3, r: 78, w: 16, off: [10, 40] })] },
   };
 }
+// 巨兵 3 连击版（圣骑士施放 성령의 메이스 / 썬더 해머 后：namu “평타 모션이 퇴마사와 유사하게 바뀐다” = 3 段全挥巨兵）：横扫 → 回扫 → 重砸（击退）；跑攻 / 跳攻同基础表
+function priestSwingActsFor(F) {
+  const R = b => [b[0], Math.round(b[1] * F.reach), b[2], b[3], b[4]], S = s => +(s * F.stun).toFixed(3), B = priestActsFor(F);
+  return { ...B, atk4: undefined,
+    atk1: { name: 'atk1', dur: 0.36, basic: true, speed: 'aspd', chain: [0.14, 0.36], next: 'atk2', move: [[0.02, 0.08, 90]],
+      hits: [HB(0.08, 0.14, R([0, 112, 36, 20, 115]), 1.0, { stun: S(0.32), knock: 50, hs: 0.055, snd: 'blunt' })],
+      events: [slashAt(0.07, { a0: -2.2, a1: 0.9, r: 82, w: 18, off: [12, 56] })] },
+    atk2: { name: 'atk2', dur: 0.38, basic: true, speed: 'aspd', chain: [0.15, 0.38], next: 'atk3', move: [[0.02, 0.08, 90]],
+      hits: [HB(0.08, 0.15, R([0, 116, 36, 16, 115]), 1.1, { stun: S(0.34), knock: 55, hs: 0.055, snd: 'blunt' })],
+      events: [slashAt(0.07, { a0: 0.9, a1: -2.2, r: 84, w: 18, off: [12, 54] })] },
+    atk3: { name: 'atk3', dur: 0.56, basic: true, speed: 'aspd', move: [[0.04, 0.16, 150]],
+      hits: [HB(0.16, 0.24, R([0, 126, 40, 0, 135]), 1.6, { stun: S(0.55), knock: 220, hs: 0.09, shake: 3, heavy: true, big: 1.3, snd: 'blunt' })],
+      events: [slashAt(0.14, { a0: -2.7, a1: 1.1, r: 94, w: 24, off: [12, 60], squash: 0.85, heavy: true }), evAt(0.2, e => fxDust(e.x + e.face * 80, e.y, 4, 14))] } };
+}
 // 转职手写的普攻表也按武器手感缩放：前沿 × reach（身后框 / 前沿 0 的不动）、硬直 × stun；按武器缓存（cache / key 由调用方给），返回新表不改原表
 function pFeelActs(A, F, cache, key) {
   if (cache[key]) return cache[key];
@@ -105,7 +128,7 @@ function pFeelActs(A, F, cache, key) {
   for (const n in A) { const a = A[n]; out[n] = { ...a, hits: (a.hits || []).map(h => ({ ...h, box: R(h.box), ...(h.stun ? { stun: +(h.stun * F.stun).toFixed(3) } : {}) })) }; }
   return (cache[key] = out);
 }
-const PRIEST_ACTS_BY_W = {}; for (const w in PRIEST_FEEL) PRIEST_ACTS_BY_W[w] = priestActsFor(PRIEST_FEEL[w]);
+const PRIEST_ACTS_BY_W = {}; for (const w in PRIEST_FEEL) PRIEST_ACTS_BY_W[w] = priestActsFor(pNoReach(PRIEST_FEEL[w]));
 const PRIEST_ACTS = PRIEST_ACTS_BY_W.cross;
 const pActsOf = p => (p && PRIEST_ACTS_BY_W[wtypeOf(p)]) || PRIEST_ACTS;
 // 普攻动作表按转职 / 状态挑选（蓝拳 意念驱动换拳、复仇者 半魔化 / 魔化）：转职文件往 PRIEST_ACT_PICK 里登记 p => 动作表 | null

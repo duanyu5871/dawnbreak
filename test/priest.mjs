@@ -254,14 +254,21 @@ if (MODES.includes('base')) {
     T.clear(); T.reset(); const m = T.mob(600); addStatus(p, 'poison', 9, { src: m }); addStatus(p, 'burn', 9, { src: m }); addStatus(p, 'blind', 9, { src: m }); castSkill(p, 'p_cure'); T.run(50); out.cure = !p.status.poison && !p.status.burn && !p.status.blind; T.idle();
     T.clear(); T.reset(); p.lastHurtT = 1e9; p.mp = 100; const hp1 = p.hp; castSkill(p, 'p_rapture'); T.run(60 * 9); out.rapture = { mp: Math.round((p.mp - 100) / p.mpMax * 100) / 100, hp: +((hp1 - p.hp) / p.hpMax).toFixed(3), gone: !p.buffs.p_rapture };
     T.idle(); p.hp = Math.round(p.hpMax * 0.2); p.cool = {}; castSkill(p, 'p_rapture'); out.raptureLow = !!(p.act && p.act.skill === 'p_rapture'); T.idle();
-    const reach = w => { inv.equip.weapon = w ? { key: 'x', slot: 'weapon', wtype: w, lvl: 1, rar: 0 } : null; recalcStats(p); T.run(16); return p.acts.atk1.hits[0].box[1]; };
-    out.reach = { none: reach(null), cross: reach('cross'), rosary: reach('rosary'), scythe: reach('scythe'), battleaxe: reach('battleaxe') }; inv.equip.weapon = null; recalcStats(p);
+    // namu：武器距离只有驱魔师在意（别的职业没意义）→ 基础普攻最后一击（唯一挥巨兵）的距离不随武器变；硬直：镰刀小、战斧大
+    const reach = w => { inv.equip.weapon = w ? { key: 'x', slot: 'weapon', wtype: w, lvl: 1, rar: 0 } : null; recalcStats(p); T.run(16); return p.acts.atk4.hits[0].box[1]; };
+    out.reach = { none: reach(null), cross: reach('cross'), rosary: reach('rosary'), totem: reach('totem'), scythe: reach('scythe'), battleaxe: reach('battleaxe') }; inv.equip.weapon = null; recalcStats(p);
+    const stun = w => { inv.equip.weapon = { key: 'x', slot: 'weapon', wtype: w, lvl: 1, rar: 0 }; recalcStats(p); T.run(16); return p.acts.atk4.hits[0].stun; };
+    out.stun = { scythe: stun('scythe'), cross: stun('cross'), battleaxe: stun('battleaxe') }; inv.equip.weapon = null; recalcStats(p);
+    out.exo = ['cross', 'rosary', 'scythe', 'battleaxe'].map(w => pFeelFor(w, 'exorcist').reach); out.crus = pFeelFor('scythe', 'crusader').reach;
+    out.n = Object.keys(p.acts).filter(k => /^atk\d$/.test(k)).length;
     return out;
   });
   report('缓慢愈合：20 秒回复 ≈ 表里的比例（单刷给自己），到期消失', Math.abs(R5.heal.gain - R5.heal.want) < 0.03 && R5.heal.buffGone, R5.heal);
   report('净化：解除中毒 / 灼烧 / 失明', R5.cure, R5.cure);
   report('化魔：8 秒 4 次 HP -3% / MP +6%，HP 低于 25% 放不出', R5.rapture.gone && Math.abs(R5.rapture.hp - 0.12) < 0.02 && Math.abs(R5.rapture.mp - 0.24) < 0.02 && !R5.raptureLow, R5.rapture);
-  report('武器手感：不装武器 = 十字架；念珠距离短、镰刀 / 战斧距离长', R5.reach.none === R5.reach.cross && R5.reach.rosary < R5.reach.cross && R5.reach.scythe > R5.reach.cross && R5.reach.battleaxe > R5.reach.cross, R5.reach);
+  report('基础圣职者普攻 4 段（namu：只有最后一击挥巨兵）；武器手感：不装武器 = 十字架；非驱魔师武器距离无意义（各武器一致）、驱魔师才吃距离（镰刀 > 战斧 > 十字架 = 念珠）；硬直镰刀 < 十字架 < 战斧',
+    R5.n === 4 && R5.reach.none === R5.reach.cross && R5.reach.rosary === R5.reach.cross && R5.reach.totem === R5.reach.cross && R5.reach.scythe === R5.reach.cross && R5.reach.battleaxe === R5.reach.cross
+    && R5.exo[0] === R5.exo[1] && R5.exo[2] > R5.exo[3] && R5.exo[3] > R5.exo[0] && R5.crus === 1 && R5.stun.scythe < R5.stun.cross && R5.stun.cross < R5.stun.battleaxe, R5);
   noErr(logs, 'base');
   await browser.close();
 }

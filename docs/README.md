@@ -28,6 +28,7 @@
 | [`SKILLS_OFFICIAL_*.md`](SKILLS_OFFICIAL_common.md) · [`SKILL_ALIGN_FINAL.md`](SKILL_ALIGN_FINAL.md) | 过程记录 | 各职业技能对齐官方的调研与要求（common / sword / gun / mage / fighter / priest） |
 | [`CLASS_PLAN_FIGHTER.md`](CLASS_PLAN_FIGHTER.md) · [`CLASS_PLAN_PRIEST.md`](CLASS_PLAN_PRIEST.md) | 过程记录 | 新增一个职业的完整做法：接入点、任务拆分、美术（格斗家是范例） |
 | [`FIGHTER_ART_SAMPLES.md`](FIGHTER_ART_SAMPLES.md) · [`PRIEST_ART.md`](PRIEST_ART.md) · [`FIGHTER_GEAR_AUDIT.md`](FIGHTER_GEAR_AUDIT.md) | 过程记录 | 格斗家 / 圣职者的原装美术与装备审计 |
+| [`BASIC_ATTACK_SOURCES_priest.md`](BASIC_ATTACK_SOURCES_priest.md) | 过程记录 | 圣职者（男）普攻 / 武器 / 空斩打的官方出处（namu 原文引用）和查不到的部分，issue #3 |
 | [`HANDOFF_PRIEST.md`](HANDOFF_PRIEST.md) | 已作废 | 文件内已声明作废，以 `CLASS_PLAN_PRIEST.md` 为准 |
 
 ## 3. 装备、商城与经济

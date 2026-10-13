@@ -168,19 +168,19 @@ const PA_ACTS_HUMAN = {
     hits: [HB(0.07, 0.18, [0, 120, 40, -40, 90], 1.0, { type: 'mag', stun: 0.34, knock: 40, airLift: 150, hs: 0.05, snd: 'slash', col: '#d0a0ff', onHit: paGainHit(4) })],
     events: [slashAt(0.06, { a0: -1.7, a1: 1.4, r: 104, w: 20, off: [10, 40], col: PA_COL.dark })] },
 };
-// 半魔化：1、2 段一下两记勾拳（各半伤），3 段上勾，4 段下砸；跳攻可以连续
+// 半魔化（namu 어벤저 메타몰포시스：평타 4타，1、2타很快、一次 X 输入就发动、伤害各是其余的一半，所以实际 3 次按键）：
+//   X1 = 左右两记勾拳（各半伤），X2 = 上勾（挑空），X3 = 下砸（击飞）；跳攻可以连续
 const paHook = (t0, dmg, o = {}) => HB(t0, t0 + 0.05, [0, 115, 40, 20, 125], dmg, { type: 'mag', stun: 0.32, knock: 30, hs: 0.04, snd: 'blunt', col: '#c080ff', ...o });
 const PA_ACTS_HALF = { ...PA_ACTS_HUMAN,
-  atk1: { name: 'atk1', clip: 'paJab', dur: 0.34, basic: true, speed: 'aspd', type: 'mag', chain: [0.14, 0.34], next: 'atk2', move: [[0.02, 0.08, 90]], hits: [paHook(0.04, 0.45), paHook(0.12, 0.45)],
-    events: [evAt(0.04, e => paClawFx(e.x + e.face * 70, e.y, e.z + 70, e.face, 0.7)), evAt(0.12, e => paClawFx(e.x + e.face * 80, e.y, e.z + 60, e.face, 0.7))] },
-  atk2: { name: 'atk2', clip: 'paStraight', dur: 0.34, basic: true, speed: 'aspd', type: 'mag', chain: [0.14, 0.34], next: 'atk3', move: [[0.02, 0.08, 90]], hits: [paHook(0.04, 0.5), paHook(0.12, 0.5)],
-    events: [evAt(0.04, e => paClawFx(e.x + e.face * 70, e.y, e.z + 70, -e.face, 0.7)), evAt(0.12, e => paClawFx(e.x + e.face * 80, e.y, e.z + 60, e.face, 0.7))] },
-  atk3: { name: 'atk3', clip: 'paUpper', dur: 0.4, basic: true, speed: 'aspd', type: 'mag', chain: [0.16, 0.4], next: 'atk4', move: [[0.02, 0.08, 90]], hits: [paHook(0.07, 1.3, { launch: 480, box: [0, 125, 42, 0, 160] })],
+  atk1: { name: 'atk1', clip: 'paJab', dur: 0.4, basic: true, speed: 'aspd', type: 'mag', chain: [0.2, 0.4], next: 'atk2', move: [[0.02, 0.08, 90]], hits: [paHook(0.04, 0.65), paHook(0.14, 0.65)],
+    events: [evAt(0.04, e => paClawFx(e.x + e.face * 70, e.y, e.z + 70, e.face, 0.7)), evAt(0.14, e => paClawFx(e.x + e.face * 80, e.y, e.z + 60, -e.face, 0.7))] },
+  atk2: { name: 'atk2', clip: 'paUpper', dur: 0.4, basic: true, speed: 'aspd', type: 'mag', chain: [0.16, 0.4], next: 'atk3', move: [[0.02, 0.08, 90]], hits: [paHook(0.07, 1.3, { launch: 480, box: [0, 125, 42, 0, 160] })],
     events: [evAt(0.07, e => paClawFx(e.x + e.face * 70, e.y, e.z + 80, e.face, 1))] },
-  atk4: { name: 'atk4', clip: 'paSlash2', dur: 0.52, basic: true, speed: 'aspd', type: 'mag', move: [[0.04, 0.12, 110]], hits: [paHook(0.14, 1.8, { down: true, knock: 160, hs: 0.09, big: 1.4, box: [0, 135, 44, -10, 170] })],
+  atk3: { name: 'atk3', clip: 'paSlash2', dur: 0.52, basic: true, speed: 'aspd', type: 'mag', move: [[0.04, 0.12, 110]], hits: [paHook(0.14, 1.8, { down: true, knock: 160, hs: 0.09, big: 1.4, box: [0, 135, 44, -10, 170] })],
     events: [evAt(0.14, e => { paClawFx(e.x + e.face * 80, e.y, e.z + 60, e.face, 1.3); fxShock(e.x + e.face * 80, e.y, 140, PA_COL.dark); })] },
   jatk: { ...PA_ACTS_HUMAN.jatk, clip: 'paDive', hits: [paHook(0.06, 1.0, { box: [0, 115, 40, -40, 90], airLift: 150 })], events: [evAt(0.06, e => paClawFx(e.x + e.face * 60, e.y, e.z + 40, e.face, 0.8))] },
 };
+delete PA_ACTS_HALF.atk4;   // 半魔化只有 3 次按键（1、2 打合一下）
 // 魔化：爪 → 爪 → 上挑 → 下劈，每段 2 下（1 : 1.5 : 3.13 : 3.44），1、2 段让敌人浮空、3 段打飞；跑攻 = 恶魔脸气劲的长距离冲撞（多段）；跳攻 = 高速下落爪劈
 const paDClaw = (t0, dmg, o = {}) => HB(t0, t0 + 0.05, [0, 190, 62, -10, 210], dmg, { type: 'mag', stun: 0.4, knock: 30, hs: 0.05, downHit: true, snd: 'slash', col: '#e0a0ff', onHit: paGainHit(10), ...o });
 const paDFx = (t, s, flip, dz = 70) => evAt(t, e => { paClawFx(e.x + e.face * 95, e.y, e.z + dz, flip ? -e.face : e.face, s); sfx.swing(s > 1.2); });
@@ -204,7 +204,7 @@ const PA_ACTS_DEMON = {
     events: [evAt(0.02, e => paClawFx(e.x + e.face * 60, e.y, e.z + 30, e.face, 1.6))] },
 };
 const PA_FEEL_C = { h: {}, f: {} };
-const paFeelOf = (A, k, p) => { const w = wtypeOf(p); return pFeelActs(A, PRIEST_FEEL[w] || PRIEST_FEEL.cross, PA_FEEL_C[k], w || 'cross'); };
+const paFeelOf = (A, k, p) => { const w = wtypeOf(p); return pFeelActs(A, pFeelFor(w, 'avenger'), PA_FEEL_C[k], w || 'cross'); };
 PRIEST_ACT_PICK.push(p => !paOn(p) ? null : paDemon(p) ? { ...pActsOf(p), ...PA_ACTS_DEMON } : paHalf(p) ? { ...pActsOf(p), ...paFeelOf(PA_ACTS_HALF, 'f', p) } : skLv(p, 'pa_devil') ? { ...pActsOf(p), ...paFeelOf(PA_ACTS_HUMAN, 'h', p) } : null);
 
 /* ---- 恶魔之力：复仇者技能动画中按 Z / X / C 放恶魔残影（耗 30 能量；半魔化不耗、更强）；普攻 / 地狱之门 / 末日浩劫 / 二三觉 / 魔化中不能用 ---- */
