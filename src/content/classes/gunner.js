@@ -34,22 +34,21 @@ CLIPS.gun = { ...HUMAN_CLIPS,
 function muzzle(e) { e.drawOpts = { muzzle: 1 }; game.after(0.05, () => { if (e.drawOpts) e.drawOpts.muzzle = 0; }); }
 const weaponType = p => wtypeOf(p);
 /* ---- 普攻手感随武器（官方：地面一轮发数 左轮 4 / 自动 6 / 步枪 3 / 手炮 2 / 手弩 7；拔枪速度 自动 > 左轮 > 手弩 > 步枪 > 手炮；
-   硬直 手炮 > 步枪 > 左轮 > 手弩 > 自动；射程 步枪 > 左轮 > 手弩 > 自动 > 手炮；手炮不是子弹，是前方一小块范围判定、空中命中直接打倒地）。
+   出手后摇 自动 > 手弩 > 左轮 = 步枪 > 手炮（namu 거너：발사 후 딜레이）；射程 步枪 > 左轮 > 手弩 > 自动 > 手炮；手炮不是子弹，是前方一小块范围判定、空中命中直接打倒地）。
    n 发数、draw 拔枪前摇、gap 连射间隔、holster 收枪 / 装填后摇、life 子弹寿命（射程）、stun 硬直、knock 击退、pierce 穿透几率、dmg 每发伤害倍率（最后一发 ×1.8）、
    air 每次跳跃的射击上限（手炮官方 1 发，其余按地面发数）、bonus 空中射击 1 / 10 级增加的发数、airGap 跳射间隔、recoil 跳射后坐 —— 数值是【建议】值，见 docs/SKILLS_OFFICIAL_gun.md 第 2.2 节 ---- */
 const GUN_FEEL = {
-  revolver: { n: 4, draw: 0.08, gap: 0.18, holster: 0.24, life: 0.8, stun: 0.25, knock: 25, pierce: 0.1, dmg: 0.6, air: 4, bonus: [4, 8], airGap: 0.2, recoil: 'none' },
-  autopistol: { n: 6, draw: 0.05, gap: 0.13, holster: 0.2, life: 0.62, stun: 0.16, knock: 16, pierce: 0, dmg: 0.41, air: 6, bonus: [6, 12], airGap: 0.15, recoil: 'hover' },
-  rifle: { n: 3, draw: 0.14, gap: 0.24, holster: 0.3, life: 0.92, stun: 0.32, knock: 40, pierce: 0.3, dmg: 0.86, air: 3, bonus: [3, 7], airGap: 0.26, recoil: 'up' },
-  handcannon: { n: 2, draw: 0.2, gap: 0.3, holster: 0.34, life: 0, stun: 0.42, knock: 90, pierce: 1, dmg: 1.15, air: 1, bonus: [2, 4], airGap: 0.3, recoil: 'back', area: 170 },
-  bowgun: { n: 7, draw: 0.1, gap: 0.12, holster: 0.24, life: 0.7, stun: 0.2, knock: 12, pierce: 0, dmg: 0.4, air: 7, bonus: [5, 14], airGap: 0.13, recoil: 'sink' },
+  revolver: { n: 4, draw: 0.08, gap: 0.2, holster: 0.24, life: 0.8, stun: 0.25, knock: 25, pierce: 0.1, dmg: 0.6, air: 4, bonus: [4, 8], airGap: 0.2, recoil: 'none', rx: 45 },
+  autopistol: { n: 6, draw: 0.05, gap: 0.115, holster: 0.2, life: 0.62, stun: 0.16, knock: 16, pierce: 0, dmg: 0.41, air: 6, bonus: [6, 12], airGap: 0.12, recoil: 'hover', rx: 25 },
+  rifle: { n: 3, draw: 0.14, gap: 0.2, holster: 0.3, life: 0.92, stun: 0.32, knock: 40, pierce: 0.3, dmg: 0.86, air: 3, bonus: [3, 7], airGap: 0.2, recoil: 'none', rx: 90 },
+  handcannon: { n: 2, draw: 0.2, gap: 0.3, holster: 0.34, life: 0, stun: 0.42, knock: 90, pierce: 1, dmg: 1.15, air: 1, bonus: [2, 4], airGap: 0.3, recoil: 'back', rx: 130, area: 170 },
+  bowgun: { n: 7, draw: 0.1, gap: 0.12, holster: 0.24, life: 0.7, stun: 0.2, knock: 12, pierce: 0, dmg: 0.4, air: 7, bonus: [5, 14], airGap: 0.13, recoil: 'sink', rx: 30 },
 };
-// 枪炮师（launcher）的默认手感偏手炮：没装备武器 = 手炮手感（跳射 2 发）；装了别的枪 = 硬直 / 击退加重、收枪略慢（缓存，避免每次分配）
+// 枪炮师（launcher）的默认手感偏手炮：没装备武器 = 手炮手感（跳射 2 发）；装了别的枪 = 和其他职业一样按武器走（官方没有枪炮师专属普攻，见 docs/BASIC_ATTACK_SOURCES_gun.md）（缓存，避免每次分配）
 const _lcFeel = new Map();
 function launcherFeel(w) {
   const k = w || '-'; let F = _lcFeel.get(k); if (F) return F;
   F = w ? { ...(GUN_FEEL[w] || GUN_FEEL.revolver) } : { ...GUN_FEEL.handcannon, air: 2 };
-  if (w && w !== 'handcannon') { F.stun *= 1.25; F.knock *= 1.4; F.holster *= 1.12; }
   _lcFeel.set(k, F); return F;
 }
 const feelOf = p => { const w = wtypeOf(p); return (typeof jobOf === 'function' && p && jobOf(p) === 'launcher') ? launcherFeel(w) : GUN_FEEL[w] || GUN_FEEL.revolver; };
@@ -67,7 +66,6 @@ function fireBullet(e, o = {}) {
   { const mx = e.x + e.face * 34, mz = e.z + zz, rot = (dn ? 0.7 : up ? -0.7 : 0) * e.face + (e.face < 0 ? Math.PI : 0);   // 枪口火光
     addFx({ x: mx, y: e.y + 1, z: mz, dur: 0.07, add: true, rot, draw(c) { drawSpr(c, o.col ? fxTint('muzzle', o.col) : 'muzzle', sx(this.x), sy(this.y, this.z), 34 * (o.sz || 1), 0, { ax: 0.2, rot: this.rot, alpha: 1 - this.t / this.dur }); } }); }   // 枪口火光随子弹染色 / 大小（机械师电光、弹药专家爆炸弹）
   if (!o.quiet) sfx.gun(o.vol || 1);
-  if (o.basic && typeof jobOf === 'function' && jobOf(e) === 'launcher') cam.shake = Math.max(cam.shake, 1.2);   // 枪炮师：普攻枪声更沉、震屏
   // 银弹：按发数计（官方），只有普通射击吃
   const silver = o.basic && e.buffs && e.buffs.g_silver;
   if (silver) { silver.n--; if (silver.n <= 0) delete e.buffs.g_silver; }
@@ -115,7 +113,8 @@ const GUN_ACTS = {
     onStart: e => { const F = feelOf(e), a = e.act, hang = e.buffs && e.buffs.g_aerial ? 0.6 : 1;
       a.dur = F.airGap; a.chain = [F.airGap * 0.5, F.airGap]; a.counterEnd = a.dur; a.lowGrav = (F.recoil === 'hover' ? 0.35 : F.recoil === 'sink' ? 0.8 : 0.55) * hang;
       if (F.recoil === 'up') e.vz = Math.max(e.vz, 150); else if (F.recoil === 'sink') e.vz = Math.min(e.vz, 0) - 60; else e.vz = Math.max(e.vz, F.recoil === 'hover' ? 50 : 30);
-      if (F.recoil === 'back') e.vx = -e.face * 120; },
+      // 官方：空中普攻按住反方向键会被反冲向后飘，距离 手炮 > 步枪 > 其余（手炮不按键也有一点反冲）
+      { const back = e.pad && e.pad.is(e.face > 0 ? 'left' : 'right'); if (back) e.vx = -e.face * F.rx; else if (F.recoil === 'back') e.vx = -e.face * F.rx * 0.5; } },
     events: [evAt(0.01, e => gunFire(e, 0, '', true))] },
   back: BACKSTEP,
 };
