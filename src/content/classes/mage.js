@@ -96,10 +96,12 @@ const MAGE_ACTS = {
 const MAGE_TRIP = { name: 'mg_trip', clip: 'down', dur: 0.5, noCounter: true, move: [[0, 0.12, 170]],
   events: [evAt(0.01, e => { fxText('哎哟！', e.x, e.y, e.z + 70, { col: '#ffd0e0', size: 12, dur: 0.6 }); fxDust(e.x + e.face * 20, e.y, 3, 5, '#c8b8a0'); sfx.thud(); }), evAt(0.28, e => e.play('getup', true))] };
 // 武器手感（官方：武器只改攻速 / 数值 / 距离 / 僵直，不改动作）：cos = 挥砍特效 r 倍率 + 颜色（纯表现）；reach / stun 只给战斗法师（key 见 mageFeelKey），其余职业不改判定
+// 依据见 docs/BASIC_ATTACK_SOURCES_mage.md：攻速本身已在 WTYPES.aspd；联网只查到两条距离的定性描述——法杖"리치가 의외로 긴 편"、魔杖"짧은 리치"（namu.wiki 아이템/스탭、아이템/로드），
+// 所以只保留这两个方向（幅度 ±5% 查不到出处，只作很小的方向表达）；矛 / 棍 / 扫把的普攻距离、所有武器的僵直倍率都查不到出处，一律 1.0（原来的 spear 1.2、pole 的 stun 1.15 等猜测值已删）
 const MAGE_FEEL = {
-  staff: { cos: { r: 1.06, col: '#d0a0ff' }, reach: 1.05, stun: 1.1 }, rod: { cos: { r: 0.94, col: '#ffd0f0' }, reach: 0.95, stun: 0.9 },
-  pole: { cos: { r: 1.0, col: '#ffc890' }, reach: 0.98, stun: 1.15 }, spear: { cos: { r: 1.12, col: '#dfe8ff' }, reach: 1.2, stun: 1.0 },
-  spear0: { cos: { r: 1.12, col: '#dfe8ff' }, reach: 1.0, stun: 1.0 }, broom: { cos: { r: 1.0, col: '#b8f0c0' }, reach: 1.0, stun: 1.0 } };
+  staff: { cos: { r: 1.06, col: '#d0a0ff' }, reach: 1.05, stun: 1 }, rod: { cos: { r: 0.94, col: '#ffd0f0' }, reach: 0.95, stun: 1 },
+  pole: { cos: { r: 1.0, col: '#ffc890' }, reach: 1, stun: 1 }, spear: { cos: { r: 1.12, col: '#dfe8ff' }, reach: 1, stun: 1 },
+  spear0: { cos: { r: 1.12, col: '#dfe8ff' }, reach: 1, stun: 1 }, broom: { cos: { r: 1.0, col: '#b8f0c0' }, reach: 1, stun: 1 } };
 const MAGE_FEEL_CACHE = new Map();
 function mageFeelWrap(T, key, hit) {
   const F = MAGE_FEEL[key]; if (!F) return T;

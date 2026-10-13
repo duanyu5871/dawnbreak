@@ -27,6 +27,7 @@
 | [`dnf_reference.md`](dnf_reference.md) | 参考 | DNF 玩法机制参考（只描述机制，名称与美术须原创） |
 | [`skills/`](skills) | 现行 | 每个职业 / 转职的官方技能规格（`<职业>.json` 供 `skillaudit --compare` 对比，`*_final.md` 为逐项对照） |
 | [`SKILLS_OFFICIAL_*.md`](SKILLS_OFFICIAL_common.md) · [`SKILL_ALIGN_FINAL.md`](SKILL_ALIGN_FINAL.md) | 过程记录 | 各职业技能对齐官方的调研与要求（common / sword / gun / mage / fighter / priest） |
+| [`BASIC_ATTACK_SOURCES_mage.md`](BASIC_ATTACK_SOURCES_mage.md) | 过程记录 | 魔法师普攻对齐（issue #3）：武器类型 / 战斗法师 / 天击龙牙霸体 / 魔道学者等的网页出处（URL + 原文）和未查到的项 |
 | [`CLASS_PLAN_FIGHTER.md`](CLASS_PLAN_FIGHTER.md) · [`CLASS_PLAN_PRIEST.md`](CLASS_PLAN_PRIEST.md) | 过程记录 | 新增一个职业的完整做法：接入点、任务拆分、美术（格斗家是范例） |
 | [`FIGHTER_ART_SAMPLES.md`](FIGHTER_ART_SAMPLES.md) · [`PRIEST_ART.md`](PRIEST_ART.md) · [`FIGHTER_GEAR_AUDIT.md`](FIGHTER_GEAR_AUDIT.md) | 过程记录 | 格斗家 / 圣职者的原装美术与装备审计 |
 | [`HANDOFF_PRIEST.md`](HANDOFF_PRIEST.md) | 已作废 | 文件内已声明作废，以 `CLASS_PLAN_PRIEST.md` 为准 |
