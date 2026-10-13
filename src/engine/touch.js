@@ -18,11 +18,24 @@ const TOUCH_BTNS = [
 ];
 const TOUCH_SLIDE = ['上', '右', '下', '左'];   // 滑屏键方向 → 技能栏 s10..s13
 const touch = {
-  on: (IS_TOUCH || PARAMS.has('touch')) && !PARAMS.has('bot'), stick: null, dirs: {}, held: new Set(), pulses: [], btns: [], skillBtns: [],
+  avail: (IS_TOUCH || PARAMS.has('touch')) && !PARAMS.has('bot'), forced: PARAMS.has('touch'),
+  // 电脑端（主指针是鼠标/触控板，哪怕笔记本带触摸屏）默认不显示虚拟按键；检测到触摸再自动切回
+  on: (IS_TOUCH || PARAMS.has('touch')) && !PARAMS.has('bot') && (PARAMS.has('touch') || matchMedia('(pointer: coarse)').matches || !matchMedia('(pointer: fine)').matches), stick: null, dirs: {}, held: new Set(), pulses: [], btns: [], skillBtns: [],
   slideDir: 0, awSlots: [], uiT: 0, jumpWait: 90, hid: null, town: null, editing: false, pos: {}, U: 4,
+  // 切换触屏 / 键鼠界面：收到键盘按键 → 隐藏虚拟按键；收到触摸 → 显示（?touch 强制模式不切换）
+  setMode(on) {
+    if (!this.avail || this.forced || on === this.on) return;
+    this.on = on;
+    document.body.classList.toggle('touchui', on);
+    if (this.el) { this.el.classList.toggle('hidden', !on); this.hid = !on; }
+    if (!on) this.releaseAll(); else if (this.layout) this.layout();
+    if (typeof resize === 'function') try { resize(); } catch (e) {}
+  },
   init() {
-    if (!this.on) return;
-    document.body.classList.add('touchui');
+    if (!this.avail) return;
+    addEventListener('keydown', ev => { if (ev.isTrusted && !ev.isComposing && ev.key !== 'Unidentified') this.setMode(false); }, true);
+    addEventListener('pointerdown', ev => { if (ev.pointerType === 'touch') this.setMode(true); }, true);
+    if (this.on) document.body.classList.add('touchui');
     const el = h('div', { id: 'touch' });
     this.el = el;
     // ---- 摇杆 ----
@@ -97,6 +110,7 @@ const touch = {
       canFs ? h('button', { class: 'btn', onclick: () => document.documentElement.requestFullscreen().then(() => screen.orientation.lock('landscape')).catch(() => {}) }, '全屏横屏') : null));
     addEventListener('resize', () => this.layout());
     this.applyPrefs();
+    if (!this.on) { this.el.classList.add('hidden'); this.hid = true; }
   },
   press(a) { input.virt[a] = 2; this.held.add(a); },
   release(a) { delete input.virt[a]; this.held.delete(a); },
