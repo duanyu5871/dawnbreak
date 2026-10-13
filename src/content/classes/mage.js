@@ -72,27 +72,49 @@ function mageChargeMove(e, clip) {
   if (dx || dy) { const l = Math.hypot(dx, dy * 0.7) || 1, ck = run ? 'run' : 'walk'; e.vx = dx / l * sp; e.vy = dy / l * sp * 0.7; if (dx) e.face = dx; if (e.clipName !== ck) e.play(ck); }
   else { e.vx = e.vy = 0; if (e.clipName !== clip) e.play(clip); }
 }
+// 带参数记录的挥砍特效（武器手感包装时按武器改 r / 颜色用）
+const mSlash = (t, o) => { const ev = slashAt(t, o); ev.o = o; return ev; };
 const MAGE_ACTS = {
   atk1: { name: 'atk1', clip: 'atk1', dur: 0.36, basic: true, speed: 'aspd', chain: [0.14, 0.36], next: 'atk2', move: [[0.03, 0.08, 90]],
-    hits: [HB(0.07, 0.12, [0, 82, 30, 18, 100], 0.8, { stun: 0.34, knock: 50, hs: 0.05, snd: 'blunt', type: 'phys' })], events: [slashAt(0.06, { a0: -2.2, a1: 0.6, r: 56, w: 8, off: [10, 56], squash: 0.7 })] },
+    hits: [HB(0.07, 0.12, [0, 82, 30, 18, 100], 0.8, { stun: 0.34, knock: 50, hs: 0.05, snd: 'blunt', type: 'phys' })], events: [mSlash(0.06, { a0: -2.2, a1: 0.6, r: 56, w: 8, off: [10, 56], squash: 0.7 })] },
   atk2: { name: 'atk2', clip: 'atk2', dur: 0.38, basic: true, speed: 'aspd', chain: [0.15, 0.38], next: 'atk3', move: [[0.03, 0.08, 80]],
-    hits: [HB(0.07, 0.12, [0, 82, 30, 18, 110], 0.85, { stun: 0.36, knock: 50, hs: 0.05, snd: 'blunt', type: 'phys' })], events: [slashAt(0.06, { a0: 1.0, a1: -2.0, r: 56, w: 8, off: [10, 56], squash: 0.8 })] },
+    hits: [HB(0.07, 0.12, [0, 82, 30, 18, 110], 0.85, { stun: 0.36, knock: 50, hs: 0.05, snd: 'blunt', type: 'phys' })], events: [mSlash(0.06, { a0: 1.0, a1: -2.0, r: 56, w: 8, off: [10, 56], squash: 0.8 })] },
   // 第 3 下：双手挥杖重击，击退（官方女法普攻是 3 段近战，不发魔法球）
   atk3: { name: 'atk3', clip: 'atk3', dur: 0.46, basic: true, speed: 'aspd', move: [[0.04, 0.12, 120]],
     hits: [HB(0.12, 0.18, [0, 96, 32, 10, 115], 1.15, { stun: 0.42, knock: 230, heavy: true, hs: 0.07, snd: 'blunt', type: 'phys', last: true, shake: 1.5 })],
-    events: [slashAt(0.11, { a0: -2.5, a1: 0.8, r: 68, w: 12, off: [10, 58], heavy: true })] },
+    events: [mSlash(0.11, { a0: -2.5, a1: 0.8, r: 68, w: 12, off: [10, 58], heavy: true })] },
   // 跑攻：扫杖挑空；打空时“哎哟”一声向前扑倒（官方女法彩蛋，战斗法师没有——战法有自己的跑攻）
   dash: { name: 'dash', clip: 'dash', dur: 0.45, basic: true, speed: 'aspd', move: [[0, 0.24, 380]], noCounter: true,
-    hits: [HB(0.05, 0.24, [0, 84, 30, 10, 90], 1.1, { launch: 220, knock: 90, hs: 0.06, snd: 'blunt', type: 'phys' })], events: [slashAt(0.05, { a0: -2.6, a1: 1.0, r: 62, w: 10, off: [10, 40] })],
-    onEnd: (e, cut) => { if (!cut && !e.dead && e.grounded && e.hitsDone.size === 0 && jobOf(e) !== 'battlemage') e.doAct(MAGE_TRIP); } },
+    hits: [HB(0.05, 0.24, [0, 84, 30, 10, 90], 1.1, { launch: 220, knock: 90, hs: 0.06, snd: 'blunt', type: 'phys' })], events: [mSlash(0.05, { a0: -2.6, a1: 1.0, r: 62, w: 10, off: [10, 40] })],
+    onEnd: (e, cut) => { if (!cut && !e.dead && e.grounded && e.hitsDone.size === 0 && jobOf(e) !== 'battlemage' && !e._noTrip) e.doAct(MAGE_TRIP); } },
   // 空中挥杖：向前下方扫，托住浮空的敌人
   jatk: { name: 'jatk', clip: 'mjatk', dur: 0.32, basic: true, speed: 'aspd', airOnly: true, lowGrav: 0.75,
     hits: [HB(0.07, 0.15, [0, 78, 28, -40, 80], 0.8, { stun: 0.34, knock: 60, airLift: 170, hs: 0.05, snd: 'blunt', type: 'phys' })],
-    events: [slashAt(0.06, { a0: -1.9, a1: 1.3, r: 56, w: 9, off: [8, 36] })] },
+    events: [mSlash(0.06, { a0: -1.9, a1: 1.3, r: 56, w: 9, off: [8, 36] })] },
   back: BACKSTEP,
 };
 const MAGE_TRIP = { name: 'mg_trip', clip: 'down', dur: 0.5, noCounter: true, move: [[0, 0.12, 170]],
   events: [evAt(0.01, e => { fxText('哎哟！', e.x, e.y, e.z + 70, { col: '#ffd0e0', size: 12, dur: 0.6 }); fxDust(e.x + e.face * 20, e.y, 3, 5, '#c8b8a0'); sfx.thud(); }), evAt(0.28, e => e.play('getup', true))] };
+// 武器手感（官方：武器只改攻速 / 数值 / 距离 / 僵直，不改动作）：cos = 挥砍特效 r 倍率 + 颜色（纯表现）；reach / stun 只给战斗法师（key 见 mageFeelKey），其余职业不改判定
+const MAGE_FEEL = {
+  staff: { cos: { r: 1.06, col: '#d0a0ff' }, reach: 1.05, stun: 1.1 }, rod: { cos: { r: 0.94, col: '#ffd0f0' }, reach: 0.95, stun: 0.9 },
+  pole: { cos: { r: 1.0, col: '#ffc890' }, reach: 0.98, stun: 1.15 }, spear: { cos: { r: 1.12, col: '#dfe8ff' }, reach: 1.2, stun: 1.0 },
+  spear0: { cos: { r: 1.12, col: '#dfe8ff' }, reach: 1.0, stun: 1.0 }, broom: { cos: { r: 1.0, col: '#b8f0c0' }, reach: 1.0, stun: 1.0 } };
+const MAGE_FEEL_CACHE = new Map();
+function mageFeelWrap(T, key, hit) {
+  const F = MAGE_FEEL[key]; if (!F) return T;
+  let m = MAGE_FEEL_CACHE.get(T); if (!m) MAGE_FEEL_CACHE.set(T, m = {});
+  const ck = key + (hit ? '+' : ''); if (m[ck]) return m[ck];
+  const out = {};
+  for (const k in T) {
+    const a = T[k]; if (!(a && a.basic && !a.rk && a.hits)) { out[k] = a; continue; }
+    const hits = hit && F.reach !== 1 || hit && F.stun !== 1 ? a.hits.map(h => h.box ? { ...h, box: [h.box[0], Math.round(h.box[1] * F.reach), ...h.box.slice(2)], ...(h.stun ? { stun: +(h.stun * F.stun).toFixed(3) } : {}) } : h) : a.hits;
+    const events = a.events && a.events.map(ev => ev.o ? slashAt(ev.t, { ...ev.o, r: Math.round((ev.o.r || 60) * F.cos.r), ...(ev.o.col ? {} : { col: F.cos.col }) }) : ev);
+    out[k] = { ...a, hits, ...(events ? { events } : {}) };
+  }
+  m[ck] = out; out._base = T; return out;
+}
+const mageFeelBase = A => (A && A._base) || A;
 const NO_BM = ['battlemage'];   // 战斗法师学不了的基础技能（官方 2024 重做后）
 /* ---- 基础技能 ---- */
 defSkill('mg_orb', { name: '魔法星弹', cls: 'mage', lvReq: 1, mp: 6, cd: 0.5, type: 'mag', elem: 'light', icon: 'mg_orb', col: '#b04ad0', cast: true,

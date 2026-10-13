@@ -260,7 +260,15 @@ CLASSES.mage.onHit = (p, t, h, dmg, act) => {
 // ---- 被动刷新（每 0.25 秒）----
 CLASSES.mage.passives.push(p => {
   const bm = jobOf(p) === BM;
-  if (bm && hasSkill(p, 'bm_niu')) { if (p.acts !== BM_ACTS) p.acts = BM_ACTS; } else if (p.acts === BM_ACTS) p.acts = MAGE_ACTS;
+  // 普攻表：尼巫的战术 = BM_ACTS，否则 MAGE_ACTS；再按武器套手感（距离 / 僵直只给战斗法师，装矛 + 武器精通 = 普攻判定 ×1.2；其余职业只改挥砍特效）。普攻连段中途不切换
+  if (!(p.st === 'act' && p.act && p.act.basic)) {
+    const cur = mageFeelBase(p.acts);
+    if (cur === MAGE_ACTS || cur === BM_ACTS) {
+      const w = wtypeOf(p), want = bm && hasSkill(p, 'bm_niu') ? BM_ACTS : MAGE_ACTS;
+      const nx = mageFeelWrap(want, w === 'spear' && !(bm && hasSkill(p, 'bm_weapon')) ? 'spear0' : w, bm);
+      if (p.acts !== nx) p.acts = nx;
+    }
+  }
   if (!bm) return;
   // 战斗法师武器精通：装矛 = 技能攻击范围 +20%（combat.js 的 rngOf，觉醒 / 普攻除外）；装棍 = 技能冷却 -5%（onCast 里扣，觉醒除外）
   p.rngMul = wtypeOf(p) === 'spear' && hasSkill(p, 'bm_weapon') ? 1.2 : undefined;
