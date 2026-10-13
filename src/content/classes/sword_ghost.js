@@ -79,14 +79,6 @@ const SWORD_ACTS_GB = { ...SWORD_ACTS,
     SWORD_ACTS.back.update(e);
   } },
 };
-// 鬼人化普攻：本体斩后幻鬼（半透明剑影）在身后补一道小斩（纯表现：不召唤幻鬼实体、不出判定、不影响幻鬼技能的占用 / 回溯状态）
-function gbEcho(t, o) {
-  return [slashAt(t, { ...o, col: GB_COL, silent: true, r: o.r * 0.9, w: o.w * 0.8 }),
-    evAt(t, e => fxSpr('ghost', e.x - e.face * 34, e.y, 50, { w: 70, dur: 0.22, col: GB_COL, alpha: 0.35, flip: e.face < 0 }))];
-}
-for (const [k, t, o] of [['atk1', 0.1, { a0: 0.9, a1: -1.6, off: [-10, 52], r: 70, w: 14 }], ['atk2', 0.1, { a0: -2.0, a1: 0.9, off: [-10, 52], r: 70, w: 14 }],
-  ['atk3', 0.11, { a0: 0.8, a1: -2.0, off: [-12, 52], r: 76, w: 16 }], ['atk4', 0.15, { a0: -2.4, a1: 1.0, off: [-12, 50], r: 80, w: 18 }]])
-  SWORD_ACTS_GB[k] = { ...SWORD_ACTS_GB[k], events: [...SWORD_ACTS_GB[k].events, ...gbEcho(t, o)] };
 SWORD_ACT_PICK.push(p => gbJob(p) && gbLv(p, 'gb_ghostman') ? SWORD_ACTS_GB : null);
 
 /* ---- 鬼步：进入准备姿势（霸体，最多 3 秒）。按 X / Z 瞬间向前闪过（穿过敌人，路径上 3 段伤害）；按剑术技能 = 换成该技能的收尾，伤害打在路径上的所有敌人；C 取消 ---- */

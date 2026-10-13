@@ -206,14 +206,12 @@ defSkill('as_spear', { name: '波动剑·闪枪', cls: 'sword', job: 'asura', lv
     events: [evAt(0.14, e => { asMarkAdd(e, 1); const t = aimAhead(e, 240, 460), x = t.x + e.face * 70; sfx.iai(); cam.shake = Math.max(cam.shake, 4);
       fxBeam(x, t.y, 60, 330, -e.face, { col: '#e0c8ff', w: 34, dur: 0.35 });
       for (let k = 0; k < 3; k++) blast(e, x - e.face * (50 + k * 100), t.y, 72, { dmg: skillDmg(1.7, 0.17, lv), knock: -200, launch: 260, hs: 0.08, big: 1.4, type: 'indep', col: '#e0c8ff', radial: false }, { zMax: 160 }); })] }) });
-// 阿修罗普攻：波动魔法风格——独立攻击（和阿修罗的技能一致，吃独立攻击力），刀光紫色（见下方被动里的 slashCol）
-const SWORD_ACTS_AS0 = {}; for (const k in SWORD_ACTS) { const a = SWORD_ACTS[k]; SWORD_ACTS_AS0[k] = a && a.basic ? { ...a, type: 'indep' } : a; }
 // 领域中的普攻第 3 击：刺轮（向前滚动的波动刺轮）
-const SWORD_ACTS_AS = { ...SWORD_ACTS_AS0, atk3: { ...SWORD_ACTS_AS0.atk3, events: [...SWORD_ACTS_AS0.atk3.events, evAt(0.12, e => {
+const SWORD_ACTS_AS = { ...SWORD_ACTS, atk3: { ...SWORD_ACTS.atk3, events: [...SWORD_ACTS.atk3.events, evAt(0.12, e => {
   spawnProj({ owner: e, x: e.x + e.face * 30, y: e.y, z: 20, vx: e.face * 360, face: e.face, life: 0.9, w: 30, d: 26, h: 60, pierce: true,
     hit: { dmg: 0.9, rep: 0.08, max: 10, stun: 0.3, knock: 20, hs: 0.02, type: 'indep', col: AS_COL },
     draw(c, pr) { drawSpr(c, fxTint('rune', AS_COL), sx(pr.x), sy(pr.y, pr.z + 20), 60, 0, { rot: pr.t * 14 * pr.face }); } }); })] } };
-SWORD_ACT_PICK.push(p => jobOf(p) === 'asura' ? (asDomain(p) ? SWORD_ACTS_AS : SWORD_ACTS_AS0) : null);
+SWORD_ACT_PICK.push(p => jobOf(p) === 'asura' && asDomain(p) ? SWORD_ACTS_AS : null);
 for (const [a0, b0] of [['wave', 'as_wing'], ['as_ice', 'as_amaterasu'], ['as_fire', 'as_spear']]) { const S = SKILLS[a0], m0 = S.morph; S.morph = p => (jobOf(p) === 'asura' && asDomain(p) ? b0 : m0 ? m0(p) : null); }
 
 /* =====================================================================
@@ -366,7 +364,6 @@ CLASSES.sword.cmds.push(['uu', 'as_mark', 'buff'], ['bff', 'as_orb'], ['ff', 'as
 // 无双波：记下裂缝位置（再按一次引爆用）；无尽波动：每秒耗 MP、每 0.5 秒伤害 + 挑衅；波动刻印：每 7 秒一个印；绝对感知：免疫失明
 CLASSES.sword.passives.push(p => {
   if (jobOf(p) !== 'asura') { if (p.statusImmune && p.statusImmune._asura) p.statusImmune = null; return; }
-  p.slashCol = AS_COL;   // 波动斩：紫色刀光（非阿修罗时由狂战士被动里的 else 分支还原）
   if (hasSkill(p, 'as_sense')) p.statusImmune = { blind: true, _asura: true };
   const D = p.buffs.as_domain; if (D) { asDomainFx(p); if (D.t <= 0.3) asSkyEyes(p);
     D.sl = (D.sl ?? 0) - 0.25; if (D.sl <= 0) { D.sl = 2; for (const t of ents) if (hittable(p, t) && Math.hypot(t.x - p.x, (t.y - p.y) * 1.5) < 110) addStatus(t, 'slow', 2, { src: p }); } }   // 领域内 110 范围每 2 秒减速（攻速）
