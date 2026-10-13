@@ -617,3 +617,25 @@ CLASSES.fighter.jobs.striker = { art: 'job/striker', name: '散打', role: '近�
 CLASSES.fighter.cmds.push(['uf', 'fs_elbow'], ['uu', 'fs_sa', 'buff'], ['ff', 'fs_power', 'buff'], ['ff', 'fs_pusher'], ['fd', 'fs_bone'], ['bdf', 'fs_close'], ['buf', 'fs_flamekick'],
   ['bff', 'fs_dance'], ['uff', 'fs_dragon'], ['uudd', 'fs_awaken'], ['dduu', 'fs_dual'], ['fbuf', 'fs_spin'], ['fbf', 'fs_descent'], ['dff', 'fs_cannon'], ['duff', 'fs_awaken2'],
   ['udff', 'fs_mortal'], ['bufd', 'fs_awaken3']);
+
+// 烈焰焚身觉醒中：普攻带火焰斩 / 火焰踢视觉，命中小几率点燃（平衡几乎不变）
+const FS_FIRE_ACTS = new Map();
+FIGHTER_ACT_PICK.push(p => {
+  if (!fsOn(p) || !p.buffs.fs_awaken) return null;
+  const w = wtypeOf(p) || 'knuckle'; let A = FS_FIRE_ACTS.get(w);
+  if (!A) { const B = fActsOf(p); A = {};
+    for (const k in B) { const a = B[k];
+      if (!a || !a.basic || !a.hits || !a.hits.length) { A[k] = a; continue; }
+      const t0 = a.hits[0].t0, big = k === 'atk4' || k === 'dash';
+      A[k] = { ...a, fsFire: true, events: (a.events || []).concat(evAt(t0, e => {
+        fxStreak({ x: e.x + e.face * 20, y: e.y, z: e.z + (k === 'atk2' ? 45 : 60), face: e.face, len: big ? 130 : 90, w: big ? 18 : 12, col: FS_FIRE, dur: 0.22 });
+        fxSpr('jv_flame', e.x + e.face * 60, e.y + 1, e.z + 50, { w: big ? 70 : 46, dur: 0.25, col: FS_FIRE }); })) };
+    }
+    FS_FIRE_ACTS.set(w, A); }
+  return A;
+});
+FIGHTER_HOOKS.onHit.push((p, t, h, dmg, act) => {
+  if (!fsOn(p) || !p.buffs.fs_awaken || !act || !act.fsFire || !t || t.dead) return;
+  fxSpr('explosion', t.x, t.y + 1, t.z + 50, { w: 40, dur: 0.22, grow: [0.5, 1] });
+  if (Math.random() < 0.2) addStatus(t, 'burn', 3, { dps: atkOf(p, 'phys') * 0.015, src: p });
+});

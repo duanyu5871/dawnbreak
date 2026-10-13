@@ -237,7 +237,10 @@ const fnShockOn = (a, t) => addStatus(t, 'shock', 7, { src: a, hitDmg: atkOf(a, 
 function fnTigerActsFor(F) {
   const R = b => [b[0], Math.round(b[1] * F.reach * 1.15), b[2] + 4, b[3], b[4]], S = s => +(s * F.stun).toFixed(3);   // 龙虎啸：攻击范围变大
   const H = (t0, t1, box, dmg, o) => HB(t0, t1, R(box), dmg, fnHit('fn_tigerAtk', { snd: 'blunt', ...o }));
-  const claw = (t, o) => evAt(t, e => { fnClaw(e, o); if (Math.random() < 0.5) sfx.zap(); });
+  // 每一段交替翻转挥爪方向，并随机微调角度 / 距离 / 大小，避免每次一个样
+  let flip = 1;
+  const claw = (t, o) => evAt(t, e => { flip = -flip; const a0 = o.a0 ?? -1.1, a1 = o.a1 ?? 0.9, v = rnd(-0.12, 0.12);
+    fnClaw(e, { ...o, a0: flip > 0 ? a0 : -a0, a1: flip > 0 ? a1 : -a1, rot: (o.rot || 0) * flip + v, big: (o.big || 1) * rnd(0.95, 1.12), oz: (o.oz ?? 66) + rnd(-6, 8) }); if (Math.random() < 0.5) sfx.zap(); });
   return {
     atk1: { name: 'atk1', clip: 'atk1', dur: 0.26, basic: true, fnTiger: true, speed: 'aspd', chain: [0.1, 0.26], next: 'atk2', move: [[0.02, 0.06, 90]],
       hits: [H(0.05, 0.09, [0, 80, 30, 30, 110], 1.0, { stun: S(0.28), knock: 40, hs: 0.05 })], events: [claw(0.04, { a0: -1.0, a1: 0.8 })] },

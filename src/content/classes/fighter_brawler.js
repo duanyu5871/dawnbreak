@@ -522,6 +522,7 @@ CLASSES.fighter.cmds.push(['bf', 'fb_strong', 'jump'], ['ff', 'fb_poison', 'buff
 /* ---- 钩子 ---- */
 FIGHTER_HOOKS.onHit.push((p, t, h, dmg) => {
   if (!isFb(p) || !t || t.dead) return;
+  const A = p.act; if (A && A.basic && wtypeOf(p) === 'claw' && Math.random() < 0.18) { if (Math.random() < 0.6) fbAbn(p, t, 'bleed', 4, 0.01); else fbAbn(p, t, 'poison', 4, 0.008); }   // 街霸 + 爪：普攻小几率出血 / 中毒
   if (p.buffs.fb_taunt) fbTauntMark(p, t, p.buffs.fb_taunt.lv || 1);   // 挑衅：被打中的敌人伤害加深 10 秒
 });
 FIGHTER_HOOKS.onCast.push((p, id, act) => {
