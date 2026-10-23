@@ -224,7 +224,9 @@ class Ent {
   // 先画进离屏精灵，再整体合成：受击闪白、霸体红描边只需处理一次（逐部件加滤镜又慢又会把内部线条也描红）
   draw(c) {
     const sc = this.scale || 1, X = sx(this.x), Y = sy(this.y, this.z);
-    const shk = this.hitstop > 0 && this.st !== 'act' ? (Math.floor(game.t * 60) % 2 ? 1.5 : -1.5) : 0;
+    const isStruck = this.flash > 0 || this.st === 'hit' || this.st === 'air' || this.st === 'down';
+    const shkAmp = this.hitHeavy ? 3.2 : 2.2;
+    const shk = this.hitstop > 0 && isStruck ? (Math.floor(game.t * 60) % 2 ? shkAmp : -shkAmp) : 0;
     let a = 1;
     if (this.st === 'dead' && this.z <= 0) a = clamp(1 - (this.deadT - 0.5) / 0.6, 0, 1);
     if (this.invul > 0 && this.fighter && this.st !== 'getup' && this.st !== 'act' && Math.floor(game.t * 20) % 2) a *= 0.55;
@@ -239,16 +241,17 @@ class Ent {
       body(c);
       c.restore(); return;
     }
-    const col = this.flash > 0 ? '#ffffff' : (Math.floor(game.t * 8) % 2 ? '#ff2020' : '#ff6a3a');
+    const saCol = Math.floor(game.t * 10) % 2 ? '#ff2020' : '#ff9a20';
+    const col = this.flash > 0 ? '#ffffff' : saCol;
     // 精灵帧模型（怪物）：直接画到世界层——霸体描边 = 4 个偏移的纯色剪影、闪白 = 再叠一层白色剪影（剪影按帧图缓存，models/imgmodel.js sprSil）。
     // 不走下面的离屏合成：那条路每只怪要在 3 张画布之间来回拷贝，大范围技能同时打中一屋子怪时占了世界层绘制的一半（docs/PERF.md）
     if (this.model instanceof SpriteModel && !this.model.av) {
-      const M = this.model, t = game.t + this.id, sil = { sil: col };
+      const M = this.model, t = game.t + this.id, saSil = { sil: saCol }, flashSil = { sil: '#ffffff' };
       const put = (ox, oy, o) => { c.save(); c.translate(X + shk + ox, Y + oy); c.scale(fsx, sc); if (rot) { c.translate(0, cy); c.rotate(rot); c.translate(0, -cy); } M.draw(c, this.pose, t, o); c.restore(); };
       c.globalAlpha = a;
-      if (sa) for (const [ox, oy] of SA_OFF) put(ox / RS, oy / RS, sil);
+      if (sa) for (const [ox, oy] of SA_OFF) put(ox / RS, oy / RS, saSil);
       put(0, 0, this.drawOpts || NO_OPTS);
-      if (this.flash > 0) { c.globalAlpha = a * 0.7; put(0, 0, sil); }
+      if (this.flash > 0) { c.globalAlpha = a * 0.72; put(0, 0, flashSil); }
       c.globalAlpha = 1; return;
     }
     // 受击闪白 / 霸体红描边：先画进离屏精灵再整体着色合成

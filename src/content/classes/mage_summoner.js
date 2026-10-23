@@ -162,7 +162,31 @@ const smSummonAct = (key, lv, cast = 0.5, extra = {}) => ({ name: key, clip: 'sm
   events: [evAt(cast * 0.44, e => { sfx.magic(); summon(e, key, { lv, mul: smMul(e, lv) }); })] });
 // 交感（心灵感应）：契约兽在场时再按一次召唤键，它瞬移到你前方放专属招；需要心灵感应达到对应等级
 // 无动作下令（recast.instant）：放别的技能 / 普攻的过程中也能按，不打断你自己的动作（官方交感 / 附灵都可以在动作中施放）
-const smOrderNow = (p, key, cmd, name, arg) => { const n = summonCmd(p, key, cmd, { ...smCmdArg(p), ...(arg || {}) }); if (n) fxText(name, p.x, p.y, p.z + 30, { col: '#e0c0ff', size: 10, dur: 0.5 }); return n; };
+function smCrestFx(e, ecl) {
+  const col = ecl ? '#b870ff' : '#e8b8ff';
+  fxShock(e.x, e.y, ecl ? 85 : 65, col);
+  addFx({ ent: e, y: e.y + 1, z: 0, dur: 0.42, draw(c) {
+    const k = this.t / this.dur, a = 1 - k, X = sx(e.x), Y = sy(e.y, e.z + 92);
+    c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = a * 0.9;
+    c.fillStyle = col; c.beginPath(); c.arc(X, Y, 18 * (0.7 + 0.4 * k), 0, TAU); c.fill();
+    c.globalCompositeOperation = ' destination-out';
+    c.restore();
+    c.save(); c.globalAlpha = a; c.strokeStyle = '#ffffff'; c.lineWidth = 2.5;
+    c.beginPath(); c.arc(X, Y, 16 * (0.8 + 0.3 * k), -0.8, 2.2); c.stroke();
+    c.strokeStyle = col; c.lineWidth = 4; c.beginPath(); c.arc(X - 4, Y - 2, 14 * (0.8 + 0.3 * k), -0.9, 2.3); c.stroke();
+    c.restore();
+  } });
+}
+const smOrderNow = (p, key, cmd, name, arg) => {
+  const n = summonCmd(p, key, cmd, { ...smCmdArg(p), ...(arg || {}) });
+  if (n) {
+    const ecl = cmd === 'eclipse' || name === '附灵';
+    fxText(name, p.x, p.y, p.z + 30, { col: ecl ? '#d090ff' : '#e0c0ff', size: 10, dur: 0.5 });
+    smCrestFx(p, ecl);
+    for (const s of summonsOf(p, key)) smCrestFx(s, ecl);
+  }
+  return n;
+};
 const smRecast = (key, need, cd, mp) => ({ ok: p => jobOf(p) === SM && summonsOf(p, key).length > 0 && skLv(p, 'sm_telepathy') >= need, cd, mp, instant: true,
   act: (lv, p) => { smOrderNow(p, key, 'special', '交感'); } });
 defSkill('sm_aura', { name: '召唤兽强化', cls: 'mage', job: SM, lvReq: 15, passive: true, type: 'mag', col: '#b89aff', desc: '【被动光环】全图的召唤兽攻击力提高；你的魔法暴击率提高。', infoExtra: lv => [['召唤兽攻击力', '+' + pct(0.02 + 0.02 * lv)], ['魔法暴击率', '+' + pct(0.05 + 0.005 * lv)]] });
@@ -249,11 +273,16 @@ function casRift(x, y, dur) {
   addFx({ x, y: y - 3, z: 0, dur, draw(c) {
     const k = this.t / this.dur, o = k < 0.12 ? k / 0.12 : k > 0.8 ? (1 - k) / 0.2 : 1, H = 250 * Math.min(1, o * 1.2), W = 36 * o * (0.85 + 0.15 * Math.sin(game.t * 22)), X = sx(this.x), Y = sy(this.y, 0) - 8;
     if (H < 2) return;
-    // 官方：裂缝处升起一根紫色光柱直通画面顶端，底部一圈暗紫色的地面漩涡
-    c.save(); c.globalCompositeOperation = 'lighter'; { const pw = 70 * o * (0.9 + 0.1 * Math.sin(game.t * 17)), g = c.createLinearGradient(0, 0, 0, Y); g.addColorStop(0, 'rgba(176,96,255,0.05)'); g.addColorStop(0.7, 'rgba(176,96,255,0.45)'); g.addColorStop(1, 'rgba(230,170,255,0.75)'); c.fillStyle = g; c.fillRect(X - pw / 2, 0, pw, Y); c.globalAlpha = 0.5 * o; c.fillStyle = '#ffffff'; c.fillRect(X - pw / 6, 0, pw / 3, Y); } c.restore();
+    // 官方：裂缝处升起一根紫色光柱直通画面顶端，底部一圈暗紫与猩红剑气交织的地面漩涡
+    c.save(); c.translate(X, Y + 6); c.scale(1, GR);
+    drawSpr(c, fxTint('vortex', '#7a20d8'), 0, 0, 240 * o, 240 * o, { rot: -game.t * 5, alpha: 0.85 * o });
+    drawSpr(c, fxTint('vortex', CAS_COL), 0, 0, 185 * o, 185 * o, { rot: game.t * 6.5, alpha: 0.78 * o });
+    for (let i = 0; i < 4; i++) { const a = game.t * 7 + i * TAU / 4; c.strokeStyle = i % 2 ? CAS_COL : '#d080ff'; c.lineWidth = 3 * o; c.beginPath(); c.arc(0, 0, 88 * o, a, a + 1.15); c.stroke(); }
+    c.restore();
+    c.save(); c.globalCompositeOperation = 'lighter'; { const pw = 74 * o * (0.9 + 0.1 * Math.sin(game.t * 17)), g = c.createLinearGradient(0, 0, 0, Y); g.addColorStop(0, 'rgba(176,96,255,0.05)'); g.addColorStop(0.65, 'rgba(176,96,255,0.48)'); g.addColorStop(0.9, 'rgba(224,48,74,0.68)'); g.addColorStop(1, 'rgba(245,190,255,0.85)'); c.fillStyle = g; c.fillRect(X - pw / 2, 0, pw, Y); c.globalAlpha = 0.55 * o; c.fillStyle = '#ffffff'; c.fillRect(X - pw / 6, 0, pw / 3, Y); } c.restore();
     c.save(); c.fillStyle = '#12061e'; c.beginPath(); c.ellipse(X, Y - H / 2, W, H / 2, 0, 0, TAU); c.fill();
     c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.9; c.strokeStyle = '#b060ff'; c.lineWidth = 4; c.stroke();
-    c.globalAlpha = 0.6; c.strokeStyle = CAS_COL; c.lineWidth = 2; c.beginPath(); c.ellipse(X, Y - H / 2, W * 1.4 + 4, H / 2 + 6, 0, 0, TAU); c.stroke(); c.restore(); } });
+    c.globalAlpha = 0.65; c.strokeStyle = CAS_COL; c.lineWidth = 2.4; c.beginPath(); c.ellipse(X, Y - H / 2, W * 1.4 + 4, H / 2 + 6, 0, 0, TAU); c.stroke(); c.restore(); } });
 }
 // 狱冥天地：剑从天而降插满前方，最后一起爆开（伤害按主人结算：本体离场后剑阵照样生效）
 function casGokumei(o, x, y, mul) {
@@ -290,13 +319,30 @@ defSummon('sm_casillas', { kind: 'follower', name: '征服者卡西利亚斯', b
     thousand(s, arg) { smFront(s); s.face = s.owner.face; const G = hitGroup(), k = (arg && arg.mul) || 1; summonAct(s, { clip: 'casThousand', dur: 1.6, superArmor: true, move: [[0.24, 0.5, 1300]], thousand: true,
       hits: [mH(0.24, 0.52, [-20, 140, 44, 0, 180], 0, { dmg: 3.0 * s.mul * k, knock: 20, stun: 0.9, hs: 0.06, snd: 'slash', max: 1 })],
       events: [evAt(0.22, e => { sfx.charge(); e.act.x0 = e.x; fxAfterimage(e, CAS_COL); }),
-        evAt(0.5, e => { sfx.iai(); cam.shake = Math.max(cam.shake, 6); fxStreak({ x: e.act.x0, y: e.y, z: e.z + 90, face: e.face, len: Math.abs(e.x - e.act.x0) + 60, w: 14, col: CAS_COL, dur: 0.3 }); }),
+        evAt(0.5, e => { sfx.iai(); cam.shake = Math.max(cam.shake, 6); const x0 = e.act.x0, x1 = e.x, y0 = e.y;
+          fxStreak({ x: x0, y: y0, z: e.z + 90, face: e.face, len: Math.abs(x1 - x0) + 60, w: 16, col: CAS_COL, dur: 0.35 });
+          fxStreak({ x: x0, y: y0, z: e.z + 75, face: e.face, len: Math.abs(x1 - x0) + 50, w: 8, col: '#ffffff', dur: 0.28 });
+          addFx({ x: (x0 + x1) / 2, y: y0 + 0.5, z: 0, dur: 0.8, draw(c) {
+            const u = this.t / this.dur, al = u > 0.8 ? (1 - u) / 0.2 : Math.min(1, u * 5);
+            c.save(); c.globalCompositeOperation = 'lighter';
+            for (let j = 0; j < 7; j++) {
+              const px = sx(x0 + (x1 - x0) * (j + 0.5) / 7), py = sy(y0, 0), ang = (j % 2 ? 0.26 : -0.26);
+              c.save(); c.translate(px, py - 58); c.rotate(ang); c.globalAlpha = al * 0.85;
+              c.fillStyle = j % 2 ? CAS_COL : '#b060ff'; c.fillRect(-3, -64, 6, 128);
+              c.fillStyle = '#ffffff'; c.fillRect(-1.2, -58, 2.4, 116);
+              c.restore();
+            }
+            c.restore();
+          } });
+        }),
         ...[0.66, 0.76, 0.86, 0.96, 1.06].map((t, i) => evAt(t, e => { const x = e.act.x0 + (e.x - e.act.x0) * (0.15 + i * 0.18); sfx.swing(i === 4);
-          fxSlash({ x, y: e.y, z: 0, face: i % 2 ? -e.face : e.face, col: CAS_COL, a0: -1.2, a1: 1.2, r: 150, w: 22, off: [0, 80], dur: 0.2 });
+          fxSlash({ x, y: e.y, z: 0, face: i % 2 ? -e.face : e.face, col: CAS_COL, a0: -1.25, a1: 1.25, r: 158, w: 24, off: [0, 80], dur: 0.22 });
+          fxSlash({ x, y: e.y, z: 0, face: i % 2 ? e.face : -e.face, col: '#b060ff', a0: -1.1, a1: 1.1, r: 132, w: 14, off: [0, 84], dur: 0.18 });
           const lo = Math.min(e.x, e.act.x0) - 40, hi = Math.max(e.x, e.act.x0) + 40;   // 剑气补在整条冲斩路径上：路径上的每个敌人都吃满 5 段
           for (const t of ents) if (foe(e.owner, t) && !t.dead && t.invul <= 0 && t.x + t.w >= lo && t.x - t.w <= hi && Math.abs(t.y - e.y) < 80 && t.z < 220) summonHit(e, t, { dmg: 1.4 * k, stun: 0.6, knock: 10, hs: 0.05, type: 'mag', col: CAS_COL, downHit: true }); })),
-        evAt(1.25, e => { sfx.boom(1.1); cam.shake = Math.max(cam.shake, 10); const cx = (e.x + e.act.x0) / 2; fxShock(cx, e.y, Math.abs(e.x - e.act.x0) / 2 + 150, CAS_COL);
-          for (const t of ents) if (foe(e.owner, t) && inGround(t, cx, e.y, Math.abs(e.x - e.act.x0) / 2 + 150) && t.z < 220) summonHit(e, t, { dmg: 5.0 * k, launch: 380, knock: 120, hs: 0.12, big: 1.8, type: 'mag', col: CAS_COL, downHit: true }, { hitGroup: G }); })] }); } } });
+        evAt(1.25, e => { sfx.boom(1.15); cam.shake = Math.max(cam.shake, 11); const cx = (e.x + e.act.x0) / 2, span = Math.abs(e.x - e.act.x0) / 2 + 150;
+          fxShock(cx, e.y, span, CAS_COL); fxShock(cx, e.y, span * 0.72, '#b060ff'); fxBurst(cx, e.y, 60, 280, CAS_COL);
+          for (const t of ents) if (foe(e.owner, t) && inGround(t, cx, e.y, span) && t.z < 220) summonHit(e, t, { dmg: 5.0 * k, launch: 380, knock: 120, hs: 0.12, big: 1.8, type: 'mag', col: CAS_COL, downHit: true }, { hitGroup: G }); })] }); } } });
 defSkill('sm_awaken', { name: '契约召唤：征服者卡西利亚斯', cls: 'mage', job: SM, lvReq: 21, maxLv: 3, mp: 150, cd: 145, pvp: 0.45, type: 'mag', awaken: true, col: CAS_COL,
   desc: '【觉醒】用禁断之术劈开次元，召唤第四使徒的分身“征服者卡西利亚斯”：他从裂缝里走出，落地时击倒画面内的全部敌人。在场 200 秒（决斗场 30 秒），霸体、免疫异常，放着不管时施展不动剑、疾风剑、残心剑；离场时放出“狱冥天地”剑阵。召唤过程中你处于无敌状态。',
   pow: lv => skillDmg(12, 3, lv), ai: { kind: 'awaken', r: [0, 420], dy: 120 }, infoExtra: () => [['在场时间', '200 秒'], ['离场', '狱冥天地（剑阵）']],
@@ -318,8 +364,8 @@ defSkill('sm_thousand', { name: '必杀剑·千鬼杀', cls: 'mage', job: SM, lv
 SKILLS.mg_hodor.recast = smRecast('hodor', 1, 8, 8);
 { const D = SUMMON_DEFS.hodor, a0 = D.ai; D.ai = (s, dt) => { const M = s.owner.summonMode; if (M && M.hold && !M.follow) return smAI(s, dt); if (a0) a0(s, dt); else summonAI(s, dt); }; }
 SUMMON_DEFS.hodor.cmds = { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'club', dur: 1.1, move: [[0.1, 0.6, 260]], superArmor: true,
-  hits: [0.15, 0.3, 0.45, 0.6].map((t0, i) => mH(t0, t0 + 0.08, [0, 84, 26, 0, 90], 0.45 * s.mul, { knock: i === 3 ? 180 : 40, stun: 0.4, heavy: i === 3 })),
-  events: [0.14, 0.29, 0.44, 0.59].map(t => evAt(t, e => sfx.swing(true))) }); } };
+  hits: [0.15, 0.3, 0.45, 0.6].map((t0, i) => mH(t0, t0 + 0.08, [0, 84, 26, 0, 90], 0.45 * s.mul, { knock: i === 3 ? 180 : 40, stun: 0.4, heavy: i === 3, hs: i === 3 ? 0.09 : 0.05, shake: i === 3 ? 3 : 1 })),
+  events: [0.14, 0.29, 0.44, 0.59].map((t, i) => evAt(t, e => { sfx.swing(true); fxSlashOn(e, { a0: -2.1, a1: 0.85, r: i === 3 ? 68 : 54, w: i === 3 ? 16 : 11, off: [14, 46], col: i === 3 ? '#ffe090' : '#e8d8b0', heavy: i === 3 }); if (i === 3) fxShock(e.x + e.face * 50, e.y, 95, '#ffe090'); })) }); } };
 CLASSES.mage.jobs.summoner = { art: 'job/summoner', name: '召唤师', role: '远程 · 召唤', armor: 'cloth', awaken: 'sm_awaken', awakenName: '月之女皇', growth: { int: 1.1, spr: 1.06 },
   desc: '召唤具有元素属性的精灵、以及与之签订契约的怪物协同作战的魔法师。召唤兽常驻在场，伤害按你的魔攻计算；交感能让契约兽瞬移到你身前放专属招。',
   skills: ['sm_aura', 'sm_telepathy', 'sm_lesser', 'sm_wait', 'sm_follow', 'sm_dismiss', 'sm_frit', 'sm_sacrifice', 'sm_sandor', 'sm_domin', 'sm_mark', 'sm_frenzy', 'sm_aukuso',
@@ -341,3 +387,11 @@ CLASSES.mage.passives.push(p => {
 const SM_BUNDLES = ['sandor', 'ador', 'naias', 'stalker', 'wisp', 'frit', 'aukuso', 'luise', 'merkle', 'glarelin', 'aqueris', 'flamehulk', 'echeverria', 'goblinCaptain', 'tauKing', 'casillas'];
 function smPreload() { const p = game.player; if (!p || p.cls !== 'mage' || jobOf(p) !== SM || typeof loadBundles !== 'function') return; const need = SM_BUNDLES.filter(b => !IMG[`spr/${b}/idle`]).map(b => 'spr:' + b); if (need.length) loadBundles(need).catch(() => { }); }
 bus.on('sceneEnter', smPreload); bus.on('dungeonEnter', smPreload); bus.on('jobChange', smPreload);
+// 二觉 / 三觉召唤师技能（月蚀之影、月蚀之王拉莫斯、蚀日、精灵王之怒、至高精灵王）新月暗炎震屏强化
+queueMicrotask(() => {
+  for (const [id, sh, dt] of [['sm_shadow', 6, 0.3], ['sm_awaken2', 11, 1.4], ['sm_lamoseclipse', 10, 0.85], ['sm_wrath', 8, 0.5], ['sm_awaken3', 14, 2.2]]) {
+    const S = SKILLS[id]; if (!S || !S.act) continue;
+    const f = S.act; S.act = (lv, p) => { const a = f(lv, p), o = a.onStart; a.onStart = e => { if (o) o(e); smCrestFx(e, true); game.after(dt, () => { if (!e.dead) cam.shake = Math.max(cam.shake, sh); }); }; return a; };
+  }
+});
+

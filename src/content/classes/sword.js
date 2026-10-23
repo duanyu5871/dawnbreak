@@ -41,15 +41,17 @@ const SWORD_ACTS = {
 /* ---- 基础技能 ---- */
 defSkill('upslash', { name: '上挑', cls: 'sword', lvReq: 1, mp: 10, cd: 2, type: 'phys', icon: 'up', col: '#3a7fd0',
   desc: '从下向上挑斩，把敌人挑到空中。发动瞬间霸体，浮空连击的起手技。', pow: lv => skillDmg(1.8, 0.18, lv), ai: { kind: 'launch', r: [0, 95], dy: 22 },
-  act: (lv) => ({ name: 'up', clip: 'up', dur: 0.46, cancelFrom: 0.26, superArmor: [0, 0.1], move: [[0.02, 0.1, 100]],
-    hits: [HB(0.1, 0.18, [0, 100, 34, 0, 125], skillDmg(1.8, 0.18, lv), { launch: 520 + lv * 6, knock: 40, hs: 0.08, shake: 2, big: 1.2 })],
-    events: [slashAt(0.09, { a0: 1.4, a1: -1.9, r: 82, w: 20, off: [10, 50], heavy: true })] }) });
+  act: (lv, p) => { const hvy = p && (wtypeOf(p) === 'club' || wtypeOf(p) === 'greatsword');
+    return { name: 'up', clip: 'up', dur: 0.46, cancelFrom: 0.26, superArmor: [0, 0.1], move: [[0.02, 0.1, 100]],
+      hits: [HB(0.1, 0.18, [0, 100, 34, 0, 125], skillDmg(1.8, 0.18, lv), { launch: 520 + lv * 6, knock: 40, hs: hvy ? 0.095 : 0.08, shake: hvy ? 3 : 2, big: 1.25 })],
+      events: [evAt(0.08, e => fxDust(e.x + e.face * 20, e.y, 4, 14)), slashAt(0.09, { a0: 1.4, a1: -1.9, r: 82, w: 20, off: [10, 50], heavy: true })] }; } });
 defSkill('ghost', { name: '鬼斩', cls: 'sword', lvReq: 1, mp: 18, cd: 6, type: 'mag', elem: 'dark', col: '#6a3ab0',
   desc: '左臂的鬼神之力附在剑上，斩出带暗属性的鬼气斩击，把前方的敌人击飞倒地。', pow: lv => skillDmg(2.6, 0.26, lv), ai: { kind: 'poke', r: [0, 180], dy: 26 },
   act: (lv) => ({ name: 'ghost', clip: 'ghost', dur: 0.56, cancelFrom: 0.36, move: [[0.1, 0.18, 160]],
-    hits: [HB(0.14, 0.22, [0, 190, 40, 0, 120], skillDmg(2.6, 0.26, lv), { stun: 0.55, knock: 240, down: true, downLift: 260, airLift: 220, hs: 0.09, shake: 3, heavy: true, big: 1.4 })],
+    hits: [HB(0.14, 0.22, [0, 190, 40, 0, 120], skillDmg(2.6, 0.26, lv), { stun: 0.55, knock: 240, down: true, downLift: 260, airLift: 220, hs: 0.1, shake: 4, heavy: true, big: 1.4, col: '#b87aff' })],
     events: [evAt(0.02, e => fxSpr('ghost', e.x - e.face * 4, e.y, e.z + 60, { w: 60, dur: 0.3, follow: e, ox: -4, oz: 58, alpha: 0.6, grow: [0.6, 1] })),
-      evAt(0.13, e => { sfx.swing(true); sfx.iai(); fxSpr('ghost', e.x + e.face * 100, e.y, e.z + 60, { w: 230, dur: 0.38, flip: e.face < 0, grow: [0.7, 1.15] }); })] }) });
+      slashAt(0.13, { a0: -2.6, a1: 1.2, r: 112, w: 26, off: [14, 56], col: '#9a4aff', heavy: true, silent: true }),
+      evAt(0.13, e => { sfx.swing(true); sfx.iai(); fxSpr('ghost', e.x + e.face * 100, e.y, e.z + 60, { w: 230, dur: 0.38, flip: e.face < 0, grow: [0.7, 1.15] }); fxBurst(e.x + e.face * 95, e.y, e.z + 55, 110, '#8a3aff'); })] }) });
 const guardPhys = lv => Math.min(0.8, 0.4 + 0.04 * (lv - 1)), guardMag = lv => Math.min(0.6, 0.15 + 0.05 * (lv - 1));   // 官方：物理 40→80%，魔法 15→60%
 defSkill('guard', { name: '格挡', cls: 'sword', lvReq: 5, mp: 5, cd: 2, type: 'phys', col: '#4a8ac8',
   desc: '举剑挡住前方的攻击（被打会后退）。物理攻击吸收较多，魔法攻击吸收较少。按住技能键可以持续格挡。抓取攻击无法格挡。', pow: null,
@@ -74,19 +76,20 @@ defSkill('dashthrust', { name: '连突刺', cls: 'sword', lvReq: 5, mp: 0, cd: 0
 defSkill('slam', { name: '崩山击', cls: 'sword', lvReq: 10, mp: 22, cd: 4, type: 'phys', icon: 'slam', col: '#b8602a', air: true,
   desc: '向前跃起后挥剑重砸地面，冲击多段、最后一击使敌人倒地。按住技能键跳得更远；跳到一半开启霸体，落地瞬间无敌。', pow: lv => skillDmg(3.2, 0.3, lv), ai: { kind: 'gap', r: [60, 260], dy: 30 },
   act: (lv) => ({ name: 'slam', clip: 'a3slam', dur: 1.3, noCounter: true, superArmor: [0.18, 1.3],
-    charge: { at: 0.02, max: 0.35, min: 0, dmg: 0.2, clip: 'charge', onRelease: (e, k) => { e.act.leap = 170 + k * 170; } },
+    charge: { at: 0.02, max: 0.35, min: 0, dmg: 0.2, clip: 'charge', update: e => { if (Math.random() < 0.45) fxCharge(e, '#ff9a4a'); }, onRelease: (e, k) => { e.act.leap = 170 + k * 170; } },
     events: [evAt(0.03, e => { if (e.z <= 1) { e.vz = 500; e.z = 1; } e.vx = e.face * (e.act.leap || 170); sfx.jump(); })],
-    update: e => { if (e.actT > 0.3 && !e.slamDive) { e.slamDive = true; e.vz = -1100; } },
+    update: e => { if (e.actT > 0.3 && !e.slamDive) { e.slamDive = true; e.vz = -1100; fxSlashOn(e, { a0: -2.8, a1: 1.2, r: 86, w: 22, off: [12, 48], col: '#ff9a4a', heavy: true }); } },
     onLand: e => { if (e.actT < 0.08) { e.vz = 0; return; } e.slamDive = false; e.vx = 0; e.invul = Math.max(e.invul, 0.15); slamImpact(e, skillDmg(1.1, 0.1, lv)); e.act.dur = e.actT + (e.buffs.rampage ? 0.18 : 0.36); e.act.onLand = null;
       if (hasSkill(e, 'bz_vigor')) game.after(0.22, () => { if (e.dead) return; const x = e.x + e.face * 110; fxSpr('bloodwave', x, e.y, 0, { h: 160, dur: 0.35, ay: 1, flip: e.face < 0, grow: [0.5, 1] }); sfx.boom(0.5);
         blast(e, x, e.y, 120, { dmg: skillDmg(0.8, 0.08, lv), knock: 120, down: true, hs: 0.05, col: '#ff5a5a', downHit: true }, { zMax: 90, status: 'bleed', sdur: 7, dps: 0.05 }); }); },
     onEnd: e => { e.slamDive = false; } }) });
 function slamImpact(e, dmg) {
-  cam.shake = Math.max(cam.shake, 7); fxDust(e.x, e.y, 14, 40); sfx.boom(1);
-  fxShock(e.x + e.face * 20, e.y, 220, '#ffb060'); fxBurst(e.x + e.face * 20, e.y, 15, 150, '#ffb060');
+  const hvy = wtypeOf(e) === 'club' || wtypeOf(e) === 'greatsword';
+  cam.shake = Math.max(cam.shake, hvy ? 9 : 7); fxDust(e.x, e.y, hvy ? 18 : 14, hvy ? 52 : 40); sfx.boom(hvy ? 1.15 : 1);
+  fxShock(e.x + e.face * 20, e.y, hvy ? 250 : 220, '#ffb060'); fxShock(e.x + e.face * 20, e.y, 130, '#ffdf9a'); fxBurst(e.x + e.face * 20, e.y, 15, hvy ? 180 : 150, '#ffb060');
   // 多段冲击：前两段小浮空，第三段倒地
   const st = e.buffs && e.buffs.rampage ? 0.4 : 0;   // 暴走：硬直更大
-  for (let i = 0; i < 3; i++) game.after(i * 0.07, () => { if (!e.dead) instantHit(e, { box: [-150, 190, 60, -5, 70], dmg, airLift: 120, launch: i < 2 ? 160 : 0, down: i === 2, knock: i === 2 ? 200 : 40, stun: 0.4 + st, hs: 0.05, big: 1.2 + i * 0.2, col: '#ffcf8a', downHit: i === 2 }); });
+  for (let i = 0; i < 3; i++) game.after(i * 0.07, () => { if (!e.dead) instantHit(e, { box: [-150, 190, 60, -5, 70], dmg, airLift: 120, launch: i < 2 ? 160 : 0, down: i === 2, knock: i === 2 ? 200 : 40, stun: 0.4 + st, hs: i === 2 ? 0.08 : 0.05, shake: i === 2 ? 4 : 1.5, big: 1.2 + i * 0.2, col: '#ffcf8a', downHit: i === 2 }); });
 }
 defSkill('rip', { name: '裂波斩', cls: 'sword', lvReq: 10, mp: 30, cd: 8, type: 'mag', col: '#3a9ae0',
   desc: '向上刺出带抓取判定的一剑（可以抓住霸体和格挡中的敌人），随后释放 3 段裂波攻击周围的敌人并把它们击飞。', pow: lv => skillDmg(4.2, 0.42, lv), ai: { kind: 'grab', r: [0, 70], dy: 20 },
@@ -95,16 +98,17 @@ defSkill('rip', { name: '裂波斩', cls: 'sword', lvReq: 10, mp: 30, cd: 8, typ
     grabAt: [48, 58],
     hold: (e, t) => { const up = clamp((e.actT - 0.2) / 0.2, 0, 1), dn = clamp((e.actT - 0.4) / 0.07, 0, 1); t.x = e.x + e.face * 42; t.y = e.y + 0.5; t.z = e.z + (20 + up * 45) * (1 - dn); t.face = -e.face; },   // 上斩挑起，下斩砸回地面
     events: [slashAt(0.16, { a0: 1.2, a1: -1.6, r: 64, w: 18, off: [10, 50], heavy: true }),
+      evAt(0.16, e => fxShock(e.x + e.face * 36, e.y, 70, '#8fd8ff')),
       evAt(0.28, e => { if (jobOf(e) === 'asura' && typeof asMarkAdd === 'function') asMarkAdd(e, 1); }),   // 阿修罗：裂波斩生成 1 个波动印
       slashAt(0.38, { a0: -1.9, a1: 1.3, r: 70, w: 20, off: [12, 46], heavy: true }),   // 下斩：只打被抓住的敌人，砸地
-      evAt(0.43, e => { const g = e.grabbed; if (!g) return; cam.shake = Math.max(cam.shake, 4); sfx.boom(0.6); fxDust(g.x, g.y, 8, 26); fxShock(g.x, g.y, 90, '#8fd8ff');
-        applyHit(e, g, { dmg: skillDmg(1.2, 0.12, lv), hs: 0.07, sure: true, snd: 'blunt', big: 1.3 }, { proj: true }); }),
-      ...[0.52, 0.64, 0.76].map((t, i) => evAt(t, e => { fxShock(e.x + e.face * 20, e.y, 180 + i * 20, '#8fd8ff'); fxSpr('wave', e.x + e.face * 60, e.y, 0, { h: 120, dur: 0.25, ay: 1, alpha: 0.7, flip: e.face < 0 }); sfx.swing(false);
-        blast(e, e.x + e.face * 20, e.y, 170, { dmg: skillDmg(0.73, 0.073, lv), airLift: 160, stun: 0.35, hs: 0.03, knock: 30 }, { zMax: 140 }); })),
-      evAt(0.88, e => { cam.shake = Math.max(cam.shake, 5); sfx.boom(0.7); fxBurst(e.x + e.face * 40, e.y, e.z + 70, 240, '#8fd8ff');
+      evAt(0.43, e => { const g = e.grabbed; if (!g) return; cam.shake = Math.max(cam.shake, 5); sfx.boom(0.65); fxDust(g.x, g.y, 8, 26); fxShock(g.x, g.y, 90, '#8fd8ff');
+        applyHit(e, g, { dmg: skillDmg(1.2, 0.12, lv), hs: 0.075, sure: true, snd: 'blunt', big: 1.35 }, { proj: true }); }),
+      ...[0.52, 0.64, 0.76].map((t, i) => evAt(t, e => { cam.shake = Math.max(cam.shake, 2.5); fxShock(e.x + e.face * 20, e.y, 180 + i * 20, '#8fd8ff'); fxSpr('wave', e.x + e.face * 60, e.y, 0, { h: 120, dur: 0.25, ay: 1, alpha: 0.7, flip: e.face < 0 }); sfx.swing(false);
+        blast(e, e.x + e.face * 20, e.y, 170, { dmg: skillDmg(0.73, 0.073, lv), airLift: 160, stun: 0.35, hs: 0.035, knock: 30 }, { zMax: 140 }); })),
+      evAt(0.88, e => { cam.shake = Math.max(cam.shake, 6); sfx.boom(0.75); fxBurst(e.x + e.face * 40, e.y, e.z + 70, 240, '#8fd8ff'); fxShock(e.x + e.face * 30, e.y, 220, '#8fd8ff');
         throwGrab(e, { dmg: skillDmg(0.4, 0.04, lv), launch: 480, knock: 120, hs: 0.1, big: 1.5 });
         blast(e, e.x + e.face * 20, e.y, 180, { dmg: skillDmg(0.6, 0.06, lv), launch: 420, knock: 100, hs: 0.06 }, { zMax: 160 }); })] }) });
-defSkill('triple', { name: '三段刃', cls: 'sword', lvReq: 15, mp: 25, cd: 6, type: 'phys', icon: 'triple', col: '#2aa0a0',
+defSkill('triple', { name: '三段刃', cls: 'sword', lvReq: 15, mp: 25, cd: 6, type: 'phys', icon: 'triple', col: '#ff7832',
   desc: '边向前滑行边斩击，再次按键追加下一段（最多 5 段，最后一段上挑浮空；剑魂装备太刀 / 光剑且武器奥义 5 级以上时最多 7 段），每段之间可以用方向键转向。常用作位移。', pow: lv => skillDmg(1.3, 0.14, lv) * 5.4, ai: { kind: 'gap', r: [20, 160], dy: 26 },
   act: (lv, p) => tripleStage(lv, 1, tripleN(p)) });
 const TRIPLE_N = 5;   // 现版 5 段（2025 年 TP 并入本体；旧版 3 段）。剑魂 太刀 / 光剑 + 武器奥义 5 级再 +2 斩（sword_blade.js 覆盖 tripleN）
@@ -115,8 +119,10 @@ function tripleStage(lv, n, N = TRIPLE_N) {
     follow: n < N ? () => tripleStage(lv, n + 1, N) : null, followWin: [0.1, 0.34],
     onStart: n === 1 ? e => { e._tri = new Set(); } : undefined,
     update: e => { if (e._tri) for (const t of e._tri) if (!t.dead && !t.boss && t.weight <= 2 && (t.st === 'hit' || t.st === 'idle') && (t.x - e.x) * e.face < 36 && Math.abs(t.y - e.y) < 30) t.x = e.x + e.face * 36; },
-    hits: [HB(0.02, 0.2, [-10, 78, 32, last ? -10 : 10, last ? 130 : 105], skillDmg(1.3, 0.14, lv) * (last ? 1.4 : 1), { stun: 0.45, knock: last ? 120 : 120, hs: 0.06, shake: last ? 3 : 1.5, launch: last ? 420 : 0, onHit: (a, t) => { if (a._tri) a._tri.add(t); } })],
-    events: [evAt(0.01, e => { fxAfterimage(e); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 58, face: e.face, len: 140, w: 12, col: '#7ff0e0' }); sfx.swing(last); })] };
+    hits: [HB(0.02, 0.2, [-10, 78, 32, last ? -10 : 10, last ? 130 : 105], skillDmg(1.3, 0.14, lv) * (last ? 1.4 : 1), { stun: 0.45, knock: 120, hs: last ? 0.085 : 0.06, shake: last ? 3.5 : 2, launch: last ? 420 : 0, heavy: last, big: last ? 1.35 : 1.15, col: '#ffaa44', onHit: (a, t) => { if (a._tri) a._tri.add(t); } })],
+    events: [evAt(0.01, e => { const gb = jobOf(e) === 'ghostblade', c1 = gb ? '#8fd0ff' : '#ff7832', c2 = gb ? '#bfe8ff' : '#ffaa44';
+      fxAfterimage(e, c1); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 58, face: e.face, len: 150, w: 14, col: c1 });
+      fxSlashOn(e, { a0: last ? 1.4 : (n % 2 ? -2.3 : 1.0), a1: last ? -1.9 : (n % 2 ? 0.9 : -2.2), r: last ? 84 : 74, w: last ? 22 : 16, off: [12, 54], col: c2, heavy: last, silent: true }); sfx.swing(last); })] };
 }
 function projWave(p, o) {   // 地面剑气：沿地面推进（o.vy：斜着往纵深走）
   return spawnProj({ owner: p, x: p.x + p.face * 30, y: p.y, z: 0, vx: p.face * (o.speed || 380), vy: o.vy || 0, face: p.face, life: o.life || 0.7, w: 26, d: 26, h: 90,
@@ -139,15 +145,16 @@ defSkill('cross', { name: '十字刃', cls: 'sword', lvReq: 15, mp: 16, cd: 3, t
 function crossStage(lv, p, n) {
   const vig = !!(p && hasSkill(p, 'bz_vigor')), big = vig ? 1.1 : 1, fast = p && p.buffs && p.buffs.rampage;
   if (n === 2) return { name: 'cross2', clip: 'atk3', dur: 0.4, cancelFrom: 0.22, move: [[0.02, 0.1, 160]],
-    hits: [HB(0.06, 0.14, [0, 110, 36, 0, 120], skillDmg(1.2, 0.12, lv), { down: true, knock: 260, stun: fast ? 0.9 : 0.5, hs: 0.09, shake: 3, heavy: true, col: '#ff6a6a', downHit: true })],
-    events: [slashAt(0.05, { a0: -2.7, a1: 1.1, r: 86, w: 22, off: [10, 56], heavy: true, col: '#ff8a8a' })] };
+    hits: [HB(0.06, 0.14, [0, 110, 36, 0, 120], skillDmg(1.2, 0.12, lv), { down: true, knock: 260, stun: fast ? 0.9 : 0.5, hs: 0.1, shake: 4, heavy: true, col: '#ff6a6a', downHit: true })],
+    events: [slashAt(0.05, { a0: -2.7, a1: 1.1, r: 86, w: 22, off: [10, 56], heavy: true, col: '#ff8a8a' }), evAt(0.06, e => fxShock(e.x + e.face * 50, e.y, 120, '#ff4a4a'))] };
   return { name: 'cross', clip: 'cross', dur: 0.52, cancelFrom: fast ? 0.2 : 0.3, links: swordAttackIds(), linkFrom: fast ? 0.2 : 0.3, move: [[0.02, 0.1, 90]], follow: () => crossStage(lv, p, 2), followWin: [0.26, 0.52],
     onStart: e => { if (vig) { const c = Math.round(e.hpMax * 0.01); e.hp = Math.max(1, e.hp - c); } },
-    hits: [HB(0.05, 0.1, [0, 92, 34, 10, 110], skillDmg(0.9, 0.09, lv), { stun: fast ? 0.7 : 0.4, knock: 40, hs: 0.05 }), HB(0.17, 0.22, [0, 92, 34, 10, 110], skillDmg(0.9, 0.09, lv), { stun: fast ? 0.7 : 0.45, knock: 60, hs: 0.06 })],
-    events: [slashAt(0.04, { a0: -2.2, a1: 1.0, r: 70, w: 16, off: [10, 55], col: '#ff8a8a' }), slashAt(0.16, { a0: 1.0, a1: -2.2, r: 70, w: 16, off: [10, 55], col: '#ff8a8a' }),
+    hits: [HB(0.05, 0.1, [0, 92, 34, 10, 110], skillDmg(0.9, 0.09, lv), { stun: fast ? 0.7 : 0.4, knock: 40, hs: 0.055, col: '#ff6a6a' }), HB(0.17, 0.22, [0, 92, 34, 10, 110], skillDmg(0.9, 0.09, lv), { stun: fast ? 0.7 : 0.45, knock: 60, hs: 0.065, col: '#ff6a6a' })],
+    events: [slashAt(0.04, { a0: -2.2, a1: 1.0, r: 74, w: 17, off: [10, 55], col: '#ff8a8a' }), slashAt(0.16, { a0: 1.0, a1: -2.2, r: 74, w: 17, off: [10, 55], col: '#ff8a8a' }),
+      evAt(0.18, e => fxSlashX(e.x + e.face * 56, e.y, e.z + 55, 95, '#ff4a4a')),
       evAt(0.24, e => { sfx.hit('crit', false);   // 血十字：交叉斩的轨迹化成血十字，向前飞一小段（官方投射物），每个敌人只打一次
         spawnProj({ owner: e, x: e.x + e.face * 40, y: e.y, z: 20, vx: e.face * 300, face: e.face, life: 0.55, w: 50 * big, d: 34, h: 100, pierce: true,
-          hit: { dmg: skillDmg(1.0, 0.1, lv) * big, stun: 0.5, knock: 90, hs: 0.07, col: '#ff6a6a' }, onHitT: vig ? (q, t) => addStatus(t, 'bleed', 7, { dps: e.atk * 0.05, src: e }) : undefined,
+          hit: { dmg: skillDmg(1.0, 0.1, lv) * big, stun: 0.5, knock: 90, hs: 0.075, shake: 2, col: '#ff6a6a' }, onHitT: vig ? (q, t) => addStatus(t, 'bleed', 7, { dps: e.atk * 0.05, src: e }) : undefined,
           draw(c, q) { const k = q.t / q.life; drawSpr(c, fxTint('crossx', '#ff4a4a'), sx(q.x), sy(q.y, q.z + 40), 130 * big * (0.6 + 0.5 * Math.min(1, k * 4)), 0, { alpha: k > 0.7 ? (1 - k) / 0.3 : 1 }); } }); })] };
 }
 // 刀魂之卡赞（通用 BUFF）：召唤鬼神卡赞，力量、智力提升 120 秒；鬼泣转职后改为被动，剑影不能学
@@ -172,12 +179,13 @@ defSkill('moon', { name: '月光斩', cls: 'sword', lvReq: 15, mp: 22, cd: 4, ty
 function moonStage(lv, n) {
   const step = e => { const d = e.pad.dx() * e.face; return d > 0 ? 220 : d < 0 ? 30 : 120; };
   if (n === 2) return { name: 'moon2', clip: 'up', dur: 0.44, cancelFrom: 0.3, move: [[0.02, 0.1, 110]],
-    hits: [HB(0.08, 0.16, [0, 100, 34, 0, 140], skillDmg(1.6, 0.16, lv), { launch: 460, knock: 40, hs: 0.08, shake: 2 })],
-    events: [slashAt(0.07, { a0: 1.4, a1: -1.9, r: 82, w: 20, off: [10, 50], col: '#c8b8ff', heavy: true })] };
+    hits: [HB(0.08, 0.16, [0, 100, 34, 0, 140], skillDmg(1.6, 0.16, lv), { launch: 460, knock: 40, hs: 0.085, shake: 2.5, col: '#dcd0ff' })],
+    events: [slashAt(0.07, { a0: 1.4, a1: -1.9, r: 84, w: 22, off: [10, 50], col: '#c8b8ff', heavy: true }), evAt(0.08, e => fxBurst(e.x + e.face * 55, e.y, e.z + 70, 75, '#c8b8ff'))] };
   return { name: 'moon', clip: 'cross', dur: 0.46, cancelFrom: 0.3, follow: () => moonStage(lv, 2), followWin: [0.14, 0.46],
     onStart: e => { e.act.move = [[0.02, 0.12, step(e)]]; },
-    hits: [HB(0.08, 0.16, [0, 110, 34, 10, 130], skillDmg(1.4, 0.14, lv), { stun: 0.4, knock: 60, airLift: 280, hs: 0.06 })],
-    events: [evAt(0.07, e => { fxSpr('slash', e.x + e.face * 52, e.y, e.z + 62, { w: 150, dur: 0.25, flip: e.face < 0, col: '#b8a8ff', grow: [0.7, 1.1] }); sfx.swing(true); })] };
+    hits: [HB(0.08, 0.16, [0, 110, 34, 10, 130], skillDmg(1.4, 0.14, lv), { stun: 0.4, knock: 60, airLift: 280, hs: 0.065, col: '#dcd0ff' })],
+    events: [slashAt(0.06, { a0: -2.5, a1: 1.1, r: 84, w: 20, off: [14, 56], col: '#dcd0ff', heavy: true, silent: true }),
+      evAt(0.07, e => { fxSpr('slash', e.x + e.face * 52, e.y, e.z + 62, { w: 150, dur: 0.25, flip: e.face < 0, col: '#b8a8ff', grow: [0.7, 1.1] }); sfx.swing(true); })] };
 }
 // 嗜魂之手（男鬼剑通用，现版）：带吸附的抓取 → 吸取能量（多段）→ 喷发打飞（身后的敌人也吃伤害）。抓到时无敌；抓不动的敌人改为向前喷血；
 // 对出血的敌人增伤。狂战士：饥渴满蓄时吸取次数 +3，学血气旺盛附出血，汲血之力（二觉被动）全程霸体，血气界限（三觉被动）血气向四个方向喷发、没抓到也会凝成血块爆炸
@@ -280,17 +288,39 @@ function swordAttackIds() { return Object.keys(SKILLS).filter(id => { const S = 
 // 普攻动作表按转职 / BUFF 挑选（狂战士狂暴之力 = 二刀流等）：各转职文件往 SWORD_ACT_PICK 里登记 p => 动作表 | null
 const SWORD_ACT_PICK = [];
 // X 轴攻击距离排序有 namu 귀검사 '무기별 비교' 佐证：대검 > 광검 ≥ 둔기 >>> 도 ≥ 소검；僵直：둔기普攻有概率眩晕、대검 경직도高（웨펀마스터页）；具体倍率是平衡取值（docs/BASIC_ATTACK_SOURCES_sword_fighter.md）
-// 武器手感（官方：武器只改攻速 / 数值 / 攻击距离 / 僵直，不改普攻动作）：reach 乘判定前沿，stun 乘僵直；攻速、物攻已在 WTYPES
-const SWORD_FEEL = { shortsword: { reach: 1.0, stun: 1.0 }, katana: { reach: 1.0, stun: 1.0 }, club: { reach: 1.06, stun: 1.3 }, greatsword: { reach: 1.15, stun: 1.1 }, lightsaber: { reach: 1.1, stun: 1.0 } };
+// 武器手感（官方：武器只改攻速 / 数值 / 攻击距离 / 僵直与受击反馈，不改普攻动作）：reach 乘判定前沿，stun 乘僵直，hs 乘顿帧，shake 乘震屏
+const SWORD_FEEL = {
+  shortsword: { reach: 1.0, stun: 1.0, hs: 0.95, shake: 0.9 },
+  katana:     { reach: 1.0, stun: 1.0, hs: 1.0,  shake: 1.0 },
+  club:       { reach: 1.06, stun: 1.3, hs: 1.3, shake: 1.4, col: '#ffd280', thud: true },
+  greatsword: { reach: 1.15, stun: 1.1, hs: 1.25, shake: 1.3, col: '#ffaa55' },
+  lightsaber: { reach: 1.1,  stun: 1.0, hs: 0.85, shake: 0.95, col: '#fff3a0' },
+};
 const SWORD_FEEL_CACHE = new Map();
 function swordFeelWrap(T, w) {
-  const F = SWORD_FEEL[w]; if (!F || (F.reach === 1 && F.stun === 1)) return T;
+  const F = SWORD_FEEL[w]; if (!F || (F.reach === 1 && F.stun === 1 && F.hs === 1 && F.shake === 1 && !F.col && !F.thud)) return T;
   let m = SWORD_FEEL_CACHE.get(T); if (!m) SWORD_FEEL_CACHE.set(T, m = {});
   if (m[w]) return m[w];
   const out = {};
   for (const k in T) {
     const a = T[k];
-    out[k] = a && a.basic && !a.rk && a.hits ? { ...a, hits: a.hits.map(h => h.box ? { ...h, box: [h.box[0], Math.round(h.box[1] * F.reach), ...h.box.slice(2)], ...(h.stun ? { stun: +(h.stun * F.stun).toFixed(3) } : {}) } : h) } : a;
+    if (a && a.basic && !a.rk && a.hits) {
+      const ev0 = a.events || [], extraEv = (F.thud && (k === 'atk3' || k === 'jatk3'))
+        ? [evAt(a.hits[0].t, e => { fxShock(e.x + e.dir * 38, e.y, 130, '#ffd280'); fxDust(e.x + e.dir * 34, e.y, e.dir, 6); })]
+        : [];
+      out[k] = {
+        ...a,
+        events: extraEv.length ? [...ev0, ...extraEv] : a.events,
+        hits: a.hits.map(h => h.box ? {
+          ...h,
+          box: [h.box[0], Math.round(h.box[1] * F.reach), ...h.box.slice(2)],
+          ...(h.stun ? { stun: +(h.stun * F.stun).toFixed(3) } : {}),
+          ...(h.hs ? { hs: +(h.hs * F.hs).toFixed(3) } : {}),
+          ...(h.shake ? { shake: +(h.shake * F.shake).toFixed(1) } : (F.thud ? { shake: 4 } : {})),
+          ...(F.col && !h.col ? { col: F.col } : {}),
+        } : h),
+      };
+    } else out[k] = a;
   }
   return m[w] = out;
 }

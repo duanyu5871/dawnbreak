@@ -23,8 +23,8 @@ defSkill('pc_awaken', { name: '天启之珠', cls: 'priest', job: PCJ, tier: 1, 
         for (let i = 0; i < n; i++) game.after(0.35 + i * (bat ? 0.06 : 0.08), () => { if (e.dead) return;
           const F = ents.filter(t => foe(e, t) && !t.dead && (bat ? t.x > cam.x - 40 && t.x < cam.x + WW + 40 : (t.x - e.x) * e.face > -100 && Math.abs(t.x - e.x) < 640)), aim = F.length && Math.random() < 0.75 ? F[Math.floor(Math.random() * F.length)] : null;   // 大部分落在敌人身上
           const x = aim ? aim.x + rnd(-40, 40) : bat ? cam.x + rnd(60, WW - 60) : e.x + e.face * rnd(-60, 560), y = clamp(aim ? aim.y + rnd(-15, 15) : e.y + rnd(-70, 70), 4, DEPTH - 4);
-          pcBoltFx(x, y, 320); pcSpearFx(x, y, 120, 150, Math.PI / 2, '#fff6c0', 0.25); fxShock(x, y, 110, '#fff0a0'); if (i % 3 === 0) { sfx.boom(0.5); cam.shake = Math.max(cam.shake, 6); }
-          areaHit(e, x, y, bat ? 150 : 120, 0, { dmg: T / n, type: 'indep', elem: 'light', sure: true, launch: 200, knock: 40, hs: 0.04, downHit: true, col: '#fff2a0' }, { zMax: 240 }); });
+          pcBoltFx(x, y, 320); pcSpearFx(x, y, 120, 160, Math.PI / 2, '#fff6c0', 0.26); fxShock(x, y, 120, '#fff0a0'); if (i % 2 === 0) pcCrossFx(x, y, 60, 96, '#fff2a0', 0.3); if (i % 3 === 0) { sfx.boom(0.55); cam.shake = Math.max(cam.shake, 7); }
+          areaHit(e, x, y, bat ? 150 : 120, 0, { dmg: T / n, type: 'indep', elem: 'light', sure: true, launch: 200, knock: 40, hs: 0.045, downHit: true, col: '#fff2a0' }, { zMax: 240 }); });
         if (!bat) game.after(0.9, () => { if (e.dead) return; pcApocBuff(e, lv, 1, 'pc_apoc', 33); for (const m of pcMembers(e, 2400)) pcPillar(m.x, m.y, { w: 90, h: 320, dur: 0.8, col: '#fff6c0' }); pcHolyAdd(e, 1); }); },
       events: [evAt(0.3, e => { cam.flash = 0.12; cam.flashCol = '#fff8d8'; })] }; } });
 defSkill('pc_aura', { name: '信念光环', cls: 'priest', job: PCJ, tier: 1, lvReq: 21, maxLv: 10, sp: 30, mp: 0, cd: 0, type: 'indep', passive: true, col: '#ffe070',
@@ -56,8 +56,8 @@ defSkill('pc_doom', { name: '神圣之矛', cls: 'priest', job: PCJ, tier: 1, lv
         addFx({ x: X, y: Y + 2, z: 0, dur: 0.45, add: true, img: fxTint('thrust', '#fff6c0'), draw(c) { const k = this.t / this.dur; drawSpr(c, this.img, sx(this.x), sy(this.y, 420 * (1 - k) + 60), 220, 40, { rot: Math.PI / 2 }); } });
         game.after(0.42, () => { if (e.dead) return; sfx.thud(1); fxDust(X, Y, 8, 30); areaHit(e, X, Y, 60, 0, { dmg: D.land, type: 'indep', elem: 'light', stun: 0.4, knock: 0, hs: 0.03, downHit: true }, { zMax: 150 });
           fxShock(X, Y, 160, '#ffe8a0'); areaHit(e, X, Y, 140, 0, { dmg: D.hit, type: 'indep', elem: 'light', stun: 0.5, knock: 30, hs: 0.05, downHit: true }, { zMax: 120 }); });
-        for (let i = 0; i < 3; i++) game.after(0.6 + i * 0.12, () => { if (e.dead) return; cam.shake = Math.max(cam.shake, 8); sfx.boom(0.9); fxSpr('explosion', X, Y, 40 + i * 20, { w: 260 + i * 40, dur: 0.45, grow: [0.5, 1.1] }); fxSpr('burst', X, Y, 60, { w: 300, dur: 0.4, col: '#fff2a0' });
-          areaHit(e, X, Y, 200, 0, { dmg: D.boom, type: 'indep', elem: 'light', launch: i === 2 ? 420 : 160, knock: 80, hs: 0.07, sure: true, downHit: true, col: '#fff2a0' }, { zMax: 220 }); }); })] }; } });
+        for (let i = 0; i < 3; i++) game.after(0.6 + i * 0.12, () => { if (e.dead) return; cam.shake = Math.max(cam.shake, 8 + i); sfx.boom(0.95); fxSpr('explosion', X, Y, 40 + i * 20, { w: 260 + i * 40, dur: 0.45, grow: [0.5, 1.1] }); fxSpr('burst', X, Y, 60, { w: 300, dur: 0.4, col: '#fff2a0' }); fxShock(X, Y, 210 + i * 24, '#ffe8a0'); pcCrossFx(X, Y, 70 + i * 16, 170 + i * 24, '#fff2a0', 0.4);
+          areaHit(e, X, Y, 200, 0, { dmg: D.boom, type: 'indep', elem: 'light', launch: i === 2 ? 420 : 160, knock: 80, hs: 0.08, shake: 6, sure: true, downHit: true, col: '#fff2a0' }, { zMax: 220 }); }); })] }; } });
 
 /* ---- 二次觉醒：神思者 ---- */
 // 神圣之光：（被动）体力 / 精神提高；选 1800px 内一名队员（守护路线；战斗路线只能对自己），在他身上爆炸（对队友施放时爆炸伤害 +150%），他 0.8 秒内受到的伤害 −20%，
@@ -144,9 +144,9 @@ defSkill('pc_punish', { name: '惩罚', cls: 'priest', job: PCJ, tier: 2, lvReq:
           areaHit(e, x, y, 80, 0, { dmg: D.beam, type: 'indep', elem: 'light', sure: true, stun: 0.3, knock: 0, hs: 0.02, downHit: true, col: '#fff2a0' }, { zMax: 220 }); }
         if (!a.fall && (a.skip || (a.n >= 24 && e.actT > 2.8))) { a.fall = true; e.vz = -1300; e.play('pcSlam', true); sfx.swing(true); fxText('Volstrecken!', e.x, e.y, e.z + 40, { col: '#fff2a0', size: 13 }); } },
       onLand: e => { const a = e.act; if (!a.fall) { e.vz = 0; e.z = Math.max(e.z, 1); return; } if (a.boom) return; a.boom = true; a.dur = e.actT + 0.6;
-        cam.shake = 16; cam.flash = 0.2; cam.flashCol = '#fff8d8'; sfx.boom(1.5); fxSpr('burst', a.cx, a.cy, 50, { w: 460, dur: 0.6, col: '#fff2a0', grow: [0.4, 1.2] }); fxShock(a.cx, a.cy, 420, '#fff2a0'); pcCrossFx(a.cx, a.cy, 120, 320, '#fff2a0', 0.7);
-        for (let i = 0; i < 5; i++) pcPillar(a.cx + (i - 2) * 120, a.cy, { w: 90, h: 360, dur: 0.6, col: '#fffaf0' });
-        areaHit(e, a.cx, a.cy, 340, 0, { dmg: D.fin, type: 'indep', elem: 'light', sure: true, launch: 520, knock: 200, hs: 0.18, big: 2.4, downHit: true, col: '#fff2a0' }, { zMax: 300 }); } }; } });
+        cam.shake = 16; cam.flash = 0.22; cam.flashCol = '#fff8d8'; sfx.boom(1.5); fxSpr('burst', a.cx, a.cy, 50, { w: 480, dur: 0.65, col: '#fff2a0', grow: [0.4, 1.25] }); fxShock(a.cx, a.cy, 440, '#fff2a0'); fxShock(a.cx, a.cy, 300, '#fffaf0'); pcCrossFx(a.cx, a.cy, 120, 340, '#fff2a0', 0.75);
+        for (let i = 0; i < 5; i++) pcPillar(a.cx + (i - 2) * 120, a.cy, { w: 96, h: 380, dur: 0.65, col: '#fffaf0' });
+        areaHit(e, a.cx, a.cy, 340, 0, { dmg: D.fin, type: 'indep', elem: 'light', sure: true, launch: 520, knock: 200, hs: 0.19, shake: 12, big: 2.4, downHit: true, col: '#fff2a0' }, { zMax: 300 }); } }; } });
 // 从天而降的圣光激光（竖着画 laser 素材）
 function pcBeamFx(x, y, col = '#ffc83a') {
   fxShock(x, y, 70, col);
@@ -172,14 +172,14 @@ defSkill('pc_astrape', { name: '神罚之锤：天怒', cls: 'priest', job: PCJ,
         pcBoltFx(e.x, e.y, 330); if (e.buffs.pc_holy) { e.buffs.pc_holy.t += 12 + 0.5 * lv; fxText('信仰延长', e.x, e.y, e.z + 30, { col: '#fff6c0', size: 11 }); } }),
         evAt(0.38, e => { e.vz = 760; e.z = Math.max(e.z, 1); e.vx = e.face * (far ? 560 : 260); e.play('pcLeap', true); sfx.jump(); }),
         evAt(0.78, e => { e.vz = -1500; e.play('pcSlam', true); sfx.swing(true); })],
-      onLand: e => { const a = e.act; if (e.actT < 0.5) { e.vz = 0; return; } if (a.slam) return; a.slam = true; e.vx = 0; a.dur = e.actT + 0.7; cam.shake = 14; sfx.boom(1.3);
-        const x = e.x + e.face * 30; pcHammerFx(e, e.x, { s: 1.4, dur: 0.3 }); fxDust(x, e.y, 10, 40); fxStreak({ x, y: e.y, z: 6, face: e.face, len: 420, w: 30, col: '#fff38a', dur: 0.4 });
-        for (let i = 0; i < 5; i++) game.after(i * 0.05, () => { fxSpr('wave', x + e.face * (60 + i * 80), e.y, 20, { h: 120, dur: 0.35, col: '#fff38a' }); });
-        instantHit(e, { box: [-120, 440, 70, 0, 160], dmg: D.wave, type: 'indep', elem: 'light', launch: 320, knock: 120, hs: 0.12, big: 2, sure: true, downHit: true, col: '#fff38a' });
-        game.after(0.3, () => { if (e.dead) return; const bx = x + e.face * 180; cam.shake = Math.max(cam.shake, 12); cam.flash = 0.12; cam.flashCol = '#fff8d8'; sfx.boom(1.2);
-          for (let i = 0; i < 4; i++) pcPillar(bx + (i - 1.5) * 90, e.y, { w: 100, h: 380, dur: 0.6, col: '#fff6c0' });
-          fxSpr('burst', bx, e.y, 60, { w: 380, dur: 0.5, col: '#fff38a', grow: [0.4, 1.2] });
-          areaHit(e, bx, e.y, 240, 0, { dmg: D.boom, type: 'indep', elem: 'light', launch: 460, knock: 160, hs: 0.14, big: 2, sure: true, downHit: true, col: '#fff38a' }, { zMax: 260 }); }); } }; } });
+      onLand: e => { const a = e.act; if (e.actT < 0.5) { e.vz = 0; return; } if (a.slam) return; a.slam = true; e.vx = 0; a.dur = e.actT + 0.7; cam.shake = 15; sfx.boom(1.35);
+        const x = e.x + e.face * 30; pcHammerFx(e, e.x, { s: 1.45, dur: 0.34 }); pcCrossFx(x, e.y, 60, 180, '#fff38a', 0.45); fxDust(x, e.y, 12, 44); fxStreak({ x, y: e.y, z: 6, face: e.face, len: 430, w: 32, col: '#fff38a', dur: 0.42 });
+        for (let i = 0; i < 5; i++) game.after(i * 0.05, () => { fxSpr('wave', x + e.face * (60 + i * 80), e.y, 20, { h: 128, dur: 0.36, col: '#fff38a' }); });
+        instantHit(e, { box: [-120, 440, 70, 0, 160], dmg: D.wave, type: 'indep', elem: 'light', launch: 320, knock: 120, hs: 0.13, shake: 8, big: 2, sure: true, downHit: true, col: '#fff38a' });
+        game.after(0.3, () => { if (e.dead) return; const bx = x + e.face * 180; cam.shake = Math.max(cam.shake, 13); cam.flash = 0.14; cam.flashCol = '#fff8d8'; sfx.boom(1.25);
+          for (let i = 0; i < 4; i++) pcPillar(bx + (i - 1.5) * 90, e.y, { w: 105, h: 390, dur: 0.65, col: '#fff6c0' });
+          fxSpr('burst', bx, e.y, 60, { w: 400, dur: 0.52, col: '#fff38a', grow: [0.4, 1.25] }); fxShock(bx, e.y, 280, '#fff38a'); pcCrossFx(bx, e.y, 90, 220, '#fff6c0', 0.5);
+          areaHit(e, bx, e.y, 240, 0, { dmg: D.boom, type: 'indep', elem: 'light', launch: 460, knock: 160, hs: 0.15, shake: 10, big: 2, sure: true, downHit: true, col: '#fff38a' }, { zMax: 260 }); }); } }; } });
 // 生命礼赞：神威（三觉）：划十字向神祈祷，释放生命之圣遗物的力量：8 段同等伤害的神圣之光覆盖全画面；
 // 联动天启之珠（默认）：圣遗物化为神圣太阳，守护路线给全队天启之珠 BUFF ×(1.08+1%/级)、43 秒；联动惩罚：和天启之珠 BUFF 叠加 20 秒（23%+1%/级）；战斗路线固定「审判」演出、不给 BUFF
 defSkill('pc_awaken3', { name: '生命礼赞：神威', cls: 'priest', job: PCJ, tier: 3, lvReq: 30, maxLv: 3, sp: 0, mp: 300, cd: 270, pvp: 0.45, type: 'indep', elem: 'light', awaken: true, col: '#bfe8ff', switchOpt: '联动觉醒', switchLabel: off => off ? '当前联动：惩罚（点击改为天启之珠）' : '当前联动：天启之珠（点击改为惩罚）',
@@ -195,13 +195,13 @@ defSkill('pc_awaken3', { name: '生命礼赞：神威', cls: 'priest', job: PCJ,
         evAt(0.5, e => { addFx({ x: e.x, y: e.y + 1, z: 0, dur: 0.8, add: true, draw(c) { const k = this.t / this.dur; drawSpr(c, fxTint('chaser', '#8fd0ff'), sx(this.x), sy(this.y, 70 + 230 * easeOut(k)), 40 + 60 * k, 0, {}); } }); sfx.charge(); }),
         evAt(1.1, e => { const L = skLv(e, 'pc_awaken') || 1, ox = e.x, oz = 300;
           if (sun) { fxSpr('chaser', ox, e.y, oz, { w: 240, dur: 1.4, grow: [0.6, 1.3] }); fxSpr('aura', ox, e.y, 0, { h: 420, ay: 1, dur: 1.4, col: '#fff6c0' }); pcApocBuff(e, L, 1.08 + 0.01 * lv, 'pc_apoc', 43); }
-          else { pcBoltFx(ox, e.y, 420); pcHammerFx(e, ox, { s: 1.2, dur: 0.6 }); if (sup) pcApocBuff(e, L, 0.23 + 0.01 * lv, 'pc_judg', 20); }
+          else { pcBoltFx(ox, e.y, 420); pcHammerFx(e, ox, { s: 1.25, dur: 0.6 }); if (sup) pcApocBuff(e, L, 0.23 + 0.01 * lv, 'pc_judg', 20); }
           cam.flash = 0.35; cam.flashCol = '#ffffff'; sfx.boom(0.8); pcHolyAdd(e, 1); }),
         ...Array.from({ length: 8 }, (_, i) => evAt(1.7 + i * 0.12, e => { const x0 = cam.x + WW / 2;
           if (i === 0) { for (let j = 0; j < 6; j++) pcPillar(cam.x + 80 + j * (WW - 160) / 5, e.y + rnd(-40, 40), { w: 120, h: 420, dur: 1.2, col: sun ? '#fff6c0' : '#fff38a' }); cam.flash = 0.3; cam.flashCol = '#fff8e0'; }
-          cam.shake = Math.max(cam.shake, 10); sfx.boom(0.8); fxShock(x0, e.y, 520, '#fff2a0');
+          cam.shake = Math.max(cam.shake, i === 7 ? 15 : 10); sfx.boom(i === 7 ? 1.2 : 0.8); fxShock(x0, e.y, 520, '#fff2a0'); if (i % 2 === 1) pcCrossFx(x0 + rnd(-160, 160), e.y, 120, 220, '#fff6c0', 0.45);
           for (const t of ents) if (foe(e, t) && !t.dead && t.invul <= 0 && Math.abs(t.x - x0) < WW * 0.75)
-            applyHit(e, t, { dmg: T / 8, type: 'indep', elem: 'light', sure: true, launch: i === 7 ? 520 : 120, knock: i === 7 ? 200 : 20, hs: i === 7 ? 0.2 : 0.04, big: i === 7 ? 2.6 : 1.2, downHit: true, box: null, col: '#fff2a0' }, { proj: true, src: { x: t.x - e.face * 10, y: t.y, z: 0, face: e.face } }); }))] }; } });
+            applyHit(e, t, { dmg: T / 8, type: 'indep', elem: 'light', sure: true, launch: i === 7 ? 520 : 120, knock: i === 7 ? 200 : 20, hs: i === 7 ? 0.2 : 0.045, shake: i === 7 ? 12 : 4, big: i === 7 ? 2.6 : 1.2, downHit: true, box: null, col: '#fff2a0' }, { proj: true, src: { x: t.x - e.face * 10, y: t.y, z: 0, face: e.face } }); }))] }; } });
 
 /* =====================================================================
    觉醒自动学会、被动、登记

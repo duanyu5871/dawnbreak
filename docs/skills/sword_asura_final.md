@@ -41,3 +41,7 @@
 
 ## 验证
 skillshots 30 个技能问题 0 提醒 0（test/shots/skills/sword-asura.jpg）；skillaudit --compare 不一致 0（已说明 3）；sword.mjs 全 PASS；classes.mjs sword:asura 无报错；awkcancel 全部通过。
+
+## 第三轮（波动刻印与雷电打击感复核）
+- 波动刻印（`asMarkAdd` / `asMarkTake`）：结印与耗印时增加符文气场（`fxAura`）与爆散粒子反馈，强化阿修罗“蓄印—释印”的核心职业循环感知。
+- 邪光斩 / 修罗邪光斩（`as_evil`）、冰刃·波动剑（`as_ice`）、爆炎·波动剑（`as_fire`）、不动明王阵（`as_fudo`）、天雷·波动剑（`as_indra`）、雷神降世：裁决（`as_awaken2`）：补强多段波刃推击顿帧、满蓄剑气冲击环与终结雷暴震屏。

@@ -179,8 +179,8 @@ function enBearSkill(p, id, lv, move) {
 // 熊的招式（熊或人偶剧场中的主角都用这一份；e = 出招者）
 const EN_MOVES = {
   scratch: lv => ({ clip: 'bScratch', dur: 0.62, move: [[0.04, 0.16, 150], [0.28, 0.36, 90]],
-    hits: [HB(0.1, 0.18, [-24, 100, 32, 0, 120], skillDmg(0.55, 0.055, lv), enH(0, { stun: 0.38, knock: 50, hs: 0.05 })), HB(0.34, 0.42, [-24, 105, 32, 0, 120], skillDmg(0.55, 0.055, lv), enH(0, { stun: 0.42, knock: 90, hs: 0.05 }))].map(h => ({ ...h, dmg: skillDmg(0.55, 0.055, lv) })),
-    events: [evAt(0.08, e => { sfx.swing(false); fxSlashOn(e, { a0: -2.2, a1: 0.8, r: 60, w: 10, off: [18, 70], col: '#ffd0a0' }); }), evAt(0.32, e => { sfx.swing(true); fxSlashOn(e, { a0: 1.0, a1: -2.0, r: 63, w: 10, off: [18, 70], col: '#ffd0a0' }); })] }),
+    hits: [HB(0.1, 0.18, [-24, 100, 32, 0, 120], skillDmg(0.55, 0.055, lv), enH(0, { stun: 0.38, knock: 50, hs: 0.06, shake: 1.8 })), HB(0.34, 0.42, [-24, 105, 32, 0, 120], skillDmg(0.55, 0.055, lv), enH(0, { stun: 0.42, knock: 90, hs: 0.06, shake: 2.2 }))].map(h => ({ ...h, dmg: skillDmg(0.55, 0.055, lv) })),
+    events: [evAt(0.08, e => { sfx.swing(false); fxSlashOn(e, { a0: -2.2, a1: 0.8, r: 62, w: 13, off: [18, 70], col: '#ffd0a0' }); fxSlashOn(e, { a0: -2.0, a1: 0.6, r: 54, w: 6, off: [22, 70], col: EN_ROSE }); }), evAt(0.32, e => { sfx.swing(true); fxSlashOn(e, { a0: 1.0, a1: -2.0, r: 65, w: 13, off: [18, 70], col: '#ffd0a0' }); fxSlashOn(e, { a0: 0.8, a1: -1.8, r: 56, w: 6, off: [22, 70], col: EN_ROSE }); })] }),
   // 疯熊火箭拳：拳头连着傀儡线射出去，打中处爆出圆形冲击波，然后收回
   rocket: lv => ({ clip: 'bPunch', dur: 0.9, events: [evAt(0.12, e => enRocketFist(e, lv))] }),
   // 疯熊守护：扑向最近的敌人砸下
@@ -197,10 +197,12 @@ const EN_MOVES = {
   big: lv => ({ clip: 'bClaw', dur: 3.0, superArmor: true, noCounter: true, bigMadd: true,
     onInput: (e, I) => { if (e.enStage) enBigMash(e, e.act, I); return false; },
     update: (e, dt) => { const O = enOwner(e), u = e.actT; e.act.spd = Math.max(1, e.act.spd - dt * 0.9); e.scale = e.enStage ? 1.3 : u < 0.25 ? lerp(1, 2.1, u / 0.25) : u > 2.8 ? lerp(2.1, 1, (u - 2.8) / 0.2) : 2.1; if (e.enStage) e.scale = 1.3 * (u < 0.25 ? lerp(1, 1.7, u / 0.25) : u > 2.8 ? lerp(1.7, 1, (u - 2.8) / 0.2) : 1.7);
-      e.vx = O.pad && O.pad.dx() === e.face && u < 2.5 ? e.face * 70 : 0; if (u > 2.45 && !e.act.sl) { e.act.sl = true; e.play('bSlam', true); } },
+      e.vx = O.pad && O.pad.dx() === e.face && u < 2.5 ? e.face * 70 : 0;
+      if (u > 0.3 && u < 2.4 && (e.act._cw = (e.act._cw || 0) - dt) <= 0) { e.act._cw = 0.22; const up = (e.act._ci = (e.act._ci || 0) + 1) % 2 === 1; fxSlashOn(e, { a0: up ? 1.1 : -2.1, a1: up ? -1.9 : 0.9, r: 125, w: 22, off: [42, 110], col: '#ffd0a0', dur: 0.16 }); fxSlashOn(e, { a0: up ? 0.9 : -1.9, a1: up ? -1.7 : 0.7, r: 112, w: 9, off: [46, 110], col: EN_CURSE, dur: 0.14 }); }
+      if (u > 2.45 && !e.act.sl) { e.act.sl = true; e.play('bSlam', true); } },
     onEnd: e => { e.scale = e.enStage ? 1.3 : 1; },
-    hits: [HB(0.3, 2.45, [0, 220, 60, 0, 230], skillDmg(0.8, 0.08, lv), enH(0, { rep: 0.2, stun: 0.45, knock: 25, hs: 0.02 })), HB(2.6, 2.7, [0, 250, 66, 0, 250], skillDmg(5, 0.5, lv), enH(0, { launch: 420, knock: 220, hs: 0.12, shake: 7, big: 2, snd: 'blunt' }))].map((h, i) => ({ ...h, dmg: i ? skillDmg(5, 0.5, lv) : skillDmg(0.8, 0.08, lv) })),
-    events: [evAt(0.02, e => { sfx.boom(0.4); fxBurst(e.x, e.y, 80, 160, '#d8b0ff'); }), evAt(2.58, e => { sfx.boom(0.9); cam.shake = Math.max(cam.shake, 7); fxShock(e.x + e.face * 130, e.y, 230, '#c8a070'); fxDust(e.x + e.face * 150, e.y, 10, 60, '#8a7a6a'); })] }),
+    hits: [HB(0.3, 2.45, [0, 220, 60, 0, 230], skillDmg(0.8, 0.08, lv), enH(0, { rep: 0.2, stun: 0.45, knock: 25, hs: 0.03, shake: 1.5 })), HB(2.6, 2.7, [0, 250, 66, 0, 250], skillDmg(5, 0.5, lv), enH(0, { launch: 420, knock: 220, hs: 0.12, shake: 8, big: 2, snd: 'blunt' }))].map((h, i) => ({ ...h, dmg: i ? skillDmg(5, 0.5, lv) : skillDmg(0.8, 0.08, lv) })),
+    events: [evAt(0.02, e => { sfx.boom(0.4); fxBurst(e.x, e.y, 80, 160, '#d8b0ff'); }), evAt(2.58, e => { sfx.boom(0.9); cam.shake = Math.max(cam.shake, 8); fxShock(e.x + e.face * 130, e.y, 240, '#c8a070'); fxShock(e.x + e.face * 130, e.y, 165, EN_CURSE); fxDust(e.x + e.face * 150, e.y, 10, 60, '#8a7a6a'); })] }),
   // 哇咔咔！：把周围的敌人吸过来，瞬间变大咆哮（官方：咆哮多段 10 次，最后一下把敌人震飞）
   roar: lv => ({ clip: 'bRoar', dur: 1.8, superArmor: true, noCounter: true,
     update: e => { const u = e.actT, b = e.enStage ? 1.3 : 1; e.scale = b * (u < 0.55 ? 1 : u < 0.7 ? lerp(1, 2, (u - 0.55) / 0.15) : u > 1.55 ? lerp(2, 1, Math.min(1, (u - 1.55) / 0.2)) : 2);
@@ -213,13 +215,18 @@ const EN_MOVES = {
   // 咆哮吧！疯疯熊：巨熊向前喷诅咒吐息，24 段；地面留下 5 秒的诅咒地带
   breath: lv => ({ clip: 'bRoar', dur: 2.8, superArmor: true, noCounter: true,
     update: e => { const u = e.actT, b = e.enStage ? 1.3 : 1; e.scale = b * (u < 0.3 ? lerp(1, 2.4, u / 0.3) : u > 2.6 ? lerp(2.4, 1, (u - 2.6) / 0.2) : 2.4);
-      if (u > 0.35 && u < 2.55) addFx({ x: e.x, y: e.y + 1, z: 0, dur: 0.06, f: e.face, draw(c) {   // 官方：嘴里喷出一大片洋红 - 紫色的锥形吐息，夹着黑色碎片
+      if (u > 0.35 && u < 2.55) { cam.shake = Math.max(cam.shake, 2.5); addFx({ x: e.x, y: e.y + 1, z: 0, dur: 0.06, f: e.face, draw(c) {   // 官方：嘴里喷出一大片洋红 - 紫色的锥形吐息，夹着黑色碎片
         const q = Math.min(1, (u - 0.35) / 0.25), fl = 0.85 + 0.15 * Math.sin(u * 50), X0 = sx(e.x + this.f * 50), Y0 = sy(e.y, 96), X1 = sx(e.x + this.f * 640), Y1 = sy(e.y, 30), H = 190 * q;
         c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.62 * fl;
         const gr = c.createLinearGradient(X0, 0, X1, 0); gr.addColorStop(0, 'rgba(255,120,220,.95)'); gr.addColorStop(0.5, 'rgba(200,60,230,.6)'); gr.addColorStop(1, 'rgba(110,40,200,0)'); c.fillStyle = gr;
         c.beginPath(); c.moveTo(X0, Y0); c.lineTo(X1, Y1 - H); c.lineTo(X1, Y1 + H * 0.45); c.closePath(); c.fill();
-        c.globalAlpha = 0.5 * fl; c.fillStyle = 'rgba(255,220,250,.8)'; c.beginPath(); c.moveTo(X0, Y0); c.lineTo(lerp(X0, X1, 0.7), lerp(Y0, Y1, 0.7) - H * 0.25); c.lineTo(lerp(X0, X1, 0.7), lerp(Y0, Y1, 0.7) + H * 0.12); c.closePath(); c.fill(); c.restore(); } });
-      if (u > 0.35 && u < 2.55) for (let i = 0; i < 2; i++) if (Math.random() < 0.7) addFx({ x: e.x + e.face * rnd(60, 600), y: e.y + rnd(-60, 60), z: rnd(30, 130), dur: 0.35, draw(c) { const q = this.t / this.dur; drawSpr(c, fxTint('darkorb', EN_CURSE), sx(this.x), sy(this.y, this.z), 84 * (0.5 + q), 0, { alpha: 0.8 * (1 - q) }); } }); },
+        c.globalAlpha = 0.5 * fl; c.fillStyle = 'rgba(255,220,250,.8)'; c.beginPath(); c.moveTo(X0, Y0); c.lineTo(lerp(X0, X1, 0.7), lerp(Y0, Y1, 0.7) - H * 0.25); c.lineTo(lerp(X0, X1, 0.7), lerp(Y0, Y1, 0.7) + H * 0.12); c.closePath(); c.fill(); c.restore(); } }); }
+      if (u > 0.35 && u < 2.55) for (let i = 0; i < 2; i++) if (Math.random() < 0.7) addFx({ x: e.x + e.face * rnd(60, 600), y: e.y + rnd(-60, 60), z: rnd(30, 130), dur: 0.35, vx: e.face * rnd(260, 480), vz: rnd(-90, 70), rot0: rnd(0, 6.28), vr: rnd(-14, 14), sz: rnd(8, 16), draw(c) {
+        const q = this.t / this.dur, X = sx(this.x + this.vx * this.t), Y = sy(this.y, Math.max(4, this.z + this.vz * this.t)), s = this.sz * (1 - q * 0.3);
+        drawSpr(c, fxTint('darkorb', EN_CURSE), X, Y, 84 * (0.5 + q), 0, { alpha: 0.75 * (1 - q) });
+        c.save(); c.globalAlpha = (1 - q) * 0.92; c.translate(X, Y); c.rotate(this.rot0 + this.vr * this.t);
+        c.fillStyle = '#12041c'; c.strokeStyle = '#ff66e0'; c.lineWidth = 1.6;
+        c.beginPath(); c.moveTo(-s, -s * 0.45); c.lineTo(s * 0.25, -s * 0.95); c.lineTo(s * 1.15, 0); c.lineTo(s * 0.15, s * 0.85); c.lineTo(-s * 0.85, s * 0.5); c.closePath(); c.fill(); c.stroke(); c.restore(); } }); },
     onEnd: e => { e.scale = e.enStage ? 1.3 : 1; },
     hits: [HB(0.35, 2.55, [20, 620, 80, 0, 220], skillDmg(0.55, 0.055, lv), enH(0, { rep: 0.075, max: 24, stun: 0.35, knock: 20, hs: 0.01, col: EN_CURSE }))].map(h => ({ ...h, dmg: skillDmg(0.55, 0.055, lv) })),
     events: [evAt(0.34, e => { sfx.boom(0.7); summon(enOwner(e), 'en_cursezone', { x: e.x + e.face * 300, y: e.y, lv }); })] }),
@@ -658,15 +665,21 @@ function enDrawPuppeteer(c, e) {
 // 帷幕：两片暗红幕布从两边合上 / 拉开；rip = 谢幕时被巨熊撕开
 function enCurtain(e, dur, rip, red) {
   const CT = red ? ['#5a0a1e', '#3a0612', '#7a1028'] : ['#4a1a78', '#2c0e4c', '#6a2aa0'];   // 官方：一觉 / 二觉的幕布是紫色，三觉（终幕）是红色
-  addFx({ x: cam.x, y: DEPTH + 400, z: 0, dur, rip, draw(c) {
+  const shards = rip ? Array.from({ length: 18 }, (_, i) => ({ x0: WW * (0.26 + (i % 3) * 0.17) + rnd(-28, 28), y0: 60 + ((i * 53) % (WH - 120)), vx: (i % 2 ? 1 : -1) * rnd(90, 320), vy: rnd(-200, 180), sz: rnd(10, 22), rot0: rnd(0, 6.28), vr: rnd(-14, 14) })) : null;
+  addFx({ x: cam.x, y: DEPTH + 400, z: 0, dur, rip, shards, draw(c) {
     const k = this.t / this.dur, cl = this.rip ? (k < 0.3 ? 1 : 1 - easeOut((k - 0.3) / 0.7)) : (k < 0.4 ? easeOut(k / 0.4) : k < 0.6 ? 1 : 1 - easeOut((k - 0.6) / 0.4)), w = WW / 2 * cl;
-    if (w <= 1) return;
+    if (w <= 1 && (!this.rip || k >= 0.85)) return;
     c.save(); c.globalAlpha = 0.96;
-    for (const side of [0, 1]) { const x0 = side ? WW - w : 0; c.fillStyle = CT[0]; c.fillRect(x0, 0, w, WH); c.fillStyle = CT[1]; for (let x = x0 + 10; x < x0 + w; x += 34) c.fillRect(x, 0, 10, WH); c.fillStyle = '#c8962a'; c.fillRect(side ? x0 : x0 + w - 6, 0, 6, WH); }
-    c.fillStyle = CT[2]; c.fillRect(0, 0, WW, 36); c.fillStyle = '#c8962a'; c.fillRect(0, 34, WW, 4);
-    if (this.rip && k > 0.25 && k < 0.7) { const q = (k - 0.25) / 0.45, g = Math.min(1, q * 3.5);   // 官方：巨熊撕开幕布 = 三道弧形的红色巨爪痕
-      c.globalAlpha = 1 - q * q; c.lineCap = 'round'; c.globalCompositeOperation = 'lighter';
-      for (const [w, col] of [[26, 'rgba(255,40,70,.55)'], [11, '#ff6a7a'], [4, '#ffe8e0']]) { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); for (let i = 0; i < 3; i++) { const x0 = WW * (0.28 + i * 0.17), y0 = 30, x1 = x0 + 60, y1 = WH - 30, cx = x0 - 130, cy = WH * 0.5; c.moveTo(x0, y0); c.quadraticCurveTo(cx, cy, lerp(x0, x1, g), lerp(y0, y1, g)); } c.stroke(); } }
+    if (w > 1) {
+      for (const side of [0, 1]) { const x0 = side ? WW - w : 0; c.fillStyle = CT[0]; c.fillRect(x0, 0, w, WH); c.fillStyle = CT[1]; for (let x = x0 + 10; x < x0 + w; x += 34) c.fillRect(x, 0, 10, WH); c.fillStyle = '#c8962a'; c.fillRect(side ? x0 : x0 + w - 6, 0, 6, WH); }
+      c.fillStyle = CT[2]; c.fillRect(0, 0, WW, 36); c.fillStyle = '#c8962a'; c.fillRect(0, 34, WW, 4);
+    }
+    if (this.rip && k > 0.22 && k < 0.85) { const q = (k - 0.22) / 0.63, g = Math.min(1, q * 3.8);   // 官方：巨熊撕开幕布 = 三道弧形的红紫巨爪痕 + 飞溅的暗影幕布碎片
+      if (this.shards) for (const sh of this.shards) { const st = q * 0.75, sx0 = sh.x0 + sh.vx * st, sy0 = sh.y0 + sh.vy * st + 220 * st * st, s = sh.sz * (1 - q * 0.35);
+        c.save(); c.globalAlpha = (1 - q) * 0.92; c.translate(sx0, sy0); c.rotate(sh.rot0 + sh.vr * st); c.fillStyle = CT[1]; c.strokeStyle = '#ff5a8a'; c.lineWidth = 1.6;
+        c.beginPath(); c.moveTo(-s, -s * 0.5); c.lineTo(s * 0.3, -s); c.lineTo(s * 1.1, 0.1 * s); c.lineTo(0, s * 0.85); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+      if (q < 0.78) { const cq = q / 0.78; c.globalAlpha = 1 - cq * cq; c.lineCap = 'round'; c.globalCompositeOperation = 'lighter';
+        for (const [lw, col] of [[32, 'rgba(210,30,110,.55)'], [18, 'rgba(255,45,85,.72)'], [9, '#ff7a98'], [3.5, '#fff0f5']]) { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); for (let i = 0; i < 3; i++) { const x0 = WW * (0.28 + i * 0.17), y0 = 26, x1 = x0 + 64, y1 = WH - 26, cx = x0 - 135, cy = WH * 0.5; c.moveTo(x0, y0); c.quadraticCurveTo(cx, cy, lerp(x0, x1, g), lerp(y0, y1, g)); } c.stroke(); } } }
     c.restore(); } });
 }
 defSkill('en_awaken', { name: '开幕！人偶剧场', cls: 'mage', job: EN, tier: 1, lvReq: 21, maxLv: 3, mp: 250, cd: 160, pvp: 0.45, type: 'indep', elem: 'dark', awaken: true, col: '#c0306a',
@@ -704,15 +717,15 @@ defSummon('en_hexdoll', { kind: 'field', life: 9, max: 1, r: 0, tick: 99, keepRo
 function enHexNail(s) {
   const o = s.owner, fin = s.nails >= EN_HEX_N; s.nails++; s.lastNail = s.lifeT; s.next = fin ? 9 : s.nails === EN_HEX_N ? 0.6 : 0.55;
   if (o.act && o.act.hex === s) o.play('enNail', true);
-  fxBurst(s.x, s.y, 34, fin ? 110 : 40, fin ? '#ffd0a0' : '#e0c090');
+  fxBurst(s.x, s.y, 34, fin ? 110 : 40, fin ? '#ffd0a0' : '#e0c090'); fxShock(s.x, s.y, fin ? 190 : 85, fin ? EN_ROSE : EN_CURSE);
   const alive = s.tg.filter(t => !t.dead && !t.remove);
-  if (!fin) { sfx.hit('stab', false); for (const t of alive) { fxSpr(IMG['fx/enNeedle'] ? 'enNeedle' : 'spark', t.x, t.y, t.z + (t.h || 80) * 0.6, { w: 26, dur: 0.3, add: !IMG['fx/enNeedle'] });
-      applyHit(o, t, enH(skillDmg(0.8, 0.08, s.lv), { stun: 0.4, knock: 0, hs: 0.04, snd: 'stab', col: '#e0c090' }), { proj: true, src: { x: s.x, y: t.y, z: 0, face: Math.sign(t.x - s.x) || s.face } }); }
+  if (!fin) { sfx.hit('stab', false); cam.shake = Math.max(cam.shake, 2.5); for (const t of alive) { fxSpr(IMG['fx/enNeedle'] ? 'enNeedle' : 'spark', t.x, t.y, t.z + (t.h || 80) * 0.6, { w: 26, dur: 0.3, add: !IMG['fx/enNeedle'] });
+      applyHit(o, t, enH(skillDmg(0.8, 0.08, s.lv), { stun: 0.4, knock: 0, hs: 0.05, shake: 2, snd: 'stab', col: '#e0c090' }), { proj: true, src: { x: s.x, y: t.y, z: 0, face: Math.sign(t.x - s.x) || s.face } }); }
     return; }
   // 最后一钉：人偶弹开，敌人变回原样被打飞
-  s.done = true; s.life = s.lifeT + 0.5; sfx.boom(0.8); cam.shake = Math.max(cam.shake, 6);
+  s.done = true; s.life = s.lifeT + 0.5; sfx.boom(0.8); cam.shake = Math.max(cam.shake, 7.5);
   for (const t of s.tg) if (t.status && t.status.root) delete t.status.root; for (const k of s.tricks) dismissOne(k, 'cmd'); s.tricks = [];
-  for (const t of alive) applyHit(o, t, enH(skillDmg(3, 0.3, s.lv), { launch: 380, knock: 260, hs: 0.1, big: 1.6, snd: 'blunt' }), { proj: true, src: { x: s.x, y: t.y, z: 0, face: Math.sign(t.x - s.x) || s.face } });
+  for (const t of alive) applyHit(o, t, enH(skillDmg(3, 0.3, s.lv), { launch: 380, knock: 260, hs: 0.12, shake: 6, big: 1.7, snd: 'blunt' }), { proj: true, src: { x: s.x, y: t.y, z: 0, face: Math.sign(t.x - s.x) || s.face } });
 }
 function enDrawHex(c, s) {
   const X = sx(s.x), Y = sy(s.y, 0), u = s.lifeT, a = Math.min(1, u / 0.2, s.done ? (s.life - u) / 0.5 : 1), pop = u < 0.25 ? easeOutBack(u / 0.25) : 1, sh = s.lifeT - s.lastNail < 0.12 ? Math.sin(u * 90) * 2 : 0;

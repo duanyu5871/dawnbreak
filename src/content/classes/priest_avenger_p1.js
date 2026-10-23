@@ -22,8 +22,16 @@ function paTransform(e, lv, fromHalf) {
   fxText('神啊……!', e.x, e.y, e.z + 130, { col: '#ffa0e0', size: 18, dur: 1 });
   game.after(0.7, () => { if (paDemon(e)) fxText('……真是爽快的感觉。', e.x, e.y, e.z + 150, { col: '#e0b0ff', size: 13, dur: 1.2 }); });
 }
+function paAwakenAct(lv, p) {
+  const fromHalf = paHalf(p), T = fromHalf ? 0.25 : 0.55;
+  return { name: 'pa_awaken', clip: 'paHunch', dur: T + 0.55, noCounter: true, invul: true, superArmor: true, type: 'mag',
+    onStart: e => { game.cutin = { t: 0, dur: fromHalf ? 0.8 : 1.1, name: '魔化：末日审判者', who: cutinWho(e) }; game.timeStop = fromHalf ? 0.5 : 0.9; sfx.awaken(); sfx.charge(); fxDust(e.x, e.y, 8, 20, '#4a3a5a');
+      fxSpr('crossx', e.x + e.face * 6, e.y, e.z + 62, { w: 60, dur: T + 0.2, col: '#ffffff', grow: [0.4, 1.4] }); paCracks(e.x, e.y, 150); },
+    update: e => { if (e.actT < T && Math.random() < 0.8) { fxCharge(e, Math.random() < 0.5 ? PA_COL.dark : '#ff4a9a', 3); cam.shake = Math.max(cam.shake, 2); } },
+    events: [evAt(T, e => { e.play('paRoar', true); paTransform(e, lv, fromHalf); })] };
+}
 defSkill('pa_awaken', { name: '魔化：末日审判者', cls: 'priest', job: PA, tier: 1, lvReq: 21, maxLv: 3, sp: 0, mp: 150, cd: 145, pvp: 0.45, awaken: true, type: 'mag', col: '#9a3ad8', icon: 'pa_awaken',
-  desc: '【一次觉醒「末日审判者」的觉醒技 · 变身】完成一次觉醒任务时自动学会（不花 SP，等级随角色等级提升）并放进技能栏（↑↑↓↓+Z）。释放体内的恶魔，化身末日审判者 50 秒：体型变大、黑色的恶魔之躯长出恶魔角和翼，变身时嘶吼着炸开魔气把周围的敌人震飞（变身动画中无敌）。魔化中：全程霸体、不能被抓，受到的伤害 −15%，攻击速度 / 移动速度提高，魔法暴击伤害 +15%；普攻变成巨爪 4 段（范围很大），空斩打键变成「恶魔之爪」，多了「审判」「恶魔屏障」；复仇者的转职技能全部自动换成恶魔版（伤害更高、冷却更长）；除后跳 / 恶魔之手 / 化魔以外的转职前技能不能用。化魔每次施放：魔化持续 +7.3 秒、魔化冷却 −21 秒（实际上可以一直保持）。冷却好了再按一次 = 周身伤害并把时间重置满；冷却中再按一次 = 解除魔化。HP 归零时恶之再临会把你变回人形。',
+  desc: '【一次觉醒「末日审判者」的觉醒技 · 变身】完成一次觉醒任务时自动学会（不花 SP，等级随角色等级提升）并放进技能栏（↑↑↓↓+Z）。释放体内的恶魔，化身末日审判者 50 秒：体型变大、黑色的恶魔之躯长出恶魔角和翼，变身时嘶吼着炸开魔气把周围的敌人震飞（变身动画中无敌；学了二觉被动「原罪之力」后，复仇者技能施放中可以无施放动作即时变身魔化，不打断当前技能）。魔化中：全程霸体、不能被抓，受到的伤害 −15%，攻击速度 / 移动速度提高，魔法暴击伤害 +15%；普攻变成巨爪 4 段（范围很大），空斩打键变成「恶魔之爪」，多了「审判」「恶魔屏障」；复仇者的转职技能全部自动换成恶魔版（伤害更高、冷却更长）；除后跳 / 恶魔之手 / 化魔以外的转职前技能不能用。化魔每次施放：魔化持续 +7.3 秒、魔化冷却 −21 秒（实际上可以一直保持）。冷却好了再按一次 = 周身伤害并把时间重置满；冷却中再按一次 = 解除魔化。HP 归零时恶之再临会把你变回人形。',
   pow: lv => skillDmg(6, 1.5, lv), infoExtra: () => [['持续', '50 秒'], ['受到伤害', '−15%'], ['攻速 / 移速', '+10%（学了半魔化再 +5% / +10%）'], ['霸体', '全程，不能被抓']], ai: { kind: 'buff' },
   recast: { ok: p => paDemon(p), instant: p => (p.cool.pa_awaken || 0) > 0, cd: 0.4,
     act: (lv, p) => { if ((p.cool.pa_awaken || 0) > 0) { paDemonEnd(p, '解除魔化'); return null; }
@@ -32,12 +40,13 @@ defSkill('pa_awaken', { name: '魔化：末日审判者', cls: 'priest', job: PA
         events: [evAt(0.15, e => { if (e.buffs.pa_demon) e.buffs.pa_demon.t = 50; paRoarSfx(0.8); cam.shake = Math.max(cam.shake, 12); fxShock(e.x, e.y, 360, PA_COL.dark); fxShock(e.x, e.y, 220, '#ff4a9a'); fxAura(e, '#9a3ad8', 0.8);
           fxText('魔化 · 重置', e.x, e.y, e.z + 130, { col: '#ffa0e0', size: 14 });
           blast(e, e.x, e.y, 300, { dmg: skillDmg(6, 1.5, lv), type: 'mag', launch: 380, knock: 260, hs: 0.1, big: 1.5, downHit: true, sure: true, snd: 'slash', col: '#e0a0ff' }, { zMax: 200 }); })] }; } },
-  act: (lv, p) => { const fromHalf = paHalf(p), T = fromHalf ? 0.25 : 0.55;
-    return { name: 'pa_awaken', clip: 'paHunch', dur: T + 0.55, noCounter: true, invul: true, superArmor: true, type: 'mag',
-      onStart: e => { game.cutin = { t: 0, dur: fromHalf ? 0.8 : 1.1, name: '魔化：末日审判者', who: cutinWho(e) }; game.timeStop = fromHalf ? 0.5 : 0.9; sfx.awaken(); sfx.charge(); fxDust(e.x, e.y, 8, 20, '#4a3a5a');
-        fxSpr('crossx', e.x + e.face * 6, e.y, e.z + 62, { w: 60, dur: T + 0.2, col: '#ffffff', grow: [0.4, 1.4] }); paCracks(e.x, e.y, 150); },
-      update: e => { if (e.actT < T && Math.random() < 0.8) { fxCharge(e, Math.random() < 0.5 ? PA_COL.dark : '#ff4a9a', 3); cam.shake = Math.max(cam.shake, 2); } },
-      events: [evAt(T, e => { e.play('paRoar', true); paTransform(e, lv, fromHalf); })] }; } });
+  act: paAwakenAct,
+  instant: (lv, p, extra) => {
+    if (skLv(p, 'pa_evil') > 0 && !paDemon(p) && p.st === 'act' && p.act && p.act.skill && p.act.skill.startsWith('pa_') && p.act.skill !== 'pa_awaken') {
+      paTransform(p, lv, paHalf(p)); fxText('原罪 · 即时魔化!', p.x, p.y, p.z + 110, { col: '#ff8ae8', size: 14, dur: 0.8 }); return;
+    }
+    p.doAct(paAwakenAct(lv, p), extra);
+  } });
 // 地面裂开的紫色裂缝（魔化蓄力）
 function paCracks(x, y, r) {
   const L = []; for (let i = 0; i < 7; i++) { const a = i / 7 * TAU + rnd(-0.2, 0.2), pts = [[0, 0]]; let d = 0; while (d < r) { d += rnd(r * 0.15, r * 0.25); pts.push([Math.cos(a) * d + rnd(-6, 6), Math.sin(a) * d * GR + rnd(-3, 3)]); } L.push(pts); }
@@ -88,13 +97,20 @@ defSkill('pa_execute', { name: '审判', cls: 'priest', job: PA, tier: 1, lvReq:
           a.dur = e.actT + 0.45; } },
       hold: (e, t) => { t.x = e.x + e.face * 70; t.y = e.y + 0.5; t.z = e.z + 30; t.face = -e.face; },
       onEnd: e => { e.vy = 0; } }; } });
-// 恶魔屏障：魔化中 ↓↓+X，任何技能 / 跳跃中都能插放（没有动作）：2 秒暗黑屏障，受到的打击伤害 −60%（不是无敌、只护自己）；再按一次取消；毁灭之翼施放中不能用
-defSkill('pa_barrier', { name: '恶魔屏障', cls: 'priest', job: PA, tier: 1, lvReq: 21, maxLv: 1, sp: 0, mp: 0, cd: 5, type: 'mag', buff: true, col: '#6a3aa8', icon: 'pa_barrier',
+// 恶魔屏障：魔化中 ↓↓+X，任何技能 / 跳跃 / 受击倒地中都能插放（没有动作）：2 秒暗黑屏障，受到的打击伤害 −60% 且不会倒地（不是无敌、只护自己）；受击中施放会震开身边敌人并恢复姿态；再按一次取消；毁灭之翼施放中不能用
+defSkill('pa_barrier', { name: '恶魔屏障', cls: 'priest', job: PA, tier: 1, lvReq: 21, maxLv: 1, sp: 0, mp: 0, cd: 5, type: 'mag', buff: true, air: true, whenHit: () => false, col: '#6a3aa8', icon: 'pa_barrier',
   req: p => !paDemon(p) ? '只有魔化中能用' : p.act && p.act.skill === 'pa_awaken3' ? '毁灭之翼中不能用' : true,
-  desc: '【魔化中才能用，完成一次觉醒任务时自动学会（↓↓+X）】张开 2 秒的暗黑屏障：受到的打击伤害 −60%（不是无敌，只保护自己）。没有施放动作，任何技能、跳跃中都能插放（可以用来砍掉后摇）；再按一次取消。末日福音：毁灭之翼施放中不能用。',
-  infoExtra: () => [['受到伤害', '−60%'], ['持续', '2 秒']], ai: { kind: 'buff' },
+  desc: '【魔化中才能用，完成一次觉醒任务时自动学会（↓↓+X）】张开 2 秒的暗黑屏障：受到的打击伤害 −60% 且不会被击倒（不是无敌，只保护自己）。没有施放动作，任何技能、跳跃、受击或倒地中都能插放（受击中施放会震退身边的敌人并恢复站立姿态；也可用来砍掉技能后摇）；再按一次取消。末日福音：毁灭之翼施放中不能用。',
+  infoExtra: () => [['受到伤害', '−60%（不倒地）'], ['持续', '2 秒']], ai: { kind: 'buff' },
   recast: { ok: p => !!p.buffs.pa_barrier, instant: true, cd: 0.2, act: (lv, p) => { delete p.buffs.pa_barrier; } },
-  instant: (lv, p) => { p.buffs.pa_barrier = { t: 2, taken: -0.6, name: '恶魔屏障', col: '#6a3aa8' }; sfx.buff();
+  instant: (lv, p) => {
+    const hurt = p.st === 'hit' || p.st === 'down' || p.st === 'air';
+    if (hurt) {
+      p.st = p.z > 0 ? 'jump' : 'idle'; p.stun = 0; p.downT = 0; p.vx = 0;
+      fxShock(p.x, p.y, 200, '#9a4ae8'); fxBurst(p.x, p.y, p.z + 60, 180, '#6a3aa8');
+      for (const t of ents) if (foe(p, t) && !t.boss && Math.abs(t.x - p.x) < 160 && Math.abs(t.y - p.y) < 70) t.x += (t.x >= p.x ? 1 : -1) * 55;
+    }
+    p.buffs.pa_barrier = { t: 2, taken: -0.6, name: '恶魔屏障', col: '#6a3aa8' }; sfx.buff();
     addFx({ ent: p, x: p.x, y: p.y + 0.9, z: 0, dur: 2, draw(c) { const E = this.ent; if (!E.buffs.pa_barrier) { this.dur = this.t; return; } this.y = E.y + 0.9; const sc = E.scale || 1, k = this.t;
       drawSpr(c, fxTint('darkorb', '#8a4ad8'), sx(E.x), sy(E.y, E.z + 60 * sc), 170 * sc, 190 * sc, { rot: k * 1.5, alpha: 0.55 }); drawSpr(c, fxTint('hexagram', '#b070ff'), sx(E.x), sy(E.y, E.z + 60 * sc), 150 * sc, 170 * sc, { rot: -k, alpha: 0.35 }); } }); } });
 
@@ -285,7 +301,7 @@ function paAutoAwaken(p) {
 const PA_PSV = ['pa_devil', 'pa_scythe', 'pa_echo', 'pa_nightmare', 'pa_evil', 'pa_righteous'];
 CLASSES.priest.passives.push(p => {
   if (!paOn(p)) { for (const id of PA_PSV) setPassive(p, id, false); if (p._paD) { p._paD = 0; p.scale = p._paScale0 || 1; delete p.buffs.pa_demon; } return; }
-  paPatchBase(); paAutoAwaken(p); paHudHook(); paCoopHook();
+  paPatchBase(); paAutoAwaken(p); paHudHook(); paCoopHook(); paHideHandCross(p);
   const L = id => skLv(p, id);
   // 魔化：外观、霸体；BUFF 到时间了 → 体型 / 普攻复原
   if (paDemon(p)) { p.superArmor = Math.max(p.superArmor, 0.3); paDemonFx(p); if (p.scale !== PA_SCALE) { p._paScale0 = p.scale || 1; p.scale = PA_SCALE; } p._paD = 1; }

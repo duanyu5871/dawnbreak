@@ -46,12 +46,17 @@ const sfx = {
     if (heavy) { this.noise('bandpass', 420, 1900, 0.2, 0.34, 1.4); this.tone('triangle', 380, 900, 0.16, 0.05); }
     else { this.noise('bandpass', 900, 3200, 0.11, 0.26, 1.6); this.tone('triangle', 700, 1500, 0.08, 0.035); }
   },
-  hit(kind = 'slash', crit = false) {
-    const now = this.ctx ? this.ctx.currentTime : 0; if (now - this.lastHit < 0.025) return; this.lastHit = now;   // 同一瞬间多目标命中只响一次
-    if (kind === 'blunt') { this.tone('sine', 150, 55, 0.12, 0.55); this.noise('lowpass', 1400, 300, 0.07, 0.35, 0.8); }
-    else if (kind === 'stab') { this.tone('sine', 220, 90, 0.06, 0.35); this.noise('highpass', 2600, 2600, 0.035, 0.22, 0.7); }
-    else if (kind === 'fire') { this.noise('lowpass', 2400, 400, 0.18, 0.3, 0.7); this.tone('sine', 160, 60, 0.12, 0.4); }
-    else { this.tone('sine', 190, 60, 0.09, 0.5); this.noise('highpass', 1800, 1800, 0.028, 0.28, 0.7); this.noise('bandpass', 3400, 2200, 0.06, 0.16, 2); }
+  hit(kind = 'slash', crit = false, heavy = false) {
+    const now = this.ctx ? this.ctx.currentTime : 0; if (now - this.lastHit < 0.022) return; this.lastHit = now;   // 同一瞬间多目标命中只响一次
+    const hv = heavy ? 1.25 : 1;
+    if (kind === 'blunt') { this.tone('sine', 165, 48, 0.13 * hv, 0.58); this.tone('triangle', 95, 38, 0.1 * hv, 0.35); this.noise('lowpass', 1500, 280, 0.075 * hv, 0.38, 0.9); }
+    else if (kind === 'stab') { this.tone('sine', 240, 85, 0.065 * hv, 0.38); this.noise('highpass', 2600, 2200, 0.04, 0.25, 0.8); this.noise('bandpass', 4200, 1800, 0.045, 0.18, 1.8); }
+    else if (kind === 'fire') { this.noise('lowpass', 2400, 380, 0.18 * hv, 0.34, 0.7); this.tone('sine', 160, 52, 0.13 * hv, 0.44); }
+    else if (kind === 'elec') { this.noise('bandpass', 3600, 1400, 0.07, 0.28, 2.2); this.tone('sawtooth', 520, 180, 0.06, 0.12); this.tone('sine', 180, 65, 0.09, 0.38); }
+    else if (kind === 'ice') { this.tone('sine', 1850, 920, 0.07, 0.14); this.noise('highpass', 3200, 1800, 0.05, 0.22, 1.2); this.tone('sine', 175, 65, 0.09, 0.38); }
+    else if (kind === 'dark') { this.tone('sawtooth', 140, 48, 0.14 * hv, 0.22); this.noise('lowpass', 1600, 320, 0.1 * hv, 0.3, 1.1); this.tone('sine', 150, 50, 0.12 * hv, 0.42); }
+    else { this.tone('sine', 195, 58, 0.095 * hv, 0.52); this.noise('highpass', 1900, 1800, 0.03, 0.3, 0.7); this.noise('bandpass', 3500, 2100, 0.065, 0.18, 2); }
+    if (heavy) { this.tone('sine', 105, 36, 0.16, 0.42); this.noise('lowpass', 720, 180, 0.11, 0.26, 0.8); }
     if (crit) { this.tone('sine', 2200, 2150, 0.28, 0.09); this.tone('sine', 3120, 3050, 0.22, 0.06); this.tone('sine', 120, 45, 0.16, 0.35); }
   },
   thud(v = 1) { this.tone('sine', 110, 45, 0.16, 0.4 * v); this.noise('lowpass', 500, 180, 0.12, 0.22 * v, 0.7); },

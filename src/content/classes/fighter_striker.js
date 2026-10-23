@@ -182,6 +182,7 @@ function fsShiftCommit(p, id) {
   const s = fsShiftOf(p); if (s.n >= 1) { if (s.n >= fsShiftMax(p)) s.last = game.t; s.n--; }
   if (p.act) p.act.fsSoft = true;
   if (id === 'f_flash' || id === 'fs_stepp') { p.cool.f_flash = 0; p.cool.fs_stepp = 0; }
+  fxAfterimage(p, '#8ae8ff'); fxShock(p.x, p.y, 76, '#8ae8ff'); fxSpr('spark', p.x, p.y + 1, p.z + 58, { w: 46, dur: 0.16, col: '#b8f4ff' });
   fxText('柔化', p.x, p.y, p.z + 16, { col: '#8ae8ff', size: 10, dur: 0.45 });
 }
 FIGHTER_HOOKS.softCommit.push((p, a, id) => { if (fsOn(p) && skLv(p, 'fs_shift')) fsShiftCommit(p, id); });
@@ -289,8 +290,9 @@ defSkill('fs_pusher', { name: '铁山靠', cls: 'fighter', job: FS, lvReq: 17, m
     return { name: 'fs_pusher', clip: 'fsPush', dur: 0.55, noCounter: true, superArmor: [0, 0.34], move: [[0.03, 0.27, far ? 1050 : 720]],
       onStart: e => { sfx.swing(true); fxDust(e.x, e.y, 4, 10); },
       update: e => { if (e.actT < 0.27 && Math.floor(e.actT / 0.05) !== e.act.ai) { e.act.ai = Math.floor(e.actT / 0.05); fxDust(e.x - e.face * 10, e.y, 2, 8); } },
-      hits: [HB(0.03, 0.3, [-5, 88, 58, 0, 115], skillDmg(3.8, 0.38, lv), { max: 1, knock: 380, launch: 200, airLift: 220, hs: 0.08, shake: 4, heavy: true, big: 1.3, downHit: true, snd: 'blunt', col: '#ffd0a0',
-        onHit: (a, t) => { fxShock(t.x, t.y, 120, '#ffd0a0'); if (a.act && a.act.skill === 'fs_pusher' && !a.act.fsWave && a.buffs.fs_awaken && skLv(a, 'fs_limit')) { a.act.fsWave = true; const x0 = t.x, y0 = t.y;
+      hits: [HB(0.03, 0.3, [-5, 88, 58, 0, 115], skillDmg(3.8, 0.38, lv), { max: 1, knock: 380, launch: 200, airLift: 220, hs: 0.1, shake: 5, heavy: true, big: 1.45, downHit: true, snd: 'blunt', col: '#ffd0a0',
+        onHit: (a, t) => { fxShock(t.x, t.y, 130, '#ffd0a0'); fxBurst(t.x, t.y, t.z + 55, 130, '#ffd0a0'); fxDust(t.x, t.y, 6, 22);
+          if (a.act && a.act.skill === 'fs_pusher' && !a.act.fsWave && a.buffs.fs_awaken && skLv(a, 'fs_limit')) { a.act.fsWave = true; const x0 = t.x, y0 = t.y;
           game.after(0.12, () => { if (a.dead) return; fxSpr('wave', x0 + a.face * 60, y0, 40, { h: 170, dur: 0.35, rot: a.face * Math.PI / 2, col: FS_FIRE, grow: [0.7, 1.3] }); fxShock(x0 + a.face * 160, y0, 260, FS_FIRE);
             areaHit(a, x0 + a.face * 170, y0, 200, 0, { dmg: skillDmg(1.2, 0.12, skLv(a, 'fs_pusher') || 1), knock: 260, launch: 160, hs: 0.04, downHit: true, snd: 'fire', col: '#ffb070' }, { zMax: 120 }); }); } } })] }; } });
 defSkill('fs_bone', { name: '碎骨', cls: 'fighter', job: FS, lvReq: 17, mp: 25, cd: 7, type: 'phys', col: '#d8d0c0', icon: 'wave', pre: { f_lowkick: 5 },
@@ -300,12 +302,12 @@ defSkill('fs_bone', { name: '碎骨', cls: 'fighter', job: FS, lvReq: 17, mp: 25
     return { name: 'fs_bone', clip: 'fsLow', dur: t0 + 0.34, noCounter: true, fsDirect: new Set(),
       onStart: e => { e.animT = t0 < 0.1 ? 0.08 : 0; },
       events: [evAt(t0, e => { sfx.swing(true); fxSlashOn(e, { a0: 2.4, a1: 0.4, r: 60, w: 12, off: [30, 14], col: '#ffffff', silent: true }); })],
-      hits: [HB(t0, t0 + 0.08, [0, 100, 36, 0, 55], skillDmg(2.8, 0.28, lv), { stun: 0.5, knock: 40, hs: 0.1, downHit: true, snd: 'blunt', col: '#ffffff', shake: 3,
-        onHit: (a, t) => { const A = a.act; if (A && A.fsDirect) A.fsDirect.add(t); fsCrack(t.x, t.y, 22, 1.3); fxText('咔嚓', t.x, t.y, t.z + 30, { col: '#ffffff', size: 11, dur: 0.4 });
+      hits: [HB(t0, t0 + 0.08, [0, 100, 36, 0, 55], skillDmg(2.8, 0.28, lv), { stun: 0.5, knock: 40, hs: 0.11, downHit: true, snd: 'blunt', col: '#ffffff', shake: 4, big: 1.35,
+        onHit: (a, t) => { const A = a.act; if (A && A.fsDirect) A.fsDirect.add(t); fsCrack(t.x, t.y, 22, 1.3); fxDust(t.x, t.y, 5, 18); fxText('咔嚓', t.x, t.y, t.z + 30, { col: '#ffffff', size: 11, dur: 0.4 });
           if (Math.random() < (game.pvp ? 0.5 : 0.9)) addStatus(t, 'slow', game.pvp ? 3 : 10, { src: a, amt: 0.73 });
           if (A && !A.fsWaved) { A.fsWaved = true; const big = a.buffs.fs_awaken && skLv(a, 'fs_limit'), r = big ? 280 : 170, D = A.fsDirect, x0 = t.x, y0 = t.y;
             fxShock(x0, y0, r * 1.1, big ? FS_FIRE : '#e8e0d0'); fxSpr('wave', x0 + a.face * 40, y0, 30, { h: 120, dur: 0.3, rot: a.face * Math.PI / 4, col: big ? FS_FIRE : '#e8e8ff', grow: [0.6, 1.2] });
-            for (const o of ents) if (hittable(a, o) && !D.has(o) && inGround(o, x0, y0, r) && o.z < 100) applyHit(a, o, { dmg: skillDmg(1.0, 0.1, skLv(a, 'fs_bone') || 1), stun: 0.4, knock: 120, airLift: 120, downHit: true, hs: 0.03, snd: 'blunt', col: '#e8e0d0', box: null }, { proj: true, src: { x: x0, y: y0, z: 0, face: a.face } }); } } })] }; } });
+            for (const o of ents) if (hittable(a, o) && !D.has(o) && inGround(o, x0, y0, r) && o.z < 100) applyHit(a, o, { dmg: skillDmg(1.0, 0.1, skLv(a, 'fs_bone') || 1), stun: 0.4, knock: 120, airLift: 120, downHit: true, hs: 0.04, snd: 'blunt', col: '#e8e0d0', box: null }, { proj: true, src: { x: x0, y: y0, z: 0, face: a.face } }); } } })] }; } });
 defSkill('fs_rush', { name: '闪击快打', cls: 'fighter', job: FS, lvReq: 18, mp: 30, cd: 12, type: 'phys', col: '#ff9a3a', icon: 'flurry', cmdNote: '只能用快捷栏（官方指令未查到）',
   desc: '像光一样冲向敌人，对途中碰到的第一个敌人打出肘击 + 中段踢两连击。按住方向键会追踪前方一定范围内的敌人冲过去（柔化施放时也能换方向）；前方没有敌人就冲到头原地出招。',
   pow: lv => skillDmg(5.6, 0.56, lv), ai: { kind: 'gap', r: [40, 380], dy: 60 },
@@ -357,29 +359,35 @@ defSkill('fs_flamekick', { name: '炽焰旋风腿', cls: 'fighter', job: FS, lvR
           instantHit(e, { box: [-20, 136, 54, -30, 150], dmg: skillDmg(2.8, 0.28, lv), stun: 0.5, knock: up ? 60 : 240, launch: up ? 0 : 380, spike: up ? 520 : 0, bounce: up ? 0.7 : 0, hs: 0.1, big: 1.5, heavy: true, snd: 'fire', col: '#ffa050' }); } },
       onLand: e => { const a = e.act; if (a.fin) { e.vx = 0; a.dur = Math.min(a.dur, e.actT + 0.2); fxDust(e.x, e.y, 5, 14); } else { e.vz = 0; e.z = 0; } },
       onEnd: e => { e.drawFlip = false; if (e.act && e.act.ring) e.act.ring.dur = e.act.ring.t; } }; } });
-// 闪电之舞：踢前方一个敌人，借反冲力瞬移到周围敌人身边连踢 8 次、把他们赶到第一次踢中的位置，最后一记终结
+// 闪电之舞：踢前方一个敌人（可用方向键调节起手突进距离：按 → 突进追击远处的敌人、按 ← 原地踢出），借反冲力瞬移到周围敌人身边连踢 8 次、把他们赶到第一次踢中的位置，最后一记终结
 defSkill('fs_dance', { name: '闪电之舞', cls: 'fighter', job: FS, lvReq: 19, mp: 45, cd: 20, type: 'phys', col: '#ffe23a', icon: 'triple', pre: { fs_close: 1 },
-  desc: '先踢前方一个敌人，借反冲力像闪电一样瞬移到周围敌人身边连踢 8 次，把敌人都赶到第一次踢中的地方（被赶过去的敌人强制硬直，霸体也不例外），最后一记强力终结。瞬移的瞬间无敌；周围没有敌人时提前终结，按跳跃键立即终结。透明 / 无敌 / 飞得太高的敌人追不到。需要冲膝 Lv1。',
+  desc: '先踢前方一个敌人（起手按住 → 向前突进追击、按住 ← 原地踢出），借反冲力像闪电一样瞬移到周围敌人身边连踢 8 次，把敌人都赶到第一次踢中的地方（被赶过去的敌人强制硬直，霸体也不例外），最后一记强力终结。瞬移的瞬间无敌；周围没有敌人时提前终结，按跳跃键立即终结。透明 / 无敌 / 飞得太高的敌人追不到。需要冲膝 Lv1。',
   pow: lv => skillDmg(9.6, 0.96, lv), ai: { kind: 'aoe', r: [0, 150], dy: 50 },
   act: lv => ({ name: 'fs_dance', clip: 'fsMid', dur: 0.5, noCounter: true, superArmor: true,
     onInput: (e, I) => { if (I.buffered('jump')) { while (I.consume('jump')); if (e.act.gx !== undefined && !e.act.fin) e.act.stop = true; return true; } return false; },
     hits: [HB(0.1, 0.18, [0, 96, 40, 0, 120], skillDmg(1.0, 0.1, lv), { max: 1, stun: 0.6, knock: 0, hs: 0.06, snd: 'blunt', col: '#cfe8ff',
       onHit: (a, t) => { const A = a.act; if (!A || A.skill !== 'fs_dance' || A.gx !== undefined) return; A.gx = t.x; A.gy = t.y; A.n = 0; A.next = a.actT + 0.1; A.dur = 3; fxText('Kick!', t.x, t.y, t.z + 30, { col: '#cfe8ff', size: 11, dur: 0.4 });
         addStatus(t, 'hold', 3, { src: a }); } })],
-    update: e => { const a = e.act; if (a.gx === undefined || a.fin) return;
+    update: e => { const a = e.act;
+      if (a.dir === undefined && e.actT >= 0.02 && e.actT < 0.09) {
+        const d = (e.pad ? e.pad.dx() * e.face : 0) || (fsFwd(e) ? 1 : 0);
+        if (d) { a.dir = d; if (d > 0) { a.move = [[0.02, 0.12, 420]]; a.hits[0].box = [0, 128, 40, 0, 120]; fxAfterimage(e, '#9ad0ff'); } else { a.move = null; e.vx = 0; } }
+      }
+      if (a.gx === undefined || a.fin) return;
       if (a.stop || a.n >= 8 || e.actT >= a.next) {
         const L = a.stop || a.n >= 8 ? [] : ents.filter(t => hittable(e, t) && Math.abs(t.x - a.gx) < 440 && Math.abs(t.y - a.gy) < 170 && t.z < 150);
-        if (!L.length) { a.fin = e.actT; e.x = a.gx - e.face * 90; e.y = a.gy; fsBolt(e.x, e.y, 60, a.gx, a.gy, 60, '120,190,255'); fxAfterimage(e, '#9ad0ff'); e.play('fsUp', true); sfx.swing(true); cam.shake = 8; sfx.boom(0.8);
-          a.dur = e.actT + 0.5; fxBurst(a.gx, a.gy, 60, 220, '#8ac8ff'); fxShock(a.gx, a.gy, 260, '#8ac8ff');
+        if (!L.length) { a.fin = e.actT; e.x = a.gx - e.face * 90; e.y = a.gy; fsBolt(e.x, e.y, 60, a.gx, a.gy, 60, '120,190,255'); fxAfterimage(e, '#9ad0ff'); e.play('fsUp', true); sfx.swing(true); cam.shake = 9; sfx.boom(0.85);
+          a.dur = e.actT + 0.5; fxBurst(a.gx, a.gy, 60, 230, '#8ac8ff'); fxShock(a.gx, a.gy, 260, '#8ac8ff'); fxShock(a.gx, a.gy, 170, '#ffffff');
           for (const o of ents) if (hittable(e, o) && Math.abs(o.x - a.gx) < 190 && Math.abs(o.y - a.gy) < 80 && o.z < 170) { if (o.status) delete o.status.hold;
             applyHit(e, o, { dmg: skillDmg(3.4, 0.34, lv), launch: 480, knock: 260, hs: 0.14, big: 2, shake: 6, downHit: true, snd: 'blunt', col: '#cfe8ff', box: null }, { src: { x: e.x, y: e.y, z: 0, face: e.face } }); }
           return; }
         const t = L[a.n % L.length]; a.n++; a.next = e.actT + 0.12;
         const side = Math.sign(t.x - a.gx) || (a.n % 2 ? 1 : -1), x0 = e.x, y0 = e.y;
         fxAfterimage(e, '#9ad0ff'); e.x = clamp(t.x + side * 58, game.room ? game.room.x0 + 20 : -1e9, game.room ? game.room.x1 - 20 : 1e9); e.y = t.y; e.face = -side; e.invul = Math.max(e.invul, 0.06);
-        fsBolt(x0, y0, 60, e.x, e.y, 60, '120,190,255'); e.play(a.n % 2 ? 'fsMid' : 'fsUp', true); e.animT = 0.18; sfx.swing(a.n % 2 === 0);
+        fsBolt(x0, y0, 60, e.x, e.y, 60, '120,190,255'); fxSpr('spark', t.x, t.y + 1, t.z + 55, { w: 42, dur: 0.15, col: '#cfe8ff' });
+        e.play(a.n % 2 ? 'fsMid' : 'fsUp', true); e.animT = 0.18; sfx.swing(a.n % 2 === 0);
         fxText(['Quick!', 'Cut!', '上段!', '中段!', '下段!'][a.n % 5], t.x, t.y, t.z + 36, { col: '#cfe8ff', size: 10, dur: 0.3 });
-        applyHit(e, t, { dmg: skillDmg(0.65, 0.065, lv), stun: 0.5, knock: 0, hs: 0.03, sure: true, downHit: true, snd: 'blunt', col: '#cfe8ff' }, { src: e });
+        applyHit(e, t, { dmg: skillDmg(0.65, 0.065, lv), stun: 0.5, knock: 0, hs: 0.035, sure: true, downHit: true, snd: 'blunt', col: '#cfe8ff' }, { src: e });
         if (!t.dead) { fsPull(t, a.gx + side * 26, a.gy, 1); if (!t.boss) addStatus(t, 'hold', 3, { src: e }); } } } }) });
 // 瞬影连环踢（俗称“大脚”）：能踢穿对手似的飞踢，单发大伤害；落地后才能柔化
 defSkill('fs_dragon', { name: '瞬影连环踢', cls: 'fighter', job: FS, lvReq: 20, mp: 55, cd: 45, type: 'phys', col: '#ff3a2a', icon: 'iai', pre: { fs_close: 1 },

@@ -172,10 +172,28 @@ function fighterActsFor(F) {
   };
 }
 const FIGHTER_ACTS_BY_W = {}; for (const w in FIGHTER_FEEL) FIGHTER_ACTS_BY_W[w] = fighterActsFor(FIGHTER_FEEL[w]);
-// 臂铠：第 4 段重击更重（只改震屏 / 顿帧 / 动作冲击，数值与动作不变）
-{ const a4 = FIGHTER_ACTS_BY_W.gauntlet.atk4; Object.assign(a4.hits[0], { shake: 6, hs: 0.15, big: 1.7 });
-  a4.events = a4.events.concat(evAt(0.17, e => { fxShock(e.x + e.face * 70, e.y, 90, '#c8d0e0'); fxDust(e.x + e.face * 70, e.y, 5, 18); })); }
-// 爪：普攻命中带一点点血雾（纯视觉）
+// 臂铠：重甲重拳，普攻 / 跑攻 / 疾风终结的顿帧与震屏更沉重，第 3、4 段与跑攻带震地气浪（数值与动作不变）
+{ const G = FIGHTER_ACTS_BY_W.gauntlet;
+  Object.assign(G.atk1.hits[0], { hs: 0.07, big: 1.15 });
+  Object.assign(G.atk2.hits[0], { hs: 0.07, big: 1.15 });
+  Object.assign(G.atk3.hits[0], { hs: 0.09, shake: 2, big: 1.3 });
+  G.atk3.events = G.atk3.events.concat(evAt(0.08, e => fxDust(e.x + e.face * 50, e.y, 3, 12)));
+  Object.assign(G.atk4.hits[0], { shake: 6, hs: 0.15, big: 1.7 });
+  G.atk4.events = G.atk4.events.concat(evAt(0.17, e => { fxShock(e.x + e.face * 70, e.y, 90, '#c8d0e0'); fxDust(e.x + e.face * 70, e.y, 5, 18); }));
+  Object.assign(G.dash.hits[0], { hs: 0.1, shake: 4, big: 1.4 });
+  Object.assign(G.fchain4.hits[0], { hs: 0.13, shake: 5, big: 1.55 }); }
+// 拳套：出招衔接更紧凑，直拳与踢击带凌厉破风流光
+{ const B = FIGHTER_ACTS_BY_W.boxing;
+  B.atk1.chain = [0.09, 0.26]; B.atk2.chain = [0.09, 0.28]; B.atk3.chain = [0.11, 0.34];
+  B.atk1.events = B.atk1.events.concat(evAt(0.05, e => fxStreak({ x: e.x + e.face * 24, y: e.y, z: e.z + 66, face: e.face, len: 68, w: 8, col: '#ffd280', dur: 0.1 }))); }
+// 利爪：挥击带暗红爪痕弧光
+{ const C = FIGHTER_ACTS_BY_W.claw;
+  C.atk1.events = C.atk1.events.concat(evAt(0.04, e => fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#e83848', a0: -0.6, a1: 0.6, r: 64, w: 9, off: [14, 58], dur: 0.11 })));
+  C.atk4.events = C.atk4.events.concat(evAt(0.13, e => fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#e83848', a0: -1.9, a1: 1.25, r: 84, w: 14, off: [18, 44], dur: 0.14 }))); }
+// 东方棍：挥击带青白旋棍残弧
+{ const T = FIGHTER_ACTS_BY_W.tonfa;
+  T.atk1.events = T.atk1.events.concat(evAt(0.04, e => fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#9fe8ff', a0: -0.9, a1: 0.8, r: 60, w: 8, off: [12, 60], squash: 0.6, dur: 0.1 })));
+  T.atk3.events = T.atk3.events.concat(evAt(0.06, e => fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#9fe8ff', a0: 1.3, a1: -0.5, r: 76, w: 10, off: [14, 42], squash: 0.65, dur: 0.12 }))); }
 const FIGHTER_ACTS = FIGHTER_ACTS_BY_W.knuckle;
 const fActsOf = p => (p && FIGHTER_ACTS_BY_W[wtypeOf(p)]) || FIGHTER_ACTS;
 // 普攻动作表按转职 / BUFF 挑选（气功师 龙虎啸：普攻 / 跑攻 / 跳攻全换）：转职文件往 FIGHTER_ACT_PICK 里登记 p => 动作表 | null
@@ -356,19 +374,26 @@ defSkill('f_crouch', { name: '蹲伏', cls: 'fighter', lvReq: 15, mp: 3, cd: 2, 
   act: (lv, p) => ({ ...fCrouchAct({ dur: 2 + 0.1 * (lv - 1), hurtH: 22, onX: e => fCrouchShoulder(e, lv) }), links: ['fs_pusher'],   // 散打：蹲伏中可以接铁山靠（官方）
     move: p && p.st === 'run' ? [[0, 0.26, 300]] : null, onStart: e => { fxDust(e.x, e.y, 3, 10); fxAura(e, '#9fb8d8', 0.3); } }) });
 // 金刚碎：向前小跳（空中用方向键调落点，横向 / 纵深都能调），双脚踩地：落地踢 + 冲击波把周围的敌人挑到空中（霸体的除外），对倒地的敌人 +50%；后摇较长（等级越高越短），冲击波范围随等级变大
+// 柔道家专属形态（官方 [Adv. Feature for Grappler]）：可在技能中途取消施放，跳得更低更快，改为单臂肘击砸地（对倒地敌人伤害加成更高 +65%），落地后摇可衔接霹雳肘击（fg_snapshot）
 const fSeismicR = lv => 150 * (1 + 0.084 * (lv - 1));
 defSkill('f_seismic', { name: '金刚碎', cls: 'fighter', lvReq: 15, mp: 20, cd: 5, type: 'phys', col: '#a0703a',
-  desc: '向前小跳，双脚踩向地面：踩中的敌人受到踢击，同时产生冲击波把周围的敌人挑到空中（霸体的敌人不会被挑起），对倒地的敌人伤害 +50%。跳起时可以用方向键调整落点（前后、上下）。收招较慢，等级越高收招越快、冲击波越大。',
+  desc: '向前小跳，双脚踩向地面：踩中的敌人受到踢击，同时产生冲击波把周围的敌人挑到空中（霸体的敌人不会被挑起），对倒地的敌人伤害 +50%。跳起时可以用方向键调整落点（前后、上下）。收招较慢，等级越高收招越快、冲击波越大。柔道家使用时改为低跃单臂肘击砸地，对倒地敌人伤害加成更高，且落地后可衔接霹雳肘击。',
   pow: lv => skillDmg(0.9, 0.09, lv) + skillDmg(2.2, 0.22, lv), infoExtra: lv => [['冲击波半径', Math.round(fSeismicR(lv)) + 'px'], ['冲击波攻击力', pct(skillDmg(2.2, 0.22, lv))]], ai: { kind: 'aoe', r: [40, 220], dy: 40 },
   act: lv => ({ name: 'f_seismic', clip: 'jumpUp', dur: 2, noCounter: true,
-    onStart: e => { e.vz = 470; e.z = Math.max(e.z, 1); e.vx = e.face * 190; e.vy = 0; sfx.jump(); fxDust(e.x, e.y, 3, 8); },
-    onInput: (e, I) => { if (e.z > 1 && e.act.onLand) { const d = I.dx() * e.face; e.vx = e.face * (d > 0 ? 300 : d < 0 ? 70 : 190); e.vy = I.dy() * 150; } return false; },
+    onStart: e => { const gp = jobOf(e) === 'grappler'; e.vz = gp ? 400 : 470; e.z = Math.max(e.z, 1); e.vx = e.face * (gp ? 220 : 190); e.vy = 0; sfx.jump(); fxDust(e.x, e.y, 3, 8); },
+    onInput: (e, I) => { if (e.z > 1 && e.act.onLand) { const gp = jobOf(e) === 'grappler', d = I.dx() * e.face; e.vx = e.face * (d > 0 ? (gp ? 330 : 300) : d < 0 ? 70 : (gp ? 220 : 190)); e.vy = I.dy() * 150; } return false; },
+    update: e => { if (jobOf(e) === 'grappler' && e.z > 1 && e.vz < 120 && !e.act._dive) { e.act._dive = true; e.play('dive', true); fxAfterimage(e, '#cfe6ff'); } },
     onLand: e => { const a = e.act; if (e.actT < 0.08) { e.vz = 0; return; }
-      a.onLand = null; e.vx = e.vy = 0; e.play('quake', true); a.dur = e.actT + 0.3 + Math.max(0.04, 0.23 - 0.021 * (lv - 1));
-      const r = fSeismicR(lv), x = e.x + e.face * 18; cam.shake = Math.max(cam.shake, 5); sfx.boom(0.7); fxShock(x, e.y, r + 20, '#e0b070'); fxShock(x, e.y, r * 0.6, '#fff0c0'); fxDust(x, e.y, 10, r * 0.5, '#b89870');
+      const gp = jobOf(e) === 'grappler', dm = gp ? 1.65 : 1.5;
+      a.onLand = null; e.vx = e.vy = 0; e.play('quake', true); a.dur = e.actT + (gp ? 0.2 + Math.max(0.03, 0.16 - 0.016 * (lv - 1)) : 0.3 + Math.max(0.04, 0.23 - 0.021 * (lv - 1)));
+      if (gp) { a.links = ['fg_snapshot']; a.linkFrom = e.actT + 0.04; }
+      const r = fSeismicR(lv) * (gp && hasSkill(e, 'fg_takedown') ? 1.05 + 0.03 * skLv(e, 'fg_takedown') : 1), x = e.x + e.face * 18;
+      cam.shake = Math.max(cam.shake, gp ? 7 : 5); sfx.boom(gp ? 0.85 : 0.7); fxShock(x, e.y, r + 20, gp ? '#cfe6ff' : '#e0b070'); fxShock(x, e.y, r * 0.6, '#fff0c0'); fxDust(x, e.y, gp ? 12 : 10, r * 0.5, '#b89870');
+      if (gp) fxStreak({ x, y: e.y + 1, z: 90, vx: e.face * 40, vz: -720, len: 86, w: 16, col: '#cfe6ff', dur: 0.18 });
       for (let i = 0; i < 6; i++) { const ang = i / 6 * TAU; fxSpr('rock', x + Math.cos(ang) * r * 0.45, e.y + Math.sin(ang) * r * 0.15, 10 + rnd(0, 20), { w: rnd(16, 26), dur: 0.5, add: false, spin: rnd(-6, 6), grow: [1, 0.6] }); }
-      instantHit(e, { box: [-24, 64, 30, 0, 70], dmg: skillDmg(0.9, 0.09, lv), launch: 480, knock: 40, hs: 0.06, snd: 'blunt', downHit: true });
-      fRing(e, x, e.y, r, t => ({ dmg: skillDmg(2.2, 0.22, lv) * (t.st === 'down' ? 1.5 : 1), launch: 600, knock: 60, hs: 0.07, downHit: true, snd: 'blunt', big: 1.2 }), { zMax: 60 }); } }) });
+      const B = atkBox(e, { box: [-24, 64, 30, 0, 70] });
+      for (const t of ents) if (canHit(e, t, { downHit: true }) && overlaps(B, t)) applyHit(e, t, { box: [-24, 64, 30, 0, 70], dmg: skillDmg(0.9, 0.09, lv) * (t.st === 'down' ? dm : 1), launch: 480, knock: 40, hs: gp ? 0.08 : 0.06, snd: 'blunt', downHit: true });
+      fRing(e, x, e.y, r, t => ({ dmg: skillDmg(2.2, 0.22, lv) * (t.st === 'down' ? dm : 1), launch: 600, knock: 60, hs: gp ? 0.08 : 0.07, downHit: true, snd: 'blunt', big: gp ? 1.35 : 1.2 }), { zMax: 60 }); } }) });
 // 旋风腿：原地高速旋转踢（男版不能移动），把打到的敌人往自己身前拉；地面 / 空中 / 后跳中都能用；身体稍微离地（最下段没有受击判定）；按跳跃取消，之后可以接空中技能。只有散打能在普攻中取消施放
 const fTornadoN = lv => Math.min(9, 4 + Math.floor((lv - 1) / 2));
 defSkill('f_tornado', { name: '旋风腿', cls: 'fighter', lvReq: 18, mp: 50, cd: 8, type: 'phys', air: true, col: '#4a9ad8', noForce: p => jobOf(p) !== 'striker',
@@ -406,8 +431,21 @@ CLASSES.fighter.passives.push(p => {
    onCast(p, id, act, how) 施放后（扣完 MP / 冷却之后；how = 'recast' 是再按）；cancelHook(p, act, id) → true = 允许这次技能取消（散打 柔化肌肉）；softCommit(p, act, id) 真放出来后扣次数 */
 const FIGHTER_HOOKS = { onHit: [], onHurt: [], beforeHurt: [], onCast: [], cancelHook: [], softCommit: [] };
 FIGHTER_HOOKS.onHit.push((p, t, h, dmg, act) => {
-  if (!act || !act.basic || !t || wtypeOf(p) !== 'claw') return;
-  for (let i = 0; i < 3; i++) fxSpr('spark', t.x + rnd(-10, 10), t.y + 1, t.z + rnd(30, 70), { w: 9 + rnd(0, 6), dur: 0.22, col: '#c8242e' });
+  if (!act || !act.basic || !t) return;
+  const w = wtypeOf(p);
+  if (w === 'claw') {
+    for (let i = 0; i < 4; i++) fxSpr('spark', t.x + rnd(-12, 12), t.y + 1, t.z + rnd(30, 72), { w: 10 + rnd(0, 8), dur: 0.22, col: '#c8242e' });
+    fxStreak({ x: t.x - p.face * 14, y: t.y + 1, z: t.z + 52, vx: p.face * 260, vz: rnd(-80, 80), len: 52, w: 7, col: '#ff3848', dur: 0.12 });
+  } else if (w === 'gauntlet') {
+    fxShock(t.x, t.y, 58, '#d0d8e8'); fxDust(t.x, t.y, 3, 14, '#b8b0a0');
+  } else if (w === 'boxing') {
+    fxSpr('spark', t.x + p.face * 6, t.y + 1, t.z + 56, { w: 28, dur: 0.14, col: '#ffb850' });
+    fxStreak({ x: t.x - p.face * 10, y: t.y + 1, z: t.z + 56, face: p.face, len: 48, w: 6, col: '#ffe090', dur: 0.1 });
+  } else if (w === 'tonfa') {
+    for (let i = 0; i < 2; i++) fxSpr('spark', t.x + rnd(-8, 8), t.y + 1, t.z + 44 + i * 16, { w: 22, dur: 0.15, col: '#9fe8ff', rot: rnd(0, TAU) });
+  } else {
+    fxSpr('spark', t.x + p.face * 4, t.y + 1, t.z + 52, { w: 24, dur: 0.14, col: '#ffe890' });
+  }
 });
 CLASSES.fighter.onHit = (p, t, h, dmg, act, opt) => { for (const f of FIGHTER_HOOKS.onHit) f(p, t, h, dmg, act, opt); };
 CLASSES.fighter.onHurt = (p, a, h, dmg) => { for (const f of FIGHTER_HOOKS.onHurt) f(p, a, h, dmg); };

@@ -27,17 +27,17 @@ defSkill('pi_awaken', { name: '泯灭神击', cls: 'priest', job: PIJ, tier: 1, 
   desc: '【一次觉醒「神之手」的觉醒技】完成一次觉醒任务时自动学会（不花 SP，等级随角色等级提升）并放进技能栏（↑↑↓↓+Z）。聚集力量：右钩拳（Side!）→ 左钩拳（Chest!）→ 下劈拳（Stun!）→ 向前冲出一记强力直拳（Big! Bang!，伤害一半以上在这一拳；按住技能键可以推迟出拳等敌人落下）。全程无敌，之后 10 秒物理暴击率提高；幻影化身中攻击力 ×1.1。',
   pow: lv => skillDmg(24, 6, lv), ai: { kind: 'awaken', r: [0, 200], dy: 40 }, infoExtra: lv => [['最后一击', pct(skillDmg(24, 6, lv) * 0.5)], ['之后暴击率', '+10%（10 秒）']],
   act: lv => { const T = skillDmg(24, 6, lv) * 1;
-    const hit = (e, k, o) => instantHit(e, { box: [-40, o.r || 130, 46, 0, 150], dmg: T * k * (e.buffs.pi_shadow ? 1.1 : 1), sure: true, hs: 0.1, shake: 5, big: 1.8, heavy: true, snd: 'blunt', col: '#cfeaff', ...o.h });
+    const hit = (e, k, o) => instantHit(e, { box: [-40, o.r || 130, 46, 0, 150], dmg: T * k * (e.buffs.pi_shadow ? 1.1 : 1), sure: true, hs: 0.11, shake: 6, big: 1.85, heavy: true, snd: 'blunt', col: '#cfeaff', ...o.h });
     return { name: 'pi_awaken', clip: 'piHook', dur: 2.6, noCounter: true, invul: true, superArmor: true,
       charge: { at: 1.35, max: 1.0, min: 0, dmg: 0, update: e => { if (Math.random() < 0.5) fxCharge(e, '#9fd8ff', 2); } },
       onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '泯灭神击', who: cutinWho(e) }; game.timeStop = 0.7; sfx.awaken(); for (let i = 0; i < 3; i++) fxCharge(e, '#9fd8ff', 3); },
-      events: [evAt(0.3, e => { e.play('piHook', true); piPunchFx(e, 110, true); fxText('Side!', e.x, e.y, e.z + 60, { col: '#cfeaff', size: 13, dur: 0.4 }); hit(e, 0.11, { h: { stun: 1.2, knock: 10 } }); piImpact(e.x + e.face * 80, e.y, 60, 1.6); }),
-        evAt(0.65, e => { e.play('piJab', true); piPunchFx(e, 110, true); fxText('Chest!', e.x, e.y, e.z + 60, { col: '#cfeaff', size: 13, dur: 0.4 }); hit(e, 0.17, { h: { stun: 1.2, knock: 10 } }); piImpact(e.x + e.face * 80, e.y, 60, 1.8); }),
-        evAt(1.0, e => { e.play('piChop', true); sfx.swing(true); fxText('Stun!', e.x, e.y, e.z + 60, { col: '#cfeaff', size: 13, dur: 0.4 }); hit(e, 0.22, { h: { stun: 1.8, knock: 10 } }); piImpact(e.x + e.face * 80, e.y, 40, 2); }),
+      events: [evAt(0.3, e => { e.play('piHook', true); piPunchFx(e, 115, true); fxText('Side!', e.x, e.y, e.z + 60, { col: '#cfeaff', size: 13, dur: 0.4 }); hit(e, 0.11, { h: { stun: 1.2, knock: 10 } }); piImpact(e.x + e.face * 80, e.y, 60, 1.7); fxShock(e.x + e.face * 80, e.y, 150, '#9fd8ff'); }),
+        evAt(0.65, e => { e.play('piJab', true); piPunchFx(e, 115, true); fxText('Chest!', e.x, e.y, e.z + 60, { col: '#cfeaff', size: 13, dur: 0.4 }); hit(e, 0.17, { h: { stun: 1.2, knock: 10 } }); piImpact(e.x + e.face * 80, e.y, 60, 1.9); fxShock(e.x + e.face * 80, e.y, 170, '#9fd8ff'); }),
+        evAt(1.0, e => { e.play('piChop', true); sfx.swing(true); fxText('Stun!', e.x, e.y, e.z + 60, { col: '#cfeaff', size: 13, dur: 0.4 }); hit(e, 0.22, { h: { stun: 1.8, knock: 10 } }); piImpact(e.x + e.face * 80, e.y, 40, 2.1); fxShock(e.x + e.face * 80, e.y, 190, '#cfeaff'); }),
         evAt(1.36, e => { e.play('piStraight', true); e.vx = e.face * 420; fxAfterimage(e, '#9fd8ff'); fxText('Big! Bang!', e.x, e.y, e.z + 70, { col: '#ffffff', size: 18, dur: 0.8 }); }),
-        evAt(1.5, e => { e.vx = 0; cam.shake = 16; cam.flash = 0.2; cam.flashCol = '#cfeaff'; sfx.boom(1.5); const x = e.x + e.face * 110;
-          fxSpr('burst', x, e.y, 60, { w: 420, dur: 0.55, col: '#cfeaff', grow: [0.3, 1.2] }); fxShock(x, e.y, 360, '#9fd8ff'); fxStreak({ x: e.x, y: e.y, z: e.z + 62, face: e.face, len: 480, w: 60, col: '#cfeaff', dur: 0.4 });
-          hit(e, 0.5, { r: 230, h: { box: [-60, 230, 50, 0, 160], downHit: true, knock: 520, launch: 300, hs: 0.2, big: 2.6, critBonus: 0.1 } }); e.buffs.pi_bigbang = { t: 10, crit: 0.1, name: '泯灭神击', col: '#9fd8ff' }; })] }; } });
+        evAt(1.5, e => { e.vx = 0; cam.shake = 18; cam.flash = 0.22; cam.flashCol = '#cfeaff'; sfx.boom(1.55); const x = e.x + e.face * 110;
+          fxSpr('burst', x, e.y, 60, { w: 440, dur: 0.58, col: '#cfeaff', grow: [0.3, 1.25] }); fxShock(x, e.y, 380, '#9fd8ff'); fxShock(x, e.y, 260, '#ffffff'); fxStreak({ x: e.x, y: e.y, z: e.z + 62, face: e.face, len: 500, w: 66, col: '#cfeaff', dur: 0.42 });
+          hit(e, 0.5, { r: 230, h: { box: [-60, 230, 50, 0, 160], downHit: true, knock: 520, launch: 300, hs: 0.22, shake: 12, big: 2.6, critBonus: 0.1 } }); e.buffs.pi_bigbang = { t: 10, crit: 0.1, name: '泯灭神击', col: '#9fd8ff' }; })] }; } });
 // 破碎之拳：双拳飞快连打 10 下（连按更快，按跳跃键直接终结），最后一拳往下砸 + 爆炸；技巧精通：把周围的敌人吸过来
 const piGatDmg = lv => ({ blow: skillDmg(0.87, 0.087, lv), fin: skillDmg(2.18, 0.218, lv), boom: skillDmg(3.62, 0.362, lv) });
 defSkill('pi_gatling', { name: '破碎之拳', cls: 'priest', job: PIJ, tier: 1, lvReq: 23, sp: 60, mp: 70, cd: 35, type: 'phys', col: '#ffb070', req: piNeedWill, pre: { pi_mgjab: 1 },
@@ -50,13 +50,14 @@ defSkill('pi_gatling', { name: '破碎之拳', cls: 'priest', job: PIJ, tier: 1,
         if ((a.key && I.buffered(a.key)) || I.buffered('attack')) { if (a.key) I.consume(a.key); I.consume('attack'); a.mash = e.actT; return true; } return false; },
       update: e => { const a = e.act;
         if (!a.fin && a.n < 10 && e.actT >= a.next) { a.n++; a.next = e.actT + (e.actT - a.mash < 0.3 ? 0.06 : 0.09); sfx.swing(a.n % 2 === 0); fxDust(e.x - e.face * 20, e.y, 1, 6);
-          for (let i = 0; i < 2; i++) fxStreak({ x: e.x + e.face * 20, y: e.y + rnd(-10, 10), z: e.z + 50 + rnd(-16, 16), face: e.face, len: 80, w: 10, col: '#ffb070', dur: 0.08 });
+          for (let i = 0; i < 2; i++) fxStreak({ x: e.x + e.face * 20, y: e.y + rnd(-10, 10), z: e.z + 50 + rnd(-16, 16), face: e.face, len: 88, w: 12, col: '#ffb070', dur: 0.09 });
+          if (a.n % 2 === 1) fxSpr('shock', e.x + e.face * 72, e.y, e.z + 56, { w: 86, dur: 0.14, col: '#ffd0a0', alpha: 0.65 });
           if (pullR) for (const t of ents) if (foe(e, t) && !t.dead && piMovable(t) && Math.abs(t.x - e.x) < pullR && Math.abs(t.y - e.y) < 90) { t.x = lerp(t.x, e.x + e.face * 75, 0.3); t.y = lerp(t.y, e.y, 0.3); }
-          instantHit(e, { box: [0, 125, 44, 10, 130], dmg: D.blow, stun: 0.35, knock: 0, hs: 0.02, airLift: 100, snd: 'blunt', col: '#ffd0a0' }); }
-        if (!a.fin && a.n >= 10) { a.fin = e.actT; e.play('piChop', true); sfx.swing(true); a.dur = e.actT + 0.6;
-          instantHit(e, { box: [0, 130, 44, -10, 140], dmg: D.fin, spike: 300, knock: 40, hs: 0.1, heavy: true, downHit: true, snd: 'blunt', col: '#ffd0a0' });
-          game.after(0.12, () => { if (e.dead) return; const x = e.x + e.face * 110; cam.shake = Math.max(cam.shake, 8); sfx.boom(1); fxSpr('explosion', x, e.y, 40, { w: 240, dur: 0.45, grow: [0.5, 1.1] }); fxShock(x, e.y, 200, '#ffb070');
-            areaHit(e, x, e.y, 160, 0, { dmg: D.boom, launch: 380, knock: 120, hs: 0.1, downHit: true, col: '#ffd0a0' }, { zMax: 160 }); }); } } }; } });
+          instantHit(e, { box: [0, 125, 44, 10, 130], dmg: D.blow, stun: 0.35, knock: 0, hs: 0.025, airLift: 100, snd: 'blunt', col: '#ffd0a0' }); }
+        if (!a.fin && a.n >= 10) { a.fin = e.actT; e.play('piChop', true); sfx.swing(true); a.dur = e.actT + 0.6; fxSlashOn(e, { a0: -2.2, a1: 0.8, r: 80, w: 20, off: [30, 56], col: '#ffd0a0', heavy: true, silent: true });
+          instantHit(e, { box: [0, 130, 44, -10, 140], dmg: D.fin, spike: 300, knock: 40, hs: 0.11, shake: 6, heavy: true, downHit: true, snd: 'blunt', col: '#ffd0a0' });
+          game.after(0.12, () => { if (e.dead) return; const x = e.x + e.face * 110; cam.shake = Math.max(cam.shake, 9); sfx.boom(1.05); fxSpr('explosion', x, e.y, 40, { w: 260, dur: 0.48, grow: [0.5, 1.15] }); fxShock(x, e.y, 220, '#ffb070'); piImpact(x, e.y, 50, 2, '#ffd0a0');
+            areaHit(e, x, e.y, 160, 0, { dmg: D.boom, launch: 380, knock: 120, hs: 0.12, shake: 6, downHit: true, col: '#ffd0a0' }, { zMax: 160 }); }); } } }; } });
 // 破坏之拳：向上的强力钩拳（打中的敌人连霸体一起被拎起来：抓取判定，抓不住的只受伤害），打中后出冲击波挑高；俯冲 / 摆动中也能用
 const piDemoDmg = lv => ({ hit: skillDmg(14.4, 1.44, lv), wave: skillDmg(1.6, 0.16, lv) });
 defSkill('pi_demo', { name: '破坏之拳', cls: 'priest', job: PIJ, tier: 1, lvReq: 25, sp: 70, mp: 75, cd: 40, type: 'phys', col: '#9fd8ff', req: piNeedWill, pre: { pi_dbody: 1 },
@@ -64,11 +65,11 @@ defSkill('pi_demo', { name: '破坏之拳', cls: 'priest', job: PIJ, tier: 1, lv
   pow: lv => piDemoDmg(lv).hit + piDemoDmg(lv).wave, ai: { kind: 'launch', r: [0, 130], dy: 30 },
   act: lv => { const D = piDemoDmg(lv);
     return { name: 'pi_demo', clip: 'piUpper', dur: 0.7, noCounter: true,
-      events: [evAt(0.06, e => { piPunchFx(e, 90, true, '#cfeaff'); fxSlashOn(e, { a0: 1.7, a1: -1.5, r: 80, w: 20, off: [30, 50], col: '#cfeaff', heavy: true, silent: true }); })],
-      hits: [HB(0.08, 0.16, [0, 110, 40, -10, 150], D.hit, { max: 1, launch: 620, knock: 40, throwHit: true, hs: 0.14, shake: 6, big: 2, heavy: true, snd: 'blunt', col: '#cfeaff',
+      events: [evAt(0.06, e => { piPunchFx(e, 100, true, '#cfeaff'); fxSlashOn(e, { a0: 1.7, a1: -1.5, r: 88, w: 24, off: [30, 50], col: '#cfeaff', heavy: true, silent: true }); fxShock(e.x + e.face * 60, e.y, 130, '#9fd8ff'); })],
+      hits: [HB(0.08, 0.16, [0, 110, 40, -10, 150], D.hit, { max: 1, launch: 620, knock: 40, throwHit: true, hs: 0.15, shake: 7, big: 2, heavy: true, snd: 'blunt', col: '#cfeaff',
         onHit: (a, t) => { const A = a.act; if (!A || A.name !== 'pi_demo' || A.waved) return; A.waved = true; const x = t.x, y = t.y;
-          game.after(0.2, () => { if (a.dead) return; cam.shake = Math.max(cam.shake, 7); sfx.boom(0.9); fxShock(x, y, 200, '#9fd8ff'); fxSpr('burst', x, y, 90, { w: 220, dur: 0.4, col: '#cfeaff' });
-            areaHit(a, x, y, 160, 0, { dmg: D.wave, launch: 500, knock: 40, hs: 0.06, downHit: true, col: '#cfeaff' }, { zMax: 260 }); }); } })] }; } });
+          game.after(0.2, () => { if (a.dead) return; cam.shake = Math.max(cam.shake, 8); sfx.boom(0.95); fxShock(x, y, 220, '#9fd8ff'); fxSpr('burst', x, y, 90, { w: 240, dur: 0.42, col: '#cfeaff' }); piImpact(x, y, 90, 2, '#cfeaff');
+            areaHit(a, x, y, 160, 0, { dmg: D.wave, launch: 500, knock: 40, hs: 0.08, shake: 4, downHit: true, col: '#cfeaff' }, { zMax: 260 }); }); } })] }; } });
 
 /* ---- 二次觉醒：正义仲裁者 ---- */
 defSkill('pi_death', { name: '正义惩戒', cls: 'priest', job: PIJ, tier: 2, lvReq: 26, sp: 45, mp: 0, cd: 0, type: 'phys', passive: true, col: '#ff8a6a',
@@ -80,12 +81,12 @@ defSkill('pi_nuke', { name: '仲裁怒击', cls: 'priest', job: PIJ, tier: 2, lv
   pow: lv => piNukeDmg(lv).hit + piNukeDmg(lv).wave, ai: { kind: 'burst', r: [0, 110], dy: 30 },
   act: lv => { const D = piNukeDmg(lv);
     return { name: 'pi_nuke', clip: 'piStraight', dur: 1.0, noCounter: true, superArmor: [0, 0.5],
-      events: [evAt(0.02, e => { fxCharge(e, '#ffa04a', 3); sfx.charge(); }), evAt(0.26, e => { e.play('piStraight', true); piPunchFx(e, 120, true, '#ffa04a'); fxText('核拳！', e.x, e.y, e.z + 60, { col: '#ffa04a', size: 14, dur: 0.5 }); })],
-      hits: [HB(0.28, 0.36, [0, 112, 38, 20, 135], D.hit, { max: 1, knock: 420, launch: 120, hs: 0.18, shake: 8, big: 2.2, heavy: true, snd: 'blunt', col: '#ffd0a0',
-        onHit: (a, t) => { const A = a.act; if (!A || A.name !== 'pi_nuke' || A.waved) return; A.waved = true; const x = t.x, y = t.y; cam.flash = 0.12; cam.flashCol = '#ffd0a0'; sfx.boom(1.4);
-          fxSpr('explosion', x, y, 60, { w: 260, dur: 0.5, grow: [0.4, 1.2] }); fxStreak({ x, y, z: 60, face: a.face, len: 520, w: 70, col: '#ffa04a', dur: 0.45 }); fxShock(x + a.face * 200, y, 320, '#ffa04a');
+      events: [evAt(0.02, e => { fxCharge(e, '#ffa04a', 3); sfx.charge(); }), evAt(0.26, e => { e.play('piStraight', true); piPunchFx(e, 130, true, '#ffa04a'); fxDust(e.x - e.face * 20, e.y, 6, 18); fxText('核拳！', e.x, e.y, e.z + 60, { col: '#ffa04a', size: 14, dur: 0.5 }); })],
+      hits: [HB(0.28, 0.36, [0, 112, 38, 20, 135], D.hit, { max: 1, knock: 420, launch: 120, hs: 0.19, shake: 10, big: 2.3, heavy: true, snd: 'blunt', col: '#ffd0a0',
+        onHit: (a, t) => { const A = a.act; if (!A || A.name !== 'pi_nuke' || A.waved) return; A.waved = true; const x = t.x, y = t.y; cam.flash = 0.14; cam.flashCol = '#ffd0a0'; sfx.boom(1.45);
+          fxSpr('explosion', x, y, 60, { w: 280, dur: 0.52, grow: [0.4, 1.25] }); piImpact(x, y, 60, 2.5, '#ffa04a'); fxStreak({ x, y, z: 60, face: a.face, len: 540, w: 76, col: '#ffa04a', dur: 0.45 }); fxShock(x + a.face * 200, y, 340, '#ffa04a');
           for (const o of ents) if (o !== t && foe(a, o) && !o.dead && o.invul <= 0 && (o.x - x) * a.face > -40 && Math.abs(o.x - x) < 520 && Math.abs(o.y - y) < 110 && o.z < 200)
-            applyHit(a, o, { dmg: D.wave, knock: 380, launch: 200, hs: 0.08, downHit: true, box: null, snd: 'blunt', col: '#ffd0a0' }, { proj: true, src: { x, y, z: 0, face: a.face } }); } })] }; } });
+            applyHit(a, o, { dmg: D.wave, knock: 380, launch: 200, hs: 0.09, shake: 5, downHit: true, box: null, snd: 'blunt', col: '#ffd0a0' }, { proj: true, src: { x, y, z: 0, face: a.face } }); } })] }; } });
 // 超重拳：上勾拳把敌人稍稍挑起，几乎同时一拳往下砸（1 : 4）；俯冲 / 摆动中施放时起手几乎是瞬间
 const piAtomDmg = lv => ({ up: skillDmg(4, 0.4, lv), down: skillDmg(16, 1.6, lv) });
 defSkill('pi_atomic', { name: '超重拳', cls: 'priest', job: PIJ, tier: 2, lvReq: 26, sp: 90, mp: 95, cd: 50, type: 'phys', col: '#9fd8ff', req: piNeedWill, pre: { pi_chop: 1 },
@@ -93,9 +94,9 @@ defSkill('pi_atomic', { name: '超重拳', cls: 'priest', job: PIJ, tier: 2, lvR
   pow: lv => piAtomDmg(lv).up + piAtomDmg(lv).down, ai: { kind: 'burst', r: [0, 130], dy: 40 },
   act: (lv, p) => { const D = piAtomDmg(lv), q = piFromDuck(p) ? 0.03 : 0.12;
     return { name: 'pi_atomic', clip: 'piUpper', dur: q + 0.62, noCounter: true, superArmor: [0, q + 0.3],
-      events: [evAt(Math.max(0, q - 0.03), e => { e.play('piUpper', true); piPunchFx(e, 80, true); }), evAt(q + 0.1, e => { e.play('piChop', true); sfx.swing(true); fxSlashOn(e, { a0: -2.3, a1: 0.9, r: 90, w: 22, off: [30, 70], col: '#cfeaff', heavy: true, silent: true }); })],
-      hits: [HB(q, q + 0.07, [0, 105, 40, -10, 170], D.up, { launch: 260, knock: 20, hs: 0.05, downHit: true, snd: 'blunt', col: PI_COL.fist }),
-        HB(q + 0.12, q + 0.2, [0, 125, 46, -10, 220], D.down, { spike: 420, bounce: 0.9, knock: 60, hs: 0.16, shake: 8, big: 2.2, heavy: true, downHit: true, snd: 'blunt', col: '#cfeaff', onHit: (a, t) => { piImpact(t.x, t.y, 30, 2.6, '#cfeaff'); } })] }; } });
+      events: [evAt(Math.max(0, q - 0.03), e => { e.play('piUpper', true); piPunchFx(e, 86, true); }), evAt(q + 0.1, e => { e.play('piChop', true); sfx.swing(true); fxSlashOn(e, { a0: -2.3, a1: 0.9, r: 96, w: 26, off: [30, 70], col: '#cfeaff', heavy: true, silent: true }); fxShock(e.x + e.face * 76, e.y, 170, '#cfeaff'); fxDust(e.x + e.face * 76, e.y, 8, 28); })],
+      hits: [HB(q, q + 0.07, [0, 105, 40, -10, 170], D.up, { launch: 260, knock: 20, hs: 0.055, downHit: true, snd: 'blunt', col: PI_COL.fist }),
+        HB(q + 0.12, q + 0.2, [0, 125, 46, -10, 220], D.down, { spike: 420, bounce: 0.9, knock: 60, hs: 0.17, shake: 9, big: 2.3, heavy: true, downHit: true, snd: 'blunt', col: '#cfeaff', onHit: (a, t) => { piImpact(t.x, t.y, 30, 2.8, '#cfeaff'); fxShock(t.x, t.y, 210, '#9fd8ff'); } })] }; } });
 // 制裁：怒火疾风（二觉）：跳起砸地，然后用眼花缭乱的步法在 600px 内的敌人之间穿梭连打 19 下，消失在画面外把敌人聚到一起，再出现打出终结（2 下直接打击 + 覆盖全画面的大爆炸）
 defSkill('pi_awaken2', { name: '制裁：怒火疾风', cls: 'priest', job: PIJ, tier: 2, lvReq: 27, maxLv: 3, sp: 0, mp: 200, cd: 170, pvp: 0.45, type: 'phys', awaken: true, cast: true, col: '#ff7a5a', req: piNeedWill,
   desc: '【二次觉醒「正义仲裁者」的觉醒技】完成二次觉醒任务时自动学会（不花 SP）并放进技能栏（↓↑→→+Z）。跳起砸地，然后用眼花缭乱的步法在周围 600px 的敌人之间穿梭，连打 19 下（每打一个敌人就以他为中心再找下一个），消失在画面外把敌人聚到一起，再出现打出破坏之拳 + 破碎之锤的终结，引发覆盖整个画面的大爆炸（伤害一半在爆炸）。全程无敌；干涸之泉可以取消进来，放出后不能取消。',
@@ -108,15 +109,15 @@ defSkill('pi_awaken2', { name: '制裁：怒火疾风', cls: 'priest', job: PIJ,
         if (a.slam && a.n < 19 && t >= 0.5 + a.n * 0.08) { const L = ents.filter(o => foe(e, o) && !o.dead && Math.abs(o.x - a.cx) < 600 && Math.abs(o.y - a.cy) < 220 && o.z < 200);
           a.n++; if (!L.length) { a.n = 19; return; }
           const o = L[a.n % L.length], side = a.n % 2 ? 1 : -1, x0 = e.x, y0 = e.y; fxAfterimage(e, '#ff9a7a'); e.x = clamp(o.x + side * 56, game.room ? game.room.x0 + 20 : -1e9, game.room ? game.room.x1 - 20 : 1e9); e.y = o.y; e.face = -side; a.cx = o.x; a.cy = o.y;
-          piBoltLite(x0, y0, e.x, e.y); e.play(a.n % 2 ? 'piHook' : 'piJab', true); sfx.swing(a.n % 3 === 0); piImpact(o.x, o.y, 60, 1.2, '#ffc0a0');
+          piBoltLite(x0, y0, e.x, e.y); e.play(a.n % 2 ? 'piHook' : 'piJab', true); sfx.swing(a.n % 3 === 0); piImpact(o.x, o.y, 60, 1.25, '#ffc0a0');
           applyHit(e, o, { dmg: T * 0.43 / 19, stun: 0.5, knock: 0, hs: 0.02, sure: true, downHit: true, box: null, snd: 'blunt', col: '#ffc0a0' }, { src: e }); }
         if (a.slam && a.n >= 19 && !a.gone) { a.gone = t; e.alpha = 0.001; e.hidden = true; const cx = e.x, cy = e.y; a.cx = cx; a.cy = cy;
           for (const o of ents) if (foe(e, o) && !o.dead && piMovable(o) && Math.abs(o.x - cx) < 900) { o.x = lerp(o.x, cx + e.face * 60, 0.85); o.y = lerp(o.y, cy, 0.8); addStatus(o, 'hold', 1.2, { src: e }); } }
         if (a.gone && !a.back && t >= a.gone + 0.45) { a.back = true; e.alpha = 1; e.hidden = false; e.x = a.cx - e.face * 70; fxAfterimage(e, '#ff9a7a'); e.play('piUpper', true); sfx.swing(true);
-          for (let i = 0; i < 2; i++) game.after(i * 0.12, () => { if (e.dead) return; if (i) e.play('piChop', true); instantHit(e, { box: [-20, 150, 60, -10, 200], dmg: T * 0.035, sure: true, launch: i ? 0 : 300, spike: i ? 300 : 0, knock: 40, hs: 0.1, big: 1.8, downHit: true, snd: 'blunt', col: '#ffc0a0' }); });
+          for (let i = 0; i < 2; i++) game.after(i * 0.12, () => { if (e.dead) return; if (i) e.play('piChop', true); instantHit(e, { box: [-20, 150, 60, -10, 200], dmg: T * 0.035, sure: true, launch: i ? 0 : 300, spike: i ? 300 : 0, knock: 40, hs: 0.11, shake: 6, big: 1.85, downHit: true, snd: 'blunt', col: '#ffc0a0' }); });
           game.after(0.35, () => { if (e.dead) return; cam.shake = 20; cam.flash = 0.35; cam.flashCol = '#ffd0b0'; sfx.boom(1.6); fxText('Extremum!', a.cx, a.cy, 170, { col: '#ff9a7a', size: 20, dur: 1 });
             fxSpr('explosion', a.cx, a.cy, 60, { w: 620, dur: 0.7, grow: [0.3, 1.2] }); for (let i = 0; i < 3; i++) game.after(i * 0.1, () => fxShock(a.cx, a.cy, 400 + i * 200, '#ff9a7a'));
-            for (const o of ents) if (foe(e, o) && !o.dead && Math.abs(o.x - a.cx) < WW) applyHit(e, o, { dmg: T * 0.5, sure: true, launch: 520, knock: 300, hs: 0.2, big: 2.6, downHit: true, box: null, snd: 'blunt', col: '#ffc0a0' }, { proj: true, src: { x: a.cx, y: a.cy, z: 0, face: e.face } }); });
+            for (const o of ents) if (foe(e, o) && !o.dead && Math.abs(o.x - a.cx) < WW) applyHit(e, o, { dmg: T * 0.5, sure: true, launch: 520, knock: 300, hs: 0.2, shake: 12, big: 2.6, downHit: true, box: null, snd: 'blunt', col: '#ffc0a0' }, { proj: true, src: { x: a.cx, y: a.cy, z: 0, face: e.face } }); });
           a.dur = t + 1.0; } },
       onEnd: e => { e.alpha = 1; e.hidden = false; } }; } });
 // 穿梭的蓝色折线（怒火疾风 / 正义铁拳）
@@ -137,16 +138,16 @@ defSkill('pi_furious', { name: '正义铁拳', cls: 'priest', job: PIJ, tier: 3,
       onInput: (e, I) => { const a = e.act; if (a.fin) return false; if (I.buffered('jump') && a.n > 0) { I.consume('jump'); a.n = 15; return true; }
         if ((a.key && I.buffered(a.key)) || I.buffered('attack')) { if (a.key) I.consume(a.key); I.consume('attack'); a.mash = e.actT; return true; } return false; },
       update: e => { const a = e.act, t = e.actT;
-        if (!a.slam && t >= 0.18) { a.slam = true; cam.shake = Math.max(cam.shake, 8); sfx.boom(0.9); fxShock(a.cx, a.cy, 220, '#ffe070'); fxSpr('burst', a.cx, a.cy, 30, { w: 200, dur: 0.35, col: '#ffe070' });
-          areaHit(e, a.cx, a.cy, 170, 0, { dmg: D.slam, launch: 420, knock: 20, hs: 0.08, downHit: true, col: '#ffe8a0' }, { zMax: 120 }); }
+        if (!a.slam && t >= 0.18) { a.slam = true; cam.shake = Math.max(cam.shake, 9); sfx.boom(0.95); fxShock(a.cx, a.cy, 230, '#ffe070'); fxSpr('burst', a.cx, a.cy, 30, { w: 220, dur: 0.38, col: '#ffe070' });
+          areaHit(e, a.cx, a.cy, 170, 0, { dmg: D.slam, launch: 420, knock: 20, hs: 0.09, shake: 5, downHit: true, col: '#ffe8a0' }, { zMax: 120 }); }
         if (a.slam && !a.fin && a.n < 15 && t >= a.next) { a.n++; a.next = t + (t - a.mash < 0.3 ? 0.06 : 0.09); const side = a.n % 2 ? 1 : -1; fxAfterimage(e, '#ffe070');
           e.x = clamp(a.cx + side * 70, game.room ? game.room.x0 + 20 : -1e9, game.room ? game.room.x1 - 20 : 1e9); e.face = -side; e.play(a.n % 2 ? 'piHook' : 'piJab', true); if (a.n % 2) sfx.swing(false);
           for (const o of ents) if (foe(e, o) && !o.dead && piMovable(o) && Math.abs(o.x - a.cx) < 380 && Math.abs(o.y - a.cy) < 160) { o.x = lerp(o.x, a.cx, 0.35); o.y = lerp(o.y, a.cy, 0.35); o.z = Math.max(o.z, 30); o.vz = Math.max(o.vz, 60); }
-          if (a.n % 3 === 0) fxText(a.n % 2 ? '欧拉！' : '欧~拉！', e.x, e.y, e.z + 60, { col: '#ffe8a0', size: 10, dur: 0.3 }); piImpact(a.cx, a.cy, 60, 1.1, '#ffe8a0');
-          areaHit(e, a.cx, a.cy, 110, 0, { dmg: D.hit, stun: 0.4, knock: 0, airLift: 80, hs: 0.02, downHit: true, col: '#ffe8a0' }, { zMax: 200 }); }
-        if (a.slam && !a.fin && a.n >= 15) { a.fin = true; e.face = Math.sign(a.cx - e.x) || e.face; e.play('piHook', true); cam.shake = 16; cam.flash = 0.18; cam.flashCol = '#fff2c0'; sfx.boom(1.4); fxText('Justice!', a.cx, a.cy, 150, { col: '#ffe070', size: 18, dur: 0.8 });
-          fxSlashOn(e, { a0: -2.0, a1: 1.0, r: 120, w: 30, off: [30, 60], col: '#ffe070', heavy: true }); fxSpr('burst', a.cx, a.cy, 70, { w: 360, dur: 0.5, col: '#ffe070', grow: [0.4, 1.2] }); fxStreak({ x: a.cx, y: a.cy, z: 70, face: e.face, len: 460, w: 50, col: '#ffe070', dur: 0.4 });
-          areaHit(e, a.cx, a.cy, 170, 0, { dmg: D.fin, knock: 560, launch: 260, hs: 0.18, big: 2.4, sure: true, downHit: true, col: '#ffe8a0' }, { zMax: 260 }); a.dur = t + 0.6; } } }; } });
+          if (a.n % 3 === 0) fxText(a.n % 2 ? '欧拉！' : '欧~拉！', e.x, e.y, e.z + 60, { col: '#ffe8a0', size: 10, dur: 0.3 }); piImpact(a.cx, a.cy, 60, 1.2, '#ffe8a0');
+          areaHit(e, a.cx, a.cy, 110, 0, { dmg: D.hit, stun: 0.4, knock: 0, airLift: 80, hs: 0.025, downHit: true, col: '#ffe8a0' }, { zMax: 200 }); }
+        if (a.slam && !a.fin && a.n >= 15) { a.fin = true; e.face = Math.sign(a.cx - e.x) || e.face; e.play('piHook', true); cam.shake = 17; cam.flash = 0.2; cam.flashCol = '#fff2c0'; sfx.boom(1.45); fxText('Justice!', a.cx, a.cy, 150, { col: '#ffe070', size: 18, dur: 0.8 });
+          fxSlashOn(e, { a0: -2.0, a1: 1.0, r: 128, w: 32, off: [30, 60], col: '#ffe070', heavy: true }); fxSpr('burst', a.cx, a.cy, 70, { w: 380, dur: 0.52, col: '#ffe070', grow: [0.4, 1.25] }); fxShock(a.cx, a.cy, 280, '#ffe070'); fxStreak({ x: a.cx, y: a.cy, z: 70, face: e.face, len: 480, w: 54, col: '#ffe070', dur: 0.42 });
+          areaHit(e, a.cx, a.cy, 170, 0, { dmg: D.fin, knock: 560, launch: 260, hs: 0.19, shake: 10, big: 2.4, sure: true, downHit: true, col: '#ffe8a0' }, { zMax: 260 }); a.dur = t + 0.6; } } }; } });
 // 正义执行：雷米迪奥斯的圣座（三觉）：划十字，巨兵移到身后；跃起，巨兵化为雷米迪奥斯的圣座；落地把周围宣告为圣域，敌人被拉到面前跪地忏悔（控制）；
 // 在圣域中心的告解所祈祷，圣座现出真正的形态——神圣拳铠；注入神的意志一记上勾拳执行正义（2 段，1 : 1.5）
 defSkill('pi_awaken3', { name: '正义执行：雷米迪奥斯的圣座', cls: 'priest', job: PIJ, tier: 3, lvReq: 30, maxLv: 3, sp: 0, mp: 300, cd: 270, pvp: 0.45, type: 'phys', awaken: true, col: '#ffe070', req: p => { const r = piNeedWill(p); if (r !== true) return r; const L = piLinkOf(p); return (p.cool[L] || 0) > 0 ? `联动的${SKILLS[L].name}冷却中` : true; },
@@ -165,12 +166,12 @@ defSkill('pi_awaken3', { name: '正义执行：雷米迪奥斯的圣座', cls: '
           fxText('Dicite!', e.x, e.y, e.z + 60, { col: '#ffe070', size: 14, dur: 0.6 }); }),
         evAt(1.35, e => { e.play('piPray', true); pcPillar(e.x, e.y, { w: 120, h: 340, dur: 0.9, col: '#fff6c0' }); fxText('神的旨意！', e.x, e.y, e.z + 70, { col: '#fff6c0', size: 13, dur: 0.6 }); sfx.charge(); }),
         evAt(1.85, e => { fxSpr('burst', e.x + e.face * 30, e.y, 70, { w: 160, dur: 0.5, col: '#ffd24a' }); fxSpr('pm_hexshield', e.x + e.face * 40, e.y, 70, { w: 90, h: 120, dur: 0.6, col: '#ffd24a' }); fxText('神圣拳铠', e.x, e.y, e.z + 80, { col: '#ffd24a', size: 12, dur: 0.6 }); }),
-        evAt(2.15, e => { const a = e.act, cx = a.cx ?? e.x; e.play('piUpper', true); cam.shake = 18; cam.flash = 0.2; cam.flashCol = '#fff2c0'; sfx.boom(1.4); fxText('Justitia!', e.x, e.y, e.z + 80, { col: '#ffe070', size: 20, dur: 0.9 });
-          fxSlashOn(e, { a0: 1.7, a1: -1.6, r: 160, w: 40, off: [40, 80], col: '#ffe070', heavy: true }); fxSpr('burst', e.x + e.face * 90, e.y, 110, { w: 300, dur: 0.5, col: '#ffe070', grow: [0.4, 1.2] });
-          for (const o of ents) if (foe(e, o) && !o.dead && o.invul <= 0 && Math.abs(o.x - cx) < 700) { if (o.status) delete o.status.hold; applyHit(e, o, { dmg: T * 0.4, sure: true, launch: 520, knock: 60, hs: 0.16, big: 2.2, downHit: true, box: null, snd: 'blunt', col: '#ffe8a0' }, { proj: true, src: { x: e.x, y: e.y, z: 0, face: e.face } }); } }),
-        evAt(2.45, e => { const a = e.act, cx = a.cx ?? e.x; cam.shake = 22; cam.flash = 0.35; cam.flashCol = '#fff8e0'; sfx.boom(1.7);
-          for (let i = 0; i < 5; i++) pcPillar(cx + (i - 2) * 140, e.y, { w: 120, h: 420, dur: 0.8, col: '#fff6c0' }); fxSpr('explosion', cx + e.face * 60, e.y, 80, { w: 560, dur: 0.7, grow: [0.3, 1.2] }); for (let i = 0; i < 3; i++) game.after(i * 0.1, () => fxShock(cx, e.y, 400 + i * 180, '#ffe070'));
-          for (const o of ents) if (foe(e, o) && !o.dead && Math.abs(o.x - cx) < 800) applyHit(e, o, { dmg: T * 0.6, sure: true, launch: 600, knock: 280, hs: 0.22, big: 2.8, downHit: true, box: null, snd: 'blunt', col: '#fff2c0' }, { proj: true, src: { x: cx, y: e.y, z: 0, face: e.face } });
+        evAt(2.15, e => { const a = e.act, cx = a.cx ?? e.x; e.play('piUpper', true); cam.shake = 18; cam.flash = 0.22; cam.flashCol = '#fff2c0'; sfx.boom(1.45); fxText('Justitia!', e.x, e.y, e.z + 80, { col: '#ffe070', size: 20, dur: 0.9 });
+          fxSlashOn(e, { a0: 1.7, a1: -1.6, r: 168, w: 42, off: [40, 80], col: '#ffe070', heavy: true }); fxSpr('burst', e.x + e.face * 90, e.y, 110, { w: 320, dur: 0.52, col: '#ffe070', grow: [0.4, 1.25] });
+          for (const o of ents) if (foe(e, o) && !o.dead && o.invul <= 0 && Math.abs(o.x - cx) < 700) { if (o.status) delete o.status.hold; applyHit(e, o, { dmg: T * 0.4, sure: true, launch: 520, knock: 60, hs: 0.17, shake: 10, big: 2.2, downHit: true, box: null, snd: 'blunt', col: '#ffe8a0' }, { proj: true, src: { x: e.x, y: e.y, z: 0, face: e.face } }); } }),
+        evAt(2.45, e => { const a = e.act, cx = a.cx ?? e.x; cam.shake = 22; cam.flash = 0.35; cam.flashCol = '#fff8e0'; sfx.boom(1.75);
+          for (let i = 0; i < 5; i++) pcPillar(cx + (i - 2) * 140, e.y, { w: 126, h: 430, dur: 0.85, col: '#fff6c0' }); fxSpr('explosion', cx + e.face * 60, e.y, 80, { w: 580, dur: 0.72, grow: [0.3, 1.25] }); for (let i = 0; i < 3; i++) game.after(i * 0.1, () => fxShock(cx, e.y, 400 + i * 180, '#ffe070'));
+          for (const o of ents) if (foe(e, o) && !o.dead && Math.abs(o.x - cx) < 800) applyHit(e, o, { dmg: T * 0.6, sure: true, launch: 600, knock: 280, hs: 0.23, shake: 14, big: 2.8, downHit: true, box: null, snd: 'blunt', col: '#fff2c0' }, { proj: true, src: { x: cx, y: e.y, z: 0, face: e.face } });
           if (e.piWill) { e.piWill.x = e.x + e.face * 40; e.piWill.y = e.y; } })] }; } });
 const piLinkOf = p => isHuman(p) && pcSw('pi_awaken3') ? 'pi_awaken2' : 'pi_awaken';
 for (const id of ['pi_awaken', 'pi_awaken2']) { const S = SKILLS[id], r0 = S.req; S.req = p => { const r = r0 ? r0(p) : true; if (r !== true) return r; return (piLinkOf(p) === id && (p.cool.pi_awaken3 || 0) > 0 && skLv(p, 'pi_awaken3') > 0) ? '正义执行冷却中（联动）' : true; }; }

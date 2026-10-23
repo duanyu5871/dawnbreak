@@ -447,15 +447,16 @@ function fnPressOrb(e, t, lv, i, big) {
       if (q.ph !== 'back' && (!t || t.dead || t.remove)) q.ph = 'back';
       if (q.ph === 'go') { const dx = t.x - q.x, dy = t.y - q.y, dz = t.z + t.hurtH() * 0.5 - q.z, l = Math.hypot(dx, dy * 2, dz) || 1, sp = 760;
         q.vx = damp(q.vx, dx / l * sp, 10, dt); q.vy = damp(q.vy, dy / l * sp, 10, dt); q.vz = damp(q.vz, dz / l * sp, 10, dt);
-        if (l < 26) { if (nat) { q.ph = 'done'; q.t = q.life; fxBurst(t.x, t.y, t.z + 50, 120 * sz, NEN_COL); fxShock(t.x, t.y, 80 * sz, NEN_COL); sfx.boom(0.4);
-            applyHit(e, t, fnHit('fn_press', { dmg: per * 8, stun: 0.4, knock: 40, hs: 0.05, snd: 'crit', sure: true }), { proj: true, src: { x: q.x, y: q.y, z: q.z, face: e.face } }); return; }
+        if (l < 26) { if (nat) { q.ph = 'done'; q.t = q.life; fxBurst(t.x, t.y, t.z + 50, 130 * sz, NEN_COL); fxShock(t.x, t.y, 90 * sz, NEN_COL); fnStrike(t.x, t.y, { w: 48 * sz, h: 200 * sz, ring: 65 * sz, dur: 0.22 }); cam.shake = Math.max(cam.shake, 3); sfx.boom(0.45); sfx.zap();
+            applyHit(e, t, fnHit('fn_press', { dmg: per * 8, stun: 0.4, knock: 40, hs: 0.06, big: 1.3, snd: 'crit', sure: true }), { proj: true, src: { x: q.x, y: q.y, z: q.z, face: e.face } }); return; }
           q.ph = 'orbit'; q.ot = 0; q.tt = 0; } }
       else if (q.ph === 'orbit') { q.ot += dt; q.tt -= dt; const a = q.ot * 7 + i * TAU / 3; q.vx = q.vy = q.vz = 0; q.x = t.x + Math.cos(a) * 30; q.y = t.y + Math.sin(a) * 9; q.z = t.z + t.hurtH() * 0.55 + Math.sin(a * 2) * 6;
-        if (q.tt <= 0) { q.tt = 0.25; applyHit(e, t, fnHit('fn_press', { dmg: per, stun: 0.12, knock: 0, hs: 0.02, snd: 'crit', sure: true }), { proj: true, src: { x: q.x, y: q.y, z: q.z, face: e.face } }); }
+        if (q.tt <= 0) { q.tt = 0.25; fxSpr('spark', q.x, q.y + 1, q.z, { w: 28 * sz, dur: 0.14, col: NEN_WHITE }); applyHit(e, t, fnHit('fn_press', { dmg: per, stun: 0.12, knock: 0, hs: 0.025, snd: 'crit', sure: true }), { proj: true, src: { x: q.x, y: q.y, z: q.z, face: e.face } }); }
         if (q.ot >= 2) q.ph = 'back'; }
       else { const dx = e.x - q.x, dy = e.y - q.y, dz = e.z + 70 - q.z, l = Math.hypot(dx, dy * 2, dz) || 1; q.vx = dx / l * 700; q.vy = dy / l * 700; q.vz = dz / l * 700; if (l < 24 || e.dead) q.t = q.life; }
     },
-    draw(c, q) { fnBall(c, sx(q.x), sy(q.y, q.z), 20 * sz); } });
+    draw(c, q) { const X = sx(q.x), Y = sy(q.y, q.z); fnBall(c, X, Y, 20 * sz);
+      if (q.ph === 'orbit' && t && Math.floor(game.t * 24 + i) % 2 === 0) fnBolt(c, X, Y, sx(t.x), sy(t.y, t.z + t.hurtH() * 0.55), { w: 2, seg: 4, amp: 6, alpha: 0.8 }); } });
 }
 fnDef('fn_press', { name: '念气环绕：袭', lvReq: 17, mp: 35, cd: 4.5, col: '#ffcf40',
   desc: '把强化的念气珠射向前方 600px 内的敌人（最多 3 个目标），念气珠绕着敌人旋转 2 秒持续打击，然后飞回身边。前方没有敌人时不能施放。风雷啸开启时念气珠变大 50%；学会禅意·万象后改为追到敌人身边直接爆炸。',
@@ -470,25 +471,31 @@ fnDef('fn_nencannon2', { name: '雷霆念炮', lvReq: 17, mp: 35, cd: 7, col: '#
   pow: lv => skillDmg(4.2, 0.42, lv), ai: { kind: 'poke', r: [0, 330], dy: 26 },
   act: lv => ({ name: 'fn_nencannon2', clip: 'fnPalm2', dur: 0.66, noCounter: true,
     events: [evAt(0.02, e => { sfx.charge(); fnCharge(e, 4); }),
-      evAt(0.24, e => { instantHit(e, fnHit('fn_nencannon2', { box: [-10, 64, 34, 0, 130], dmg: 0.05, knock: 260, stun: 0.3, hs: 0.02, snd: 'blunt' })); sfx.zap(); fxBurst(e.x + e.face * 40, e.y, e.z + 62, 90, NEN_COL);
+      evAt(0.24, e => { instantHit(e, fnHit('fn_nencannon2', { box: [-10, 64, 34, 0, 130], dmg: 0.05, knock: 260, stun: 0.3, hs: 0.02, snd: 'blunt' })); sfx.zap(); sfx.boom(0.45); cam.shake = Math.max(cam.shake, 4);
+        fxBurst(e.x + e.face * 40, e.y, e.z + 62, 110, NEN_COL); fxShock(e.x + e.face * 45, e.y, 110, NEN_COL);
         fnBeam(e.x + e.face * 30, e.y + 1, e.z + 58, 340, e.face, 56, 0.4); fnBeamBolts(e, 340, 0.36); }),
-      ...[0.26, 0.34, 0.42, 0.5].map(t => evAt(t, e => instantHit(e, fnHit('fn_nencannon2', { box: [20, 360, 28, 20, 110], dmg: skillDmg(1.05, 0.105, lv), stun: 0.3, knock: 20, hs: 0.03, snd: 'crit',
+      ...[0.26, 0.34, 0.42, 0.5].map(t => evAt(t, e => instantHit(e, fnHit('fn_nencannon2', { box: [20, 360, 28, 20, 110], dmg: skillDmg(1.05, 0.105, lv), stun: 0.3, knock: 20, hs: 0.04, snd: 'crit',
         onHit: (a, tt) => addStatus(tt, 'shock', 3, { src: a }) }))))] }) });
-function fnBeamBolts(e, len, dur) { addFx({ x: e.x, y: e.y + 1.2, z: e.z + 58, face: e.face, dur, draw(c) { const k = this.t / this.dur, X = sx(this.x + this.face * 30), Y = sy(this.y, this.z); for (let i = 0; i < 2; i++) fnBolt(c, X, Y + rnd(-10, 10), X + this.face * len * (0.6 + 0.4 * Math.random()), Y + rnd(-14, 14), { w: 3, seg: 9, amp: 10, alpha: 1 - k }); } }); }
+function fnBeamBolts(e, len, dur) { addFx({ x: e.x, y: e.y + 1.2, z: e.z + 58, face: e.face, dur, draw(c) { const k = this.t / this.dur, X = sx(this.x + this.face * 30), Y = sy(this.y, this.z); for (let i = 0; i < 3; i++) fnBolt(c, X, Y + rnd(-10, 10), X + this.face * len * (0.6 + 0.4 * Math.random()), Y + rnd(-14, 14), { w: 3, seg: 9, amp: 10, alpha: 1 - k }); } }); }
 // ---- 幻影爆碎（改变分身）：分身碰到敌人就光属性爆炸；600px 内再按：分身化成念气球飞回身边合体爆炸（按分身数加伤 / 加范围）----
 const fnCloneN = p => clamp(skLv(p, 'f_clone') || 1, 1, 3);
-const fnClones = p => (p._fnClones || []).filter(q => projs.indexOf(q) >= 0 && q.hit);
-function fnCloneBoom(e, x, y, lv) { fxBurst(x, y, 50, 120, NEN_COL); fxShock(x, y, 100, NEN_COL); sfx.boom(0.5); blast(e, x, y, 95, fnHit('fn_blast', { dmg: skillDmg(2.4, 0.24, lv), launch: 240, knock: 60, hs: 0.05, downHit: true, sure: true }), { zMax: 160 }); }
+const fnClones = p => (p._fnClones || []).filter(q => projs.indexOf(q) >= 0 && q.active && !q.culled && !q.boomed);
+function fnCloneBoom(e, x, y, lv) {
+  cam.shake = Math.max(cam.shake, 3); fxBurst(x, y, 50, 130, NEN_COL); fxShock(x, y, 105, NEN_COL); fnStrike(x, y, { w: 52, h: 210, ring: 75, dur: 0.24 }); sfx.boom(0.55); sfx.zap();
+  blast(e, x, y, 95, fnHit('fn_blast', { dmg: skillDmg(2.4, 0.24, lv), stun: 0.45, knock: 30, hs: 0.06, big: 1.35, downHit: true, sure: true }), { zMax: 160 });
+}
 function fnCloneSpawn(e, lv) {
   const n = fnCloneN(e), cv = document.createElement('canvas'); cv.width = GHOST.W; cv.height = GHOST.H; cv.getContext('2d').drawImage(ghostSnap(e), 0, 0);
-  const snapFace = e.face; e._fnClones = [];
+  const snapFace = e.face, chk = fnHit('fn_blast', { downHit: true }); e._fnClones = [];
   for (let i = 0; i < n; i++) {
-    const q = spawnProj({ owner: e, x: fnClampX(e.x + e.face * (40 + i * 26)), y: clamp(e.y + (i - (n - 1) / 2) * 22, 6, DEPTH - 6), z: 0, face: e.face, life: 7, w: 16, d: 14, h: 96, pierce: false,
-      hit: fnHit('fn_blast', { dmg: 0.1, stun: 0.4, knock: 20, hs: 0.02 }),
+    const q = spawnProj({ owner: e, x: fnClampX(e.x + e.face * (40 + i * 26)), y: clamp(e.y + (i - (n - 1) / 2) * 22, 6, DEPTH - 6), z: 0, face: e.face, life: 7, w: 16, d: 14, h: 96, pierce: true, active: true, hit: null,
       update(q, dt) { const t = nearestFoe(e, 520, o => Math.abs(o.x - q.x) < 520); if (t) { const dx = t.x - q.x, dy = t.y - q.y, l = Math.hypot(dx, dy) || 1; q.vx = dx / l * 230; q.vy = dy / l * 120; q.face = Math.sign(dx) || q.face; } else { q.vx = damp(q.vx, 0, 6, dt); q.vy = damp(q.vy, 0, 6, dt); }
-        if (q.hit) { const B = { x0: q.x - q.w, x1: q.x + q.w, y0: q.y - q.d, y1: q.y + q.d, z0: q.z, z1: q.z + q.h }; for (const o of ents) if (canHit(e, o, q.hit) && overlaps(B, o)) { q.boomed = true; q.hit = null; q.culled = true; q.t = q.life; fnCloneBoom(e, q.x, q.y, lv); break; } }
+        if (q.active) {
+          const nx = q.x + q.vx * dt, ny = q.y + q.vy * dt;
+          const B = { x0: Math.min(q.x, nx) - q.w, x1: Math.max(q.x, nx) + q.w, y0: Math.min(q.y, ny) - q.d, y1: Math.max(q.y, ny) + q.d, z0: q.z, z1: q.z + q.h };
+          for (const o of ents) if (canHit(e, o, chk) && overlaps(B, o)) { q.active = false; q.boomed = true; q.culled = true; q.t = q.life; fnCloneBoom(e, q.x, q.y, lv); break; }
+        }
       },
-      onHitT(q) { q.boomed = true; },
       onEnd(q) { if (q.culled) return; if (q.boomed) fnCloneBoom(e, q.x, q.y, lv); else fxBurst(q.x, q.y, 50, 60, NEN_COL); },
       draw(c, q) { const X = sx(q.x), Y = sy(q.y, 0), a = q.t < 0.15 ? q.t / 0.15 : q.life - q.t < 0.4 ? (q.life - q.t) / 0.4 : 1;
         c.save(); c.globalAlpha = 0.72 * a; c.translate(X, Y); if (q.face !== snapFace) c.scale(-1, 1); c.drawImage(cv, -GHOST.W / 2, -GHOST.FY); c.restore();
@@ -500,7 +507,7 @@ function fnCloneSpawn(e, lv) {
 // 再按：分身化成念气球飞回身边，0.35 秒后合体爆炸（每多一个分身 +10% 伤害、范围变大）
 function fnCloneRecall(e) {
   const L = fnClones(e).filter(q => Math.abs(q.x - e.x) < 600), lv = Math.max(1, skLv(e, 'fn_blast')); if (!L.length) return false;
-  for (const q of L) { const x0 = q.x, y0 = q.y; q.hit = null; q.culled = true; q.t = q.life;
+  for (const q of L) { const x0 = q.x, y0 = q.y; q.active = false; q.boomed = true; q.culled = true; q.t = q.life;
     addFx({ x: x0, y: y0 + 0.5, z: 60, dur: 0.35, draw(c) { const k = easeIn(this.t / this.dur), X = sx(lerp(x0, e.x, k)), Y = sy(lerp(y0, e.y, k), 60 + Math.sin(k * Math.PI) * 60); fnBall(c, X, Y, 26); } }); }
   const n = L.length; sfx.charge();
   fnAfter(e, 0.35, () => { const R = 110 + 25 * n; fxBurst(e.x, e.y, 60, R * 1.6, NEN_COL); fxShock(e.x, e.y, R, NEN_COL); fxShock(e.x, e.y, R * 0.7, NEN_WHITE); cam.shake = Math.max(cam.shake, 4); sfx.boom(0.8);
@@ -533,15 +540,16 @@ fnDef('fn_roar', { name: '狮子吼', lvReq: 19, mp: 60, cd: 17, col: '#ffb030',
 // ---- 雷虎天降（2022 新增）：腿上聚成念兽形状下劈，大爆炸，原地留下念气再打 8 段 + 感电 ----
 defSummon('fn_tdfield', { kind: 'field', life: 1.35, tick: 0.16, hits: 8, max: 3, over: 'oldest', keepRoom: false, type: 'mag', elem: 'light',
   onTick(s) { summonArea(s, s.x, s.y, 120, fnHit('fn_thunderdrop', { dmg: s.dmg, stun: 0.25, knock: 10, hs: 0.02, downHit: true, snd: 'crit' }), { zMax: 160, status: 'shock', sdur: 4 }); if (s.hits % 2 === 0) fnStrike(s.x + rnd(-50, 50), s.y + rnd(-14, 14), { w: 40, h: 200, ring: 40, dur: 0.22 }); },
-  draw(c, s) { const k = s.lifeT / s.life; drawSpr(c, fnTint('shock', NEN_COL), sx(s.x), sy(s.y, 0), 280, 0, { alpha: 0.5 * (1 - k) }); },
+  draw(c, s) { const k = s.lifeT / s.life, X = sx(s.x), Y = sy(s.y, 0); drawSpr(c, fnTint('shock', NEN_COL), X, Y, 280, 0, { alpha: 0.5 * (1 - k) });
+    if (Math.floor(game.t * 24) % 2) fnBolt(c, X + rnd(-80, 80), Y + rnd(-20, 20), X + rnd(-80, 80), Y + rnd(-20, 20), { w: 2.5, seg: 5, amp: 8, alpha: 1 - k }); },
   drawUpright(c, s) { const k = s.lifeT / s.life; drawSpr(c, fnTint('pillar', NEN_COL), sx(s.x), sy(s.y, 0) + 6, 110, 200 * (0.7 + 0.3 * Math.sin(game.t * 30)), { ay: 1, alpha: 0.6 * (1 - k) }); } });
 fnDef('fn_thunderdrop', { name: '雷虎天降', lvReq: 19, mp: 60, cd: 17, col: '#ffd040', pre: { fn_legstrike: 1 },
   desc: '腿上的念气聚成猛虎的形状，跃起下劈（雷霆踏的动作），落点发生大爆炸把敌人挑起；原地留下的念气再打 8 段并 100% 感电 4 秒。风雷啸开启时附加螺旋球。',
   pow: lv => skillDmg(7.5, 0.75, lv), ai: { kind: 'aoe', r: [0, 170], dy: 40 },
   act: (lv, p) => ({ name: 'fn_thunderdrop', clip: 'fnAxe', dur: 0.8, move: [[0.04, 0.3, 110]], ws: fnWS(p),
     events: [evAt(0.02, e => { sfx.charge(); fnLegFx(e, 0.34); addFx({ ent: e, y: e.y + 0.9, dur: 0.34, draw(c) { const E = this.ent; fnBeast(c, sx(E.x + E.face * 60), sy(E.y, E.z + 20), 90, E.face, 'tiger', game.t, 0.7); } }); }),
-      evAt(0.34, e => { const x = e.x + e.face * 80; sfx.boom(0.9); sfx.zap(); cam.shake = Math.max(cam.shake, 6); fxBurst(x, e.y, 40, 220, NEN_COL); fxShock(x, e.y, 170, NEN_COL); fnStrike(x, e.y, { w: 90, h: 340, ring: 150 });
-        blast(e, x, e.y, 150, fnHit('fn_thunderdrop', { dmg: skillDmg(3.5, 0.35, lv), launch: 280, knock: 60, hs: 0.08, big: 1.5, downHit: true, sure: true }), { zMax: 160 });
+      evAt(0.34, e => { const x = e.x + e.face * 80; sfx.boom(0.95); sfx.zap(); cam.shake = Math.max(cam.shake, 7); fxBurst(x, e.y, 40, 230, NEN_COL); fxShock(x, e.y, 175, NEN_COL); fxShock(x, e.y, 115, NEN_WHITE); fnStrike(x, e.y, { w: 94, h: 350, ring: 155 });
+        blast(e, x, e.y, 150, fnHit('fn_thunderdrop', { dmg: skillDmg(3.5, 0.35, lv), launch: 280, knock: 60, hs: 0.1, big: 1.6, downHit: true, sure: true }), { zMax: 160 });
         const s = summon(e, 'fn_tdfield', { x, y: e.y }); if (s) s.dmg = skillDmg(0.5, 0.05, lv);
         if (e.act.ws) fnWSBall(e, x, e.y, skillDmg(7.5, 0.75, lv), 'fn_thunderdrop', 100); })] }) });
 // ---- 螺旋念气场：身边形成圆形念气场，14 段 + 感电 100%；风雷啸开启时霸体 ----
@@ -557,7 +565,7 @@ fnDef('fn_field', { name: '螺旋念气场', lvReq: 19, mp: 55, cd: 20, col: '#f
   pow: lv => skillDmg(8.1, 0.81, lv), ai: { kind: 'aoe', r: [0, 140], dy: 60 },
   act: (lv, p) => { const ws = fnWS(p);
     return { name: 'fn_field', clip: 'fnSeal', dur: 0.45, noCounter: true, superArmor: ws ? true : undefined, ws,
-      events: [evAt(0.02, e => { sfx.charge(); fnCharge(e, 4); }), evAt(0.3, e => { sfx.zap(); sfx.boom(0.5); fxShock(e.x, e.y, 160, NEN_COL); const s = summon(e, 'fn_nenfield', { x: e.x, y: e.y }); if (s) { s.dmg = skillDmg(8.1, 0.81, lv) / 14; s.r = 150; }
+      events: [evAt(0.02, e => { sfx.charge(); fnCharge(e, 4); }), evAt(0.3, e => { sfx.zap(); sfx.boom(0.55); cam.shake = Math.max(cam.shake, 4); fxBurst(e.x, e.y, 50, 170, NEN_COL); fxShock(e.x, e.y, 160, NEN_COL); const s = summon(e, 'fn_nenfield', { x: e.x, y: e.y }); if (s) { s.dmg = skillDmg(8.1, 0.81, lv) / 14; s.r = 150; }
         if (e.act.ws) fnWSBall(e, e.x + e.face * 60, e.y, skillDmg(8.1, 0.81, lv), 'fn_field', 110); })] }; } });
 // ---- 念兽：猛虎震地：放出獬豸形的念兽向前扑出，飞行中 4 段 + 落地爆炸；全程霸体 ----
 fnDef('fn_haitai', { name: '念兽：猛虎震地', lvReq: 20, mp: 90, cd: 45, col: '#ffc020', pre: { fn_tiger: 1 },
@@ -568,14 +576,15 @@ fnDef('fn_haitai', { name: '念兽：猛虎震地', lvReq: 20, mp: 90, cd: 45, c
 function fnHaitai(e, lv, ws) {
   const x0 = e.x + e.face * 20, per = skillDmg(1.8, 0.18, lv);
   return spawnProj({ owner: e, x: x0, y: e.y, z: 0, vx: e.face * 760, face: e.face, life: 0.62, w: 60, d: 30, h: 150, pierce: true,
-    hit: fnHit('fn_haitai', { dmg: per, stun: 0.5, knock: 30, hs: 0.03, rep: 0.12, max: 4, snd: 'crit', downHit: true }),
+    hit: fnHit('fn_haitai', { dmg: per, stun: 0.5, knock: 30, hs: 0.04, rep: 0.12, max: 4, snd: 'crit', downHit: true }),
     // 扑中的敌人被念兽推着走（领主 / 很重的不推），最后一起吃落地爆炸
     update(q, dt) { if (Math.random() < 0.6) fxDust(q.x - q.face * 30, q.y, 1, 20, '#e8c070');
       for (const t of ents) if (q.hitMap.has(t.id) && !t.dead && !t.boss && t.weight < 3 && t.st !== 'held') { t.x = fnClampX(q.x + q.face * 36, t.w + 2); t.y = damp(t.y, q.y, 8, dt); } },
-    onEnd(q) { cam.shake = Math.max(cam.shake, 7); sfx.boom(1); fxBurst(q.x, q.y, 60, 260, NEN_COL); fxShock(q.x, q.y, 190, NEN_COL); fxShock(q.x, q.y, 130, NEN_WHITE);
-      blast(e, q.x, q.y, 160, fnHit('fn_haitai', { dmg: skillDmg(7.2, 0.72, lv), launch: 320, knock: 120, hs: 0.1, big: 1.6, downHit: true, sure: true }), { zMax: 200 });
+    onEnd(q) { cam.shake = Math.max(cam.shake, 8); sfx.boom(1.05); sfx.zap(); fxBurst(q.x, q.y, 60, 270, NEN_COL); fxShock(q.x, q.y, 195, NEN_COL); fxShock(q.x, q.y, 130, NEN_WHITE); fnStrike(q.x, q.y, { w: 100, h: 360, ring: 150 });
+      blast(e, q.x, q.y, 160, fnHit('fn_haitai', { dmg: skillDmg(7.2, 0.72, lv), launch: 320, knock: 120, hs: 0.11, big: 1.7, downHit: true, sure: true }), { zMax: 200 });
       if (ws) for (let i = 0; i < 3; i++) fnWSBall(e, q.x + rnd(-70, 70), clamp(q.y + rnd(-30, 30), 6, DEPTH - 6), skillDmg(14.4, 1.44, lv) / 3, 'fn_haitai', 70); },
-    draw(c, q) { const k = q.t / q.life; fnBeast(c, sx(q.x), sy(q.y, Math.sin(k * Math.PI) * 40), 150, q.face, 'haitai', game.t * 1.6, k < 0.1 ? k / 0.1 : 1); } });
+    draw(c, q) { const k = q.t / q.life, X = sx(q.x), Y = sy(q.y, Math.sin(k * Math.PI) * 40); fnBeast(c, X, Y, 150, q.face, 'haitai', game.t * 1.6, k < 0.1 ? k / 0.1 : 1);
+      if (Math.floor(game.t * 24) % 2) fnBolt(c, X - q.face * 40, Y - 40 + rnd(-20, 20), X + q.face * 40, Y - 50 + rnd(-20, 20), { w: 2.5, seg: 5, amp: 8 }); } });
 }
 // ---- 一觉：念兽：审判之金雷虎（骑乘，方向键控制，跳 3 次踩出冲击波，最后爆炸）----
 const FN_RIDE_Z = 96;

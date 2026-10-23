@@ -91,17 +91,17 @@ const pcCrossFx = (x, y, z, w = 120, col = PC_COL.holy, dur = 0.4) => fxSpr('cro
 function pcSpearFx(x, y, z, len, ang, col = PC_COL.light, dur = 0.3) {
   addFx({ x, y: y + 1, z, dur, add: true, img: fxTint('thrust', col), draw(c) { const k = this.t / this.dur; drawSpr(c, this.img, sx(this.x), sy(this.y, this.z), len, len * 0.16, { rot: ang, alpha: 1 - k * k }); } });
 }
-// 巨大的光之锤（忏悔之锤 / 神罚之锤）：程序画的锤头 + 锤柄，从头顶挥下
+// 巨大的光之锤（忏悔之锤 / 神罚之锤 / 圣灵之槌）：程序画的锤头 + 锤柄，从头顶挥下
 function pcHammerFx(e, x, o = {}) {
-  const s = o.s || 1, face = e.face;
+  const s = o.s || 1, face = o.face || e.face;
   return addFx({ x: x - face * 30 * s, y: e.y + 2, z: 0, dur: o.dur || 0.5, face, draw(c) {
     const k = this.t / this.dur, ang = lerp(-2.1, 1.15, easeIn(Math.min(1, k / 0.45))), a = k > 0.7 ? (1 - k) / 0.3 : 1, X = sx(this.x), Y = sy(this.y, 70 * s), L = 150 * s;
-    c.save(); c.globalAlpha = 0.95 * a; c.translate(X, Y); c.scale(this.face, 1); c.rotate(ang);
+    c.save(); c.globalAlpha = 0.96 * a; c.translate(X, Y); c.scale(this.face, 1); c.rotate(ang);
     c.fillStyle = '#c8a040'; c.strokeStyle = '#5a3a10'; c.lineWidth = 2; c.fillRect(0, -6 * s, L, 12 * s); c.strokeRect(0, -6 * s, L, 12 * s);
-    const g = c.createLinearGradient(L - 20 * s, 0, L + 44 * s, 0); g.addColorStop(0, '#fff6c8'); g.addColorStop(0.5, '#ffd24a'); g.addColorStop(1, '#c88a20');
+    const g = c.createLinearGradient(L - 20 * s, 0, L + 44 * s, 0); g.addColorStop(0, '#fff8d4'); g.addColorStop(0.5, '#ffd24a'); g.addColorStop(1, '#c88a20');
     c.fillStyle = g; c.beginPath(); if (c.roundRect) c.roundRect(L - 24 * s, -46 * s, 64 * s, 92 * s, 12 * s); else c.rect(L - 24 * s, -46 * s, 64 * s, 92 * s); c.fill(); c.stroke();
-    c.fillStyle = '#ffffff'; c.fillRect(L - 2 * s, -30 * s, 8 * s, 60 * s); c.fillRect(L - 14 * s, -6 * s, 32 * s, 12 * s);
-    c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5 * a * FX_DIM; c.fillStyle = '#fff2a0'; c.beginPath(); c.ellipse(L + 8 * s, 0, 58 * s, 70 * s, 0, 0, TAU); c.fill(); c.restore();
+    c.fillStyle = '#ffffff'; c.fillRect(L - 2 * s, -32 * s, 8 * s, 64 * s); c.fillRect(L - 15 * s, -6 * s, 34 * s, 12 * s);
+    c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.58 * a * FX_DIM; c.fillStyle = '#fff4a8'; c.beginPath(); c.ellipse(L + 8 * s, 0, 62 * s, 76 * s, 0, 0, TAU); c.fill(); c.restore();
   } });
 }
 
@@ -119,8 +119,8 @@ defSkill('pc_courage', { name: '勇气恩赐', cls: 'priest', job: PCJ, lvReq: 1
 defSkill('pc_guard', { name: '守护恩赐', cls: 'priest', job: PCJ, lvReq: 15, maxLv: 10, sp: 10, mp: 0, cd: 0, type: 'indep', passive: true, col: '#a8d8ff', switchOpt: '守护路线（纯辅助）',
   desc: '【被动，转职时自动学会 · 路线开关】神圣的守护恩赐。默认关闭（战斗路线）；在技能窗口按「开启守护路线」切换成纯辅助（官方和勇气恩赐互斥）：体力 / 精神提高（最大 HP 提高、受到的伤害降低），守护系辅助技能可以使用，勇气恩赐和圣灵之槌不生效。组队时：攻击到的敌人受到的属性伤害提高（10 秒，最多 3 层）；单刷时（官方单刷专用效果）：独立攻击力提高、技能冷却 −20%。',
   infoExtra: lv => [['最大 HP', '+' + pct(0.03 + 0.004 * lv)], ['组队：敌人受到伤害', '+5.5% × 3 层'], ['单刷：技能攻击力', '+' + pct(0.12 + 0.01 * lv)], ['单刷：冷却', '−20%']] });
-defSkill('pc_firm', { name: '坚定意志', cls: 'priest', job: PCJ, lvReq: 18, maxLv: 10, sp: 15, mp: 0, cd: 0, type: 'indep', passive: true, col: '#c8c8d0',
-  desc: '【被动】对神坚定的信仰让圣骑士的意志坚不可摧：基本攻击和转职技能攻击力、魔法暴击率提高（两条路线都生效）。', infoExtra: lv => [['技能攻击力', '+' + pct(0.01 * lv)], ['暴击率', '+' + pct(0.02 + 0.003 * lv)]] });
+defSkill('pc_firm', { name: '坚定信念', cls: 'priest', job: PCJ, lvReq: 18, maxLv: 10, sp: 15, mp: 0, cd: 0, type: 'indep', passive: true, col: '#c8c8d0',
+  desc: '【被动】对神坚定的信仰让圣骑士的意志坚不可摧（韩服直译：坚定意志）：基本攻击和转职技能攻击力、魔法暴击率提高（两条路线都生效）。', infoExtra: lv => [['技能攻击力', '+' + pct(0.01 * lv)], ['暴击率', '+' + pct(0.02 + 0.003 * lv)]] });
 // 光之复仇：无限持续的 BUFF；攻击时 100%（间隔 0.2 秒）、被魔法 / 物理攻击时 80% / 42% 落下圣光雷击（被打时 10% 感电）；装备神罚之锤时不能手动放、神罚之锤施放时自动施放
 const PC_BOLT = lv => skillDmg(0.4, 0.04, lv || 1);
 defSkill('pc_revenge', { name: '光之复仇', cls: 'priest', job: PCJ, lvReq: 16, maxLv: 1, sp: 20, mp: 20, cd: 10, type: 'indep', elem: 'light', buff: true, cast: true, noHitCheck: true, col: '#fff38a',
@@ -283,8 +283,8 @@ defSummon('pc_sphere_f', { kind: 'field', life: 3, max: 2, over: 'oldest', keepR
   onEnd(s) { if (!s.burst) pcOrbStun(s); } });
 function pcOrbStun(s) { fxShock(s.x, s.y, 300, '#fff2a0'); fxSpr('burst', s.x, s.y, 56, { w: 160, dur: 0.35, col: '#fff8d0' }); sfx.hit('crit', false);
   for (const t of ents) if (foe(s.owner, t) && !t.dead && t.invul <= 0 && inGround(t, s.x, s.y, 300)) addStatus(t, 'stun', game.pvp ? 1.5 : 6, { src: s.owner }); }
-function pcOrbBurst(s) { if (s.burst) return; s.burst = true; cam.shake = Math.max(cam.shake, 4); sfx.boom(0.5); fxSpr('explosion', s.x, s.y, 56, { w: 180, dur: 0.4, grow: [0.5, 1.1] });
-  summonArea(s, s.x, s.y, 120, { dmg: s.dmg * 14, launch: 260, knock: 140, hs: 0.08, downHit: true, col: '#fff2a0' }, { zMax: 160 }); pcOrbStun(s); s.life = s.lifeT + 0.05; }
+function pcOrbBurst(s) { if (s.burst) return; s.burst = true; cam.shake = Math.max(cam.shake, 5); sfx.boom(0.6); fxSpr('explosion', s.x, s.y, 56, { w: 195, dur: 0.42, grow: [0.5, 1.15] }); pcCrossFx(s.x, s.y, 64, 160, '#fff2a0', 0.45); fxShock(s.x, s.y, 180, '#fff6c0');
+  summonArea(s, s.x, s.y, 120, { dmg: s.dmg * 14, launch: 260, knock: 140, hs: 0.09, shake: 4, downHit: true, col: '#fff2a0' }, { zMax: 160 }); pcOrbStun(s); s.life = s.lifeT + 0.05; }
 defSkill('pc_sphere', { name: '圣光球', cls: 'priest', job: PCJ, lvReq: 19, sp: 40, mp: 45, cd: 14.4, type: 'indep', elem: 'light', cast: true, col: '#fff2a0',
   desc: '在前方生成一个缓缓前进的光球，每 0.2 秒对周围的敌人造成一次光属性伤害（共 15 段），3 秒后消失时让 300px 内的敌人眩晕 6 秒（决斗场：只眩晕面朝光球的敌人，本作 1.5 秒）。按住 → 施放时光球生成得更远。学了神圣琉璃球（开关）时改为碰到敌人就地爆炸。',
   pow: lv => pcOrbDmg(lv) * 15, ai: { kind: 'aoe', r: [40, 300], dy: 50 }, infoExtra: lv => [['每段', pct(pcOrbDmg(lv))], ['段数', '15'], ['眩晕', '6 秒（300px）'], ['施放时间', '0.5 秒']],
@@ -303,9 +303,9 @@ defSkill('pc_haptism', { name: '圣光聚合', cls: 'priest', job: PCJ, lvReq: 1
     return { name: 'pc_haptism', clip: 'pcRaise', dur: 0.5, noCounter: true, noSA: true,
       events: [evAt(0.04, e => { pcPillar(e.x, e.y, { w: 90, h: 280, dur: 0.4, col: '#fff0b0' }); sfx.charge(); areaHit(e, e.x, e.y, 70, 0, { dmg: T * 0.094, type: 'indep', elem: 'light', stun: 0.3, knock: 0, hs: 0.02, downHit: true }, { zMax: 160 }); }),
         evAt(0.16, e => { fxShock(e.x, e.y, 120, '#fff0b0'); fxDust(e.x, e.y, 5, 14); areaHit(e, e.x, e.y, 110, 0, { dmg: T * 0.188, type: 'indep', elem: 'light', stun: 0.35, knock: 0, hs: 0.03, downHit: true }, { zMax: 120 }); }),
-        evAt(0.26, e => { cam.shake = Math.max(cam.shake, 4); sfx.boom(0.6); fxSpr('burst', e.x, e.y, 50, { w: 260, dur: 0.4, col: '#fff0b0', grow: [0.4, 1.1] }); fxShock(e.x, e.y, 240, '#ffe8a0');
+        evAt(0.26, e => { cam.shake = Math.max(cam.shake, 5); sfx.boom(0.65); fxSpr('burst', e.x, e.y, 50, { w: 260, dur: 0.4, col: '#fff0b0', grow: [0.4, 1.1] }); fxShock(e.x, e.y, 240, '#ffe8a0'); pcCrossFx(e.x, e.y, 70, 140, '#fff2a0', 0.4);
           for (const t of ents) if (foe(e, t) && !t.dead && t.invul <= 0 && inGround(t, e.x, e.y, 220) && pcMovable(t)) { t.x = lerp(t.x, e.x + e.face * 40, 0.75); t.y = lerp(t.y, e.y, 0.6); }
-          areaHit(e, e.x + e.face * 30, e.y, 150, 0, { dmg: T * 0.718, type: 'indep', elem: 'light', stun: 0.5, knock: 30, hs: 0.07, downHit: true, col: '#fff0b0' }, { zMax: 160 }); })] }; } });
+          areaHit(e, e.x + e.face * 30, e.y, 150, 0, { dmg: T * 0.718, type: 'indep', elem: 'light', stun: 0.5, knock: 30, hs: 0.08, shake: 4, downHit: true, col: '#fff0b0' }, { zMax: 160 }); })] }; } });
 // 忏悔之锤：用神圣之力凝成的巨锤砸下（前方很宽、身后也有一点），挥锤时霸体；锤子打中有几率让敌人忏悔（本作：混乱，敌人乱走不攻击；领主几率 / 时长减半，决斗场无效）；落点再出一圈冲击波
 const pcHammerDmg = lv => ({ swing: skillDmg(4.6, 0.46, lv), wave: skillDmg(1.9, 0.19, lv) });
 defSkill('pc_hammer', { name: '忏悔之锤', cls: 'priest', job: PCJ, lvReq: 19, sp: 45, mp: 40, cd: 14.4, type: 'indep', elem: 'light', speed: 'cspd', col: '#ffe070',
@@ -313,11 +313,12 @@ defSkill('pc_hammer', { name: '忏悔之锤', cls: 'priest', job: PCJ, lvReq: 19
   pow: lv => pcHammerDmg(lv).swing + pcHammerDmg(lv).wave, ai: { kind: 'burst', r: [0, 230], dy: 70 }, infoExtra: lv => [['冲击波攻击力', pct(pcHammerDmg(lv).wave)], ['忏悔几率', pct(Math.min(1, 0.6 + 0.04 * lv))], ['忏悔时间', '8 秒']],
   act: lv => { const D = pcHammerDmg(lv);
     return { name: 'pc_hammer', clip: 'pcHammer', dur: 0.72, noCounter: true, superArmor: [0, 0.5],
-      events: [evAt(0.04, e => { pcHammerFx(e, e.x + e.face * 60, { s: 1.25, dur: 0.5 }); sfx.swing(true); }), evAt(0.3, e => { cam.shake = Math.max(cam.shake, 6); sfx.boom(0.8); fxDust(e.x + e.face * 150, e.y, 8, 30); })],
-      hits: [HB(0.24, 0.32, [-90, 250, 76, 0, 200], D.swing, { type: 'indep', elem: 'light', stun: 0.7, knock: 90, hs: 0.1, shake: 5, big: 1.6, heavy: true, snd: 'blunt', col: '#fff0a0',
+      events: [evAt(0.04, e => { pcHammerFx(e, e.x + e.face * 60, { s: 1.28, dur: 0.52 }); sfx.swing(true); }),
+        evAt(0.3, e => { const x = e.x + e.face * 150; cam.shake = Math.max(cam.shake, 7); sfx.boom(0.85); fxDust(x, e.y, 10, 34); pcCrossFx(x, e.y, 60, 170, '#fff2a0', 0.45); pcPillar(x, e.y, { w: 96, h: 240, dur: 0.4, col: '#fff0a0' }); })],
+      hits: [HB(0.24, 0.32, [-90, 250, 76, 0, 200], D.swing, { type: 'indep', elem: 'light', stun: 0.7, knock: 90, hs: 0.11, shake: 6, big: 1.65, heavy: true, snd: 'blunt', col: '#fff0a0',
         onHit: (a, t) => { if (!game.pvp && !t.dead && Math.random() < Math.min(1, 0.6 + 0.04 * lv) * (t.boss ? 0.5 : 1)) { addStatus(t, 'confuse', t.boss ? 4 : 8, { src: a }); fxText('忏悔', t.x, t.y, t.z + 40, { col: '#ffe070', size: 11 }); } } })],
-      update: e => { const a = e.act; if (!a.wave && e.actT >= 0.38) { a.wave = true; const x = e.x + e.face * 150; fxShock(x, e.y, 200, '#ffe070'); fxSpr('wave', x, e.y, 30, { h: 110, dur: 0.3, col: '#ffe8a0' });
-        areaHit(e, x, e.y, 170, 0, { dmg: D.wave, type: 'indep', elem: 'light', launch: 260, knock: 120, hs: 0.05, downHit: true, col: '#ffe8a0' }, { zMax: 90 }); } } }; } });
+      update: e => { const a = e.act; if (!a.wave && e.actT >= 0.38) { a.wave = true; const x = e.x + e.face * 150; fxShock(x, e.y, 210, '#ffe070'); fxShock(x, e.y, 140, '#fff6c8'); fxSpr('wave', x, e.y, 30, { h: 120, dur: 0.32, col: '#ffe8a0' });
+        areaHit(e, x, e.y, 170, 0, { dmg: D.wave, type: 'indep', elem: 'light', launch: 260, knock: 120, hs: 0.06, shake: 3, downHit: true, col: '#ffe8a0' }, { zMax: 90 }); } } }; } });
 // 正义审判：前方展开神圣法阵，光之刃连续落下（16 段，每 0.07 秒），之后正义天使从地下现身投出光之长矛（刃 : 矛 ≈ 1 : 1）；落刃中按跳跃键立即召唤天使；全程霸体
 const pcJudgeDmg = lv => ({ blade: skillDmg(0.56, 0.056, lv), spear: skillDmg(9, 0.9, lv) });
 defSkill('pc_judge', { name: '正义审判', cls: 'priest', job: PCJ, lvReq: 20, sp: 50, mp: 60, cd: 45, type: 'indep', elem: 'light', cast: true, col: '#fff6c0', pre: { pc_spear: 1 },
@@ -328,15 +329,15 @@ defSkill('pc_judge', { name: '正义审判', cls: 'priest', job: PCJ, lvReq: 20,
       onStart: e => { e.act.cx = e.x + e.face * 200; e.act.cy = e.y; e.act.n = 0; fxCharge(e, '#fff6c0', 3); },
       onInput: (e, I) => { const a = e.act; if (I.buffered('jump') && a.n > 0 && !a.angel) { I.consume('jump'); a.skip = true; return true; } return false; },
       update: e => { const a = e.act, T0 = 0.6;
-        if (e.actT >= T0 && !a.circle) { a.circle = true; pcCircle(a.cx, a.cy, 170, '#fff2a0', 1.7); sfx.buff(); }
+        if (e.actT >= T0 && !a.circle) { a.circle = true; pcCircle(a.cx, a.cy, 170, '#fff2a0', 1.7); pcCircle(a.cx, a.cy, 120, '#fffaf0', 1.7, { img: 'rune', spin: -1.1 }); sfx.buff(); }
         while (!a.angel && !a.skip && a.n < 16 && e.actT >= T0 + a.n * 0.07) { a.n++; const x = a.cx + rnd(-140, 140), y = clamp(a.cy + rnd(-40, 40), 4, DEPTH - 4);
-          pcSpearFx(x, y, 60, 90, Math.PI / 2, '#fff8e0', 0.2); if (a.n % 3 === 0) sfx.swing(false);
+          pcSpearFx(x, y, 60, 96, Math.PI / 2, '#fff8e0', 0.22); if (a.n % 3 === 0) sfx.swing(false);
           blast(e, a.cx, a.cy, 170, { dmg: D.blade, type: 'indep', elem: 'light', stun: 0.3, knock: 0, hs: 0.01, downHit: true, col: '#fff8e0' }, { zMax: 150 }); }
-        if (!a.angel && (a.skip || a.n >= 16)) { a.angel = e.actT; e.play('pcRaise', true); pcPillar(a.cx, a.cy, { w: 110, h: 300, dur: 0.8, col: '#fff6c0' });
-          fxSpr('slash', a.cx - 40, a.cy, 170, { w: 150, dur: 0.7, col: '#fffaf0', rot: -0.4, flip: true }); fxSpr('slash', a.cx + 40, a.cy, 170, { w: 150, dur: 0.7, col: '#fffaf0', rot: 0.4 }); sfx.charge(); a.dur = e.actT + 0.8; }
-        if (a.angel && !a.boom && e.actT >= a.angel + 0.35) { a.boom = true; pcSpearFx(a.cx, a.cy, 110, 260, Math.PI / 2, '#fff2a0', 0.3); cam.shake = Math.max(cam.shake, 10); cam.flash = 0.08; cam.flashCol = '#fff6d0'; sfx.boom(1.1);
-          fxSpr('burst', a.cx, a.cy, 40, { w: 340, dur: 0.5, col: '#fff2a0', grow: [0.4, 1.15] }); fxShock(a.cx, a.cy, 300, '#fff2a0'); pcCrossFx(a.cx, a.cy, 90, 240, '#fff2a0', 0.6);
-          blast(e, a.cx, a.cy, 190, { dmg: D.spear, type: 'indep', elem: 'light', launch: 460, knock: 160, hs: 0.14, big: 2, downHit: true, col: '#fff2a0' }, { zMax: 220 }); } } }; } });
+        if (!a.angel && (a.skip || a.n >= 16)) { a.angel = e.actT; e.play('pcRaise', true); pcPillar(a.cx, a.cy, { w: 120, h: 320, dur: 0.85, col: '#fff6c0' });
+          fxSpr('slash', a.cx - 40, a.cy, 170, { w: 160, dur: 0.75, col: '#fffaf0', rot: -0.4, flip: true }); fxSpr('slash', a.cx + 40, a.cy, 170, { w: 160, dur: 0.75, col: '#fffaf0', rot: 0.4 }); sfx.charge(); a.dur = e.actT + 0.8; }
+        if (a.angel && !a.boom && e.actT >= a.angel + 0.35) { a.boom = true; pcSpearFx(a.cx, a.cy, 110, 280, Math.PI / 2, '#fff2a0', 0.32); cam.shake = Math.max(cam.shake, 11); cam.flash = 0.1; cam.flashCol = '#fff6d0'; sfx.boom(1.15);
+          fxSpr('burst', a.cx, a.cy, 40, { w: 360, dur: 0.52, col: '#fff2a0', grow: [0.4, 1.2] }); fxShock(a.cx, a.cy, 310, '#fff2a0'); fxShock(a.cx, a.cy, 210, '#fffaf0'); pcCrossFx(a.cx, a.cy, 90, 250, '#fff2a0', 0.65);
+          blast(e, a.cx, a.cy, 190, { dmg: D.spear, type: 'indep', elem: 'light', launch: 460, knock: 160, hs: 0.15, shake: 8, big: 2, downHit: true, col: '#fff2a0' }, { zMax: 220 }); } } }; } });
 // 圣光十字：投出圣力十字架，打中就爆炸，圣骑士脚下出现五芒星阵：阵里的自己 15 秒所有速度提高；守护路线阵里的队友也提高
 // 学了神之代行者：十字架 / 爆炸 / 法阵更大，命中位置的法阵也给 BUFF，没打中也在自己脚下生成法阵
 const pcCrossDmg = lv => ({ cross: skillDmg(1.55, 0.155, lv), boom: skillDmg(2.05, 0.205, lv) });
@@ -367,9 +368,10 @@ defSkill('pc_cross', { name: '圣光十字', cls: 'priest', job: PCJ, lvReq: 17,
    ===================================================================== */
 const PC_ACTS = {};
 function pcHolyShock(e, jup, back) {
-  const x = e.x + e.face * (back ? -90 : 110), lv = skLv(e, jup ? 'pc_jupiter' : 'pc_mace') || 1;
-  pcPillar(x, e.y, { w: 80, h: 200, dur: 0.35, col: jup ? '#fff38a' : '#ffe8a0' }); fxShock(x, e.y, 140, jup ? '#fff38a' : '#ffe8a0'); if (jup) pcBoltFx(x, e.y, 230);
-  areaHit(e, x, e.y, 110, 0, { dmg: skillDmg(0.9, 0.06, lv), type: 'indep', elem: 'light', launch: 240, knock: 80, hs: 0.05, downHit: true, col: '#fff2a0' }, { zMax: 140 });
+  const x = e.x + e.face * (back ? -90 : 110), lv = skLv(e, jup ? 'pc_jupiter' : 'pc_mace') || 1, col = jup ? '#fff38a' : '#ffe8a0';
+  pcHammerFx(e, e.x + e.face * (back ? -30 : 40), { s: jup ? 0.72 : 0.62, dur: 0.28, face: back ? -e.face : e.face });
+  pcPillar(x, e.y, { w: 86, h: 215, dur: 0.36, col }); fxShock(x, e.y, 150, col); pcCrossFx(x, e.y, 50, 105, col, 0.32); if (jup) pcBoltFx(x, e.y, 240);
+  areaHit(e, x, e.y, 110, 0, { dmg: skillDmg(0.9, 0.06, lv), type: 'indep', elem: 'light', launch: 240, knock: 80, hs: 0.07, shake: 3, downHit: true, col: '#fff2a0' }, { zMax: 140 });
 }
 function pcHolyLightning(e) {
   const lv = skLv(e, 'pc_jupiter') || 1; pcSpearFx(e.x + e.face * 90, e.y, e.z + 50, 160, e.face > 0 ? 0 : Math.PI, '#fff38a', 0.3);

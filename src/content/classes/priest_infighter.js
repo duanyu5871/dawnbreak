@@ -20,7 +20,7 @@ const piWillOn = p => !!(p && p.piWill && p.piWill.room === game.room);
 function piPlant(p, x, y, quiet) {
   const R = game.room; p.piWill = { x: R ? clamp(x, R.x0 + 20, R.x1 - 20) : x, y: clamp(y, 4, DEPTH - 4), room: game.room, t: game.t }; p.piWillOff = null;
   piWillFx(p);
-  if (!quiet) { fxShock(p.piWill.x, p.piWill.y, 150, PI_COL.fist); fxDust(p.piWill.x, p.piWill.y, 6, 20); sfx.thud(0.8); }
+  if (!quiet) { const wx = p.piWill.x, wy = p.piWill.y; fxShock(wx, wy, 165, PI_COL.fist); fxShock(wx, wy, 100, PI_COL.hot); fxSpr('pillar', wx, wy, 0, { w: 56, h: 160, dur: 0.35, col: PI_COL.fist, ay: 1, grow: [0.5, 1] }); fxDust(wx, wy, 8, 24); sfx.thud(0.85); }
 }
 function piRetrieve(p) { if (!p.piWill) return; fxSpr('burst', p.piWill.x, p.piWill.y, 60, { w: 90, dur: 0.3, col: PI_COL.fist }); p.piWill = null; p.piWillOff = game.room; delete p.buffs.pi_shadow; fxText('收回巨兵', p.x, p.y, p.z + 30, { col: PI_COL.hot, size: 11 }); sfx.swing(false); }
 // 转职技能的前提：巨兵插着。地下城 / 测试房 / 决斗场没插、且这个房间没手动收回过 → 自动插在脚下。
@@ -400,14 +400,16 @@ defSkill('pi_mgjab', { name: '刺拳猛击', cls: 'priest', job: PIJ, lvReq: 19,
         if (a.fin && !a.up && e.actT - a.fin > 0.08 && e.actT - a.fin < 0.45 && ((a.key && I.buffered(a.key)) || I.buffered('attack'))) { if (a.key) I.consume(a.key); I.consume('attack'); piMgUp(e, D); return true; } return false; },
       update: e => { const a = e.act;
         if (!a.fin && a.n < 15 && e.actT >= a.next) { a.n++; a.next = e.actT + (e.actT - a.mash < 0.25 ? 0.045 : 0.07); if (a.n % 2) sfx.swing(false);
-          fxStreak({ x: e.x + e.face * 20, y: e.y + rnd(-8, 8), z: e.z + 56 + rnd(-14, 14), face: e.face, len: 70, w: 8, col: PI_COL.fist, dur: 0.08 });
-          if (pullR) for (const t of ents) if (foe(e, t) && !t.dead && piMovable(t) && Math.abs(t.x - e.x) < pullR && Math.abs(t.y - e.y) < 90) { t.x = lerp(t.x, e.x + e.face * 70, 0.25); t.y = lerp(t.y, e.y, 0.25); }
+          fxStreak({ x: e.x + e.face * 20, y: e.y + rnd(-8, 8), z: e.z + 56 + rnd(-14, 14), face: e.face, len: 82, w: 10, col: PI_COL.fist, dur: 0.09 });
+          if (a.n % 2 === 1) { fxSpr('shock', e.x + e.face * 64, e.y, e.z + 58, { w: 74, dur: 0.14, col: PI_COL.fist, alpha: 0.65 }); fxSlashOn(e, { a0: a.n % 4 === 1 ? -1.8 : 1.8, a1: a.n % 4 === 1 ? 0.6 : -0.6, r: 54, w: 12, off: [30, 56], col: PI_COL.hot, silent: true }); }
+          if (pullR) { if (a.n % 3 === 1) fxShock(e.x + e.face * 50, e.y, 130, PI_COL.fist); for (const t of ents) if (foe(e, t) && !t.dead && piMovable(t) && Math.abs(t.x - e.x) < pullR && Math.abs(t.y - e.y) < 90) { t.x = lerp(t.x, e.x + e.face * 70, 0.25); t.y = lerp(t.y, e.y, 0.25); } }
           instantHit(e, { box: [0, 110, 38, 10, 125], dmg: D.jab, stun: 0.3, knock: 0, hs: 0.015, airLift: 90, snd: 'blunt', col: PI_COL.fist }); }
-        if (!a.fin && a.n >= 15) { a.fin = e.actT; e.play('piChop', true); sfx.swing(true); cam.shake = Math.max(cam.shake, 4); fxText('Spike!', e.x, e.y, e.z + 50, { col: PI_COL.hot, size: 11, dur: 0.35 });
-          fxSlashOn(e, { a0: -2.2, a1: 0.8, r: 64, w: 16, off: [30, 56], col: PI_COL.hot, heavy: true, silent: true });
-          instantHit(e, { box: [0, 115, 40, -10, 130], dmg: D.fin, launch: 330, knock: 60, hs: 0.08, downHit: true, heavy: true, snd: 'blunt', col: PI_COL.fist }); a.dur = e.actT + 0.5; } } }; } });
-function piMgUp(e, D) { const a = e.act; a.up = true; a.dur = e.actT + 0.4; e.play('piUpper', true); sfx.swing(true); fxText('Impact!', e.x, e.y, e.z + 50, { col: PI_COL.hot, size: 11, dur: 0.35 });
-  fxSlashOn(e, { a0: 1.5, a1: -1.6, r: 60, w: 16, off: [26, 50], col: PI_COL.hot, heavy: true, silent: true }); instantHit(e, { box: [0, 110, 40, -10, 150], dmg: D.up, launch: 560, knock: 40, hs: 0.08, downHit: true, snd: 'blunt', col: PI_COL.fist }); }
+        if (!a.fin && a.n >= 15) { a.fin = e.actT; e.play('piChop', true); sfx.swing(true); cam.shake = Math.max(cam.shake, 5); fxText('Spike!', e.x, e.y, e.z + 50, { col: PI_COL.hot, size: 11, dur: 0.35 });
+          fxSlashOn(e, { a0: -2.2, a1: 0.8, r: 72, w: 18, off: [30, 56], col: PI_COL.hot, heavy: true, silent: true }); piImpact(e.x + e.face * 68, e.y, 44, 1.5); fxShock(e.x + e.face * 68, e.y, 130, PI_COL.fist);
+          instantHit(e, { box: [0, 115, 40, -10, 130], dmg: D.fin, launch: 330, knock: 60, hs: 0.1, shake: 5, downHit: true, heavy: true, snd: 'blunt', col: PI_COL.fist }); a.dur = e.actT + 0.5; } } }; } });
+function piMgUp(e, D) { const a = e.act; a.up = true; a.dur = e.actT + 0.4; e.play('piUpper', true); sfx.swing(true); cam.shake = Math.max(cam.shake, 4); fxText('Impact!', e.x, e.y, e.z + 50, { col: PI_COL.hot, size: 11, dur: 0.35 });
+  fxSlashOn(e, { a0: 1.5, a1: -1.6, r: 68, w: 18, off: [26, 50], col: PI_COL.hot, heavy: true, silent: true }); piImpact(e.x + e.face * 64, e.y, 68, 1.4, PI_COL.hot);
+  instantHit(e, { box: [0, 110, 40, -10, 150], dmg: D.up, launch: 560, knock: 40, hs: 0.1, shake: 4, downHit: true, snd: 'blunt', col: PI_COL.fist }); }
 // 旋涡重拳：手臂飞快旋转卷起旋风，把周围的敌人吸到拳头前面并控制住（10 段），最后一拳往下砸；俯冲 / 摆动中也能用；霸体（决斗场没有）
 const piCorkDmg = lv => ({ spin: skillDmg(0.34, 0.034, lv), fin: skillDmg(5.1, 0.51, lv) });
 defSkill('pi_cork', { name: '旋涡重拳', cls: 'priest', job: PIJ, lvReq: 19, sp: 40, mp: 45, cd: 20, type: 'phys', col: '#9fd8ff', req: piNeedWill,
@@ -417,11 +419,16 @@ defSkill('pi_cork', { name: '旋涡重拳', cls: 'priest', job: PIJ, lvReq: 19, 
     return { name: 'pi_cork', clip: 'piSpin', dur: 1.15, noCounter: true, superArmor: game.pvp ? undefined : true,
       onStart: e => { const a = e.act; a.n = 0; fxText('Screw~', e.x, e.y, e.z + 50, { col: PI_COL.hot, size: 11, dur: 0.5 }); sfx.charge(); },
       update: e => { const a = e.act, fx = e.x + e.face * 70;
-        if (a.n < 10 && e.actT >= 0.12 + a.n * 0.07) { a.n++; if (a.n % 2) sfx.swing(false); fxSpr('orb', fx, e.y, e.z + 60, { w: 90, dur: 0.14, col: PI_COL.fist, spin: 20, alpha: 0.7 }); fxSlashOn(e, { a0: a.n * 2.1, a1: a.n * 2.1 + 3, r: 46, w: 10, off: [70, 60], col: PI_COL.hot, silent: true });
+        if (a.n < 10 && e.actT >= 0.12 + a.n * 0.07) { a.n++; if (a.n % 2) sfx.swing(false);
+          fxSpr('orb', fx, e.y, e.z + 60, { w: 104, dur: 0.16, col: PI_COL.fist, spin: 24, alpha: 0.78 });
+          fxSpr('shock', fx, e.y, e.z + 60, { w: 115, dur: 0.16, col: PI_COL.hot, alpha: 0.7 });
+          if (a.n % 2 === 1) { fxSpr('wave', fx + rnd(-14, 14), e.y, 44, { h: 96, dur: 0.18, col: PI_COL.fist, rot: a.n * 1.1, alpha: 0.65 }); fxShock(fx, e.y, 135, PI_COL.fist); }
+          fxSlashOn(e, { a0: a.n * 2.1, a1: a.n * 2.1 + 3.2, r: 62, w: 16, off: [70, 60], col: PI_COL.hot, silent: true });
           for (const t of ents) if (foe(e, t) && !t.dead && t.invul <= 0 && (t.x - e.x) * e.face > -30 && Math.abs(t.x - e.x) < (game.pvp ? 130 : 180) && Math.abs(t.y - e.y) < (game.pvp ? 40 : 60)) { if (piMovable(t)) { t.x = lerp(t.x, fx, 0.4); t.y = lerp(t.y, e.y, 0.4); } if (!t.boss) addStatus(t, 'hold', 0.3, { src: e }); }
-          instantHit(e, { box: [0, 120, 44, 0, 140], dmg: D.spin, stun: 0.3, knock: 0, hs: 0.01, sure: true, snd: 'blunt', col: PI_COL.fist }); }
-        if (!a.fin && e.actT >= 0.86) { a.fin = true; e.play('piChop', true); sfx.boom(0.7); cam.shake = Math.max(cam.shake, 6); fxText('Blow!', e.x, e.y, e.z + 50, { col: PI_COL.hot, size: 12, dur: 0.4 }); piImpact(fx, e.y, 50, 2);
-          instantHit(e, { box: [0, 130, 46, -10, 150], dmg: D.fin, spike: 300, bounce: 0.9, knock: 100, hs: 0.12, shake: 5, big: 1.8, heavy: true, sure: true, downHit: true, snd: 'blunt', col: PI_COL.fist }); } } }; } });
+          instantHit(e, { box: [0, 120, 44, 0, 140], dmg: D.spin, stun: 0.3, knock: 0, hs: 0.015, sure: true, snd: 'blunt', col: PI_COL.fist }); }
+        if (!a.fin && e.actT >= 0.86) { a.fin = true; e.play('piChop', true); sfx.boom(0.8); cam.shake = Math.max(cam.shake, 8); fxText('Blow!', e.x, e.y, e.z + 50, { col: PI_COL.hot, size: 12, dur: 0.4 });
+          fxSlashOn(e, { a0: -2.3, a1: 0.9, r: 78, w: 20, off: [38, 60], col: PI_COL.hot, heavy: true, silent: true }); piImpact(fx, e.y, 50, 2.2, PI_COL.hot); fxShock(fx, e.y, 180, PI_COL.hot); fxDust(fx, e.y, 8, 26);
+          instantHit(e, { box: [0, 130, 46, -10, 150], dmg: D.fin, spike: 300, bounce: 0.9, knock: 100, hs: 0.14, shake: 6, big: 1.9, heavy: true, sure: true, downHit: true, snd: 'blunt', col: PI_COL.fist }); } } }; } });
 // 神圣组合拳：右钩拳 → 左钩拳 → 强力直拳（1 : 1.3 : 2），把纵深方向的敌人拢到一条线上；直拳打中后可以用俯冲 / 摆动取消后摇
 const piHeavDmg = lv => [skillDmg(1.65, 0.165, lv), skillDmg(2.15, 0.215, lv), skillDmg(3.4, 0.34, lv)];
 defSkill('pi_heavenly', { name: '神圣组合拳', cls: 'priest', job: PIJ, lvReq: 19, sp: 40, mp: 45, cd: 16, type: 'phys', col: '#ffe8a0', req: piNeedWill, pre: { pi_gorgeous: 1 },
@@ -430,12 +437,12 @@ defSkill('pi_heavenly', { name: '神圣组合拳', cls: 'priest', job: PIJ, lvRe
   act: (lv, p) => { const D = piHeavDmg(lv), sa = skLv(p, 'pi_tech') > 0;
     const pullY = (a, t) => { if (piMovable(t)) t.y = lerp(t.y, a.y, 0.7); };
     return { name: 'pi_heavenly', clip: 'piHook', dur: 0.95, noCounter: true, superArmor: sa ? [0, 0.7] : undefined, links: ['pi_duck', 'pi_sway'], linkFrom: 0.7, hitCancel: true, move: [[0.08, 0.14, 120], [0.34, 0.4, 120], [0.6, 0.66, 160]],
-      events: [evAt(0.08, e => { e.play('piHook', true); piPunchFx(e, 90, true, '#ffe8a0'); fxText('Right!', e.x, e.y, e.z + 50, { col: '#ffe8a0', size: 10, dur: 0.3 }); }),
-        evAt(0.34, e => { e.play('piJab', true); piPunchFx(e, 90, true, '#ffe8a0'); fxText('Left!', e.x, e.y, e.z + 50, { col: '#ffe8a0', size: 10, dur: 0.3 }); }),
-        evAt(0.6, e => { e.play('piStraight', true); piPunchFx(e, 140, true, '#fff2c0'); fxText('Terminate!', e.x, e.y, e.z + 50, { col: '#fff2c0', size: 12, dur: 0.4 }); })],
+      events: [evAt(0.08, e => { e.play('piHook', true); piPunchFx(e, 96, true, '#ffe8a0'); fxText('Right!', e.x, e.y, e.z + 50, { col: '#ffe8a0', size: 10, dur: 0.3 }); }),
+        evAt(0.34, e => { e.play('piJab', true); piPunchFx(e, 96, true, '#ffe8a0'); fxText('Left!', e.x, e.y, e.z + 50, { col: '#ffe8a0', size: 10, dur: 0.3 }); }),
+        evAt(0.6, e => { e.play('piStraight', true); piPunchFx(e, 148, true, '#fff2c0'); piImpact(e.x + e.face * 76, e.y, 62, 1.6, '#fff2c0'); fxText('Terminate!', e.x, e.y, e.z + 50, { col: '#fff2c0', size: 12, dur: 0.4 }); })],
       hits: [HB(0.1, 0.16, [0, 110, 70, 10, 130], D[0], { stun: 0.9, knock: 10, hs: 0.06, snd: 'blunt', col: '#ffe8a0', onHit: pullY }),
         HB(0.36, 0.42, [0, 110, 70, 10, 130], D[1], { stun: 0.9, knock: 10, hs: 0.07, snd: 'blunt', col: '#ffe8a0', onHit: pullY }),
-        HB(0.62, 0.7, [0, 130, 44, 10, 135], D[2], { knock: 360, launch: 120, hs: 0.12, shake: 5, big: 1.8, heavy: true, snd: 'blunt', col: '#fff2c0' })] }; } });
+        HB(0.62, 0.7, [0, 130, 44, 10, 135], D[2], { knock: 360, launch: 120, hs: 0.13, shake: 6, big: 1.85, heavy: true, snd: 'blunt', col: '#fff2c0' })] }; } });
 // 极速飓风拳：把 936px 内的敌人吸过来，左右钩拳连打 10 下（连按攻击键更快，←→ 能前后移动），最后一记上勾拳打飞；按跳跃键立即出上勾拳
 const piHurrDmg = lv => ({ hook: skillDmg(1.26, 0.126, lv), up: skillDmg(5.4, 0.54, lv) });
 defSkill('pi_hurricane', { name: '极速飓风拳', cls: 'priest', job: PIJ, lvReq: 20, sp: 50, mp: 70, cd: 45, type: 'phys', col: '#9fd8ff', req: piNeedWill, pre: { pi_gorgeous: 1 },
@@ -449,14 +456,18 @@ defSkill('pi_hurricane', { name: '极速飓风拳', cls: 'priest', job: PIJ, lvR
         if ((a.key && I.buffered(a.key)) || I.buffered('attack')) { if (a.key) I.consume(a.key); I.consume('attack'); a.mash = e.actT; return true; }
         e.vx = I.dx() * 140; return false; },
       update: e => { const a = e.act;
-        if (!a.fin && Math.floor(e.actT / 0.15) !== a.tw) { a.tw = Math.floor(e.actT / 0.15); fxSpr('wave', e.x + rnd(-80, 80), e.y + rnd(-10, 10), 60, { h: 130, dur: 0.35, col: '#9fd8ff', rot: rnd(-0.6, 0.6), flip: Math.random() < 0.5, alpha: 0.6 }); }
+        if (!a.fin && Math.floor(e.actT / 0.14) !== a.tw) { a.tw = Math.floor(e.actT / 0.14);
+          fxSpr('wave', e.x + rnd(-90, 90), e.y + rnd(-12, 12), 60, { h: 145, dur: 0.36, col: '#9fd8ff', rot: rnd(-0.6, 0.6), flip: Math.random() < 0.5, alpha: 0.68 });
+          fxSpr('tornado', e.x + e.face * 30, e.y, 0, { w: 130, h: 170, ay: 1, dur: 0.24, col: PI_COL.fist, alpha: 0.52 }); }
         for (const t of ents) if (foe(e, t) && !t.dead && t.invul <= 0 && piMovable(t) && Math.abs(t.x - e.x) < 936 && Math.abs(t.y - e.y) < 250) { t.x = lerp(t.x, e.x + e.face * 60, 0.07); t.y = lerp(t.y, e.y, 0.07); }
         if (!a.fin && a.n < 10 && e.actT >= a.next) { a.n++; a.next = e.actT + (e.actT - a.mash < 0.3 ? 0.1 : 0.16); e.play(a.n % 2 ? 'piHook' : 'piJab', true); sfx.swing(a.n % 2 === 0);
-          fxSlashOn(e, { a0: a.n % 2 ? -2.0 : 2.0, a1: a.n % 2 ? 0.8 : -0.8, r: 70, w: 14, off: [24, 56], col: PI_COL.hot, silent: true });
-          instantHit(e, { box: [-50, 120, 50, 0, 140], dmg: D.hook, stun: 0.45, knock: 0, hs: 0.03, sure: true, snd: 'blunt', col: PI_COL.fist }); }
-        if (!a.fin && a.n >= 10) { a.fin = true; e.vx = 0; e.play('piUpper', true); sfx.boom(0.8); cam.shake = Math.max(cam.shake, 7); fxText('Crasher!', e.x, e.y, e.z + 60, { col: PI_COL.hot, size: 13, dur: 0.45 });
-          fxSlashOn(e, { a0: 1.6, a1: -1.7, r: 90, w: 22, off: [26, 60], col: '#fff2c0', heavy: true }); piImpact(e.x + e.face * 60, e.y, 80, 2.2);
-          instantHit(e, { box: [-40, 140, 60, -10, 170], dmg: D.up, launch: 640, knock: 80, hs: 0.14, shake: 6, big: 2, heavy: true, sure: true, downHit: true, snd: 'blunt', col: '#fff2c0' }); a.dur = e.actT + 0.5; } } }; } });
+          if (a.n % 2 === 1) fxShock(e.x + e.face * 36, e.y, 195, PI_COL.fist);
+          fxSlashOn(e, { a0: a.n % 2 ? -2.1 : 2.1, a1: a.n % 2 ? 0.9 : -0.9, r: 86, w: 18, off: [24, 56], col: PI_COL.hot, silent: true });
+          fxSpr('shock', e.x + e.face * 48, e.y, e.z + 62, { w: 110, dur: 0.18, col: PI_COL.hot, alpha: 0.65 });
+          instantHit(e, { box: [-50, 120, 50, 0, 140], dmg: D.hook, stun: 0.45, knock: 0, hs: 0.035, sure: true, snd: 'blunt', col: PI_COL.fist }); }
+        if (!a.fin && a.n >= 10) { a.fin = true; e.vx = 0; e.play('piUpper', true); sfx.boom(0.9); cam.shake = Math.max(cam.shake, 9); fxText('Crasher!', e.x, e.y, e.z + 60, { col: PI_COL.hot, size: 13, dur: 0.45 });
+          fxSlashOn(e, { a0: 1.6, a1: -1.7, r: 98, w: 26, off: [26, 60], col: '#fff2c0', heavy: true }); piImpact(e.x + e.face * 60, e.y, 80, 2.4, '#fff2c0'); fxShock(e.x + e.face * 60, e.y, 230, '#fff2c0');
+          instantHit(e, { box: [-40, 140, 60, -10, 170], dmg: D.up, launch: 640, knock: 80, hs: 0.16, shake: 8, big: 2.1, heavy: true, sure: true, downHit: true, snd: 'blunt', col: '#fff2c0' }); a.dur = e.actT + 0.5; } } }; } });
 
 /* =====================================================================
    钩子：冷却 −10%（意念驱动）、幻影化身的追加打击、技巧精通的追加伤害
@@ -471,9 +482,12 @@ const PI_TECH_EXTRA = { pi_dstraight: [0.05, 2], pi_dupper: [0.05, 2], pi_dbody:
 PRIEST_HOOKS.onHit.push((p, t, h, dmg, act) => {
   if (!piOn(p) || h.piShadow || t.dead) return;
   const B = p.buffs.pi_shadow, src = { x: t.x - p.face * 10, y: t.y, z: 0, face: p.face };
-  if (B && (h.dmg || 0) > 0) { const k = piShadowK(B.lv || 1), dbl = skLv(p, 'pi_double') > 0;
-    for (const [dt, kk] of dbl ? [[0.08, 1], [0.15, 0.5]] : [[0.08, 1]]) game.after(dt, () => { if (t.dead || p.dead) return;
-      fxSpr('spark', t.x - p.face * 12, t.y, t.z + 60, { w: 50, dur: 0.18, col: '#8a8ad8' }); fxSpr('ghost', t.x - p.face * 30, t.y, t.z + 60, { w: 60, dur: 0.2, col: '#6a6ab8', alpha: 0.5 });
+  if (B && (h.dmg || 0) > 0) { const k = piShadowK(B.lv || 1), dbl = skLv(p, 'pi_double') > 0, list = dbl ? [[0.08, 1, 0], [0.15, 0.5, 1]] : [[0.08, 1, 0]];
+    for (const [dt, kk, idx] of list) game.after(dt, () => { if (t.dead || p.dead) return;
+      const col = idx ? '#9a9ae8' : '#6a6ab8', ox = t.x - p.face * (32 + idx * 14);
+      fxStreak({ x: ox, y: t.y + (idx ? -6 : 6), z: t.z + 58 + idx * 8, face: p.face, len: 74, w: idx ? 9 : 12, col, dur: 0.14 });
+      fxSpr('spark', t.x - p.face * 12, t.y, t.z + 60, { w: 54, dur: 0.18, col: '#9fd8ff' });
+      fxSpr('ghost', ox, t.y, t.z + 60, { w: 66, dur: 0.22, col, alpha: 0.6, flip: p.face < 0 });
       applyHit(p, t, { dmg: h.dmg * k * kk, type: 'phys', sure: true, stun: t.st === 'hit' ? Math.max(t.stun || 0, 0.12) : 0.12, knock: 0, hs: 0.01, piShadow: true, box: null, col: '#8a8ad8' }, { proj: true, src }); }); }
   const X = act && act.skill && PI_TECH_EXTRA[act.skill];
   if (X && skLv(p, 'pi_tech') > 0 && (h.dmg || 0) > 0 && !h.piExtra) for (let i = 0; i < X[1]; i++) game.after(0.05 + i * 0.05, () => { if (t.dead || p.dead) return;

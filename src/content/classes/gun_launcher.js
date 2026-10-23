@@ -20,11 +20,13 @@ CLASSES.gun.onCast = (p, id, act) => {
   if (lvOf(p, 'gl_draw')) game.after(0.02, () => { if (p.act === act && !p.dead) { fxSlashOn(p, { a0: -2.2, a1: 0.6, r: 56, w: 12, off: [10, 50], col: '#ffc070', silent: true }); sfx.swing(true);
     instantHit(p, { box: [0, 90, 32, 0, 110], dmg: 1.2 * (1 + 0.1 * lvOf(p, 'gl_draw')), type: 'indep', stun: 0.35, knock: 180, hs: 0.05, snd: 'blunt', col: '#ffd090' }); } });
 };
-// 炮弹：直线飞行，碰到第一个敌人或飞到尽头爆炸
+// 炮弹：直线飞行（支持微追踪），碰到第一个敌人或飞到尽头爆炸
 function cannonShell(e, o) {
   let hitT = null;
   return shootProj(e, { img: 'shell', w: 46, h: 18, speed: o.speed || 700, life: o.life || 0.7, z: 62, dx: 46, bw: 12, bh: 24, pierce: false, trail: '#ffb060',
-    hit: { dmg: o.dmg, knock: 60, stun: 0.4, hs: 0.06, snd: 'blunt', unblockable: o.unblock, ...o.hit }, onHitT: (pr, t) => { hitT = t; },
+    hit: { dmg: o.dmg, knock: 60, stun: 0.4, hs: 0.06, snd: 'blunt', unblockable: o.unblock, ...o.hit },
+    onHitT: (pr, t) => { hitT = t; if (o.behind) { fxSpr('spark', t.x, t.y, t.z + 48, { w: 72, dur: 0.16, col: '#ffd080' }); fxBurst(t.x, t.y, t.z + 48, 36, '#ff9a50'); } },
+    update: o.homing ? (pr, dt) => { if (game.pvp) return; let bt = null, bd = 480; for (const t of ents) if (foe(e, t) && !t.dead && (t.x - pr.x) * pr.face > 0 && Math.abs(t.x - pr.x) < bd && Math.abs(t.y - pr.y) < 85) { bd = Math.abs(t.x - pr.x); bt = t; } if (bt) pr.y = clamp(damp(pr.y, bt.y, 4, dt), 4, DEPTH - 4); } : undefined,
     onEnd: pr => { const x = o.behind && hitT ? hitT.x + pr.face * 55 : pr.x, y = hitT ? hitT.y : pr.y;
       const boom = k => { meteorImpact({ x, y }, o.big || 0.85); lblast(e, x, y, o.r || 110, { dmg: o.boom, launch: k === (o.n || 1) - 1 ? o.launch ?? 380 : 120, knock: 120 * (o.behind ? -1 : 1), hs: 0.08, snd: 'fire', col: '#ffb060', elem: o.elem, unblockable: o.unblock, onHit: o.onHit }, { zMax: 160 }); };
       for (let k = 0; k < (o.n || 1); k++) game.after(k * (o.gap ?? 0.14), () => { if (!e.dead) boom(k); }); } });
@@ -49,11 +51,13 @@ defSkill('gl_cannon', { name: '加农炮', cls: 'gun', job: 'launcher', lvReq: 1
         onEnd: pr => { if (e.dead) return; fxSpr('quantum', pr.x, pr.y, 40, { w: 190 + k * 80, dur: 0.5, grow: [0.4, 1.3], col: '#d070ff' }); fxShock(pr.x, pr.y, 200 + k * 60, '#e0a0ff'); cam.shake = Math.max(cam.shake, 5); sfx.boom(0.8);   // 官方：能量球飞一段后爆成紫粉色光云
           lblast(e, pr.x, pr.y, 105 + k * 40, { dmg: skillDmg(2.4, 0.24, lv) * (1 + k * 0.8), stun: 0.5, knock: 220, airLift: 180, hs: 0.08, big: 1.3, snd: 'fire', col: '#e0a0ff' }, { zMax: 160 }); } }); })] }) });
 defSkill('gl_antitank', { name: '反坦克炮', cls: 'gun', job: 'launcher', lvReq: 16, mp: 40, cd: 6, type: 'indep', elem: 'fire', col: '#8a3a1a',
-  desc: '发射一发火属性反坦克炮弹，命中后在敌人身后连爆 3 次，把敌人炸向自己一侧，并让敌人出血。无视格挡。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'proj', r: [40, 700], dy: 16 },
+  desc: '发射一发微追踪的火属性反坦克炮弹，穿甲命中后在敌人身后连爆 3 次，把敌人炸向自己一侧，并让敌人出血；后坐力把自己向后推开。无视格挡。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'proj', r: [40, 700], dy: 16 },
   act: (lv, p) => { const pan = p && skLv(p, 'gl_pandora') > 0; return { name: 'gl_antitank', clip: 'cannon', dur: 0.55, superArmor: [0.05, 0.3],
+    onEnd: e => { e.vx = 0; },
     events: [evAt(0.1, e => { sfx.cannon(); e.play('cannonFire', true);
-      cannonShell(e, { dmg: skillDmg(1.4, 0.14, lv), boom: skillDmg(1.6, 0.16, lv), behind: true, n: 3, gap: pan ? 0.06 : 0.14, elem: 'fire', unblock: true, r: pan ? 150 : 110, big: pan ? 1.05 : 0.8, life: 1.1, hit: { elem: 'fire' },
-        onHit: (a, t) => { if (Math.random() < 0.15) addStatus(t, 'bleed', 3, { dps: a.atk * 0.05, src: a }); } }); })] }; } });
+      cannonShell(e, { dmg: skillDmg(1.4, 0.14, lv), boom: skillDmg(1.6, 0.16, lv), behind: true, homing: true, n: 3, gap: pan ? 0.06 : 0.14, elem: 'fire', unblock: true, r: pan ? 150 : 110, big: pan ? 1.05 : 0.8, life: 1.1, hit: { elem: 'fire' },
+        onHit: (a, t) => { if (Math.random() < 0.15) addStatus(t, 'bleed', 3, { dps: a.atk * 0.05, src: a }); } });
+      e.vx = -e.face * 110 * (skLv(e, 'gl_armor') ? 0.75 : 1); fxDust(e.x - e.face * 12, e.y, 4, 14); fxShock(e.x + e.face * 44, e.y, 85, '#ffb060'); cam.shake = Math.max(cam.shake, 3); })] }; } });
 defSkill('gl_laser', { name: '激光炮', cls: 'gun', job: 'launcher', lvReq: 17, mp: 45, cd: 7, type: 'indep', elem: 'light', col: '#3a9ae0',
   desc: '发射一道光属性激光：判定很窄、射程极远，一击贯穿路上的所有敌人。学了蓄电激光炮后，放激光炮时按住攻击键可以充电（最长 0.3 秒），范围和威力更大，但后坐力会把自己推后。', pow: lv => skillDmg(6.5, 0.65, lv), ai: { kind: 'burst', r: [0, 1000], dy: 16 },
   act: (lv) => ({ name: 'gl_laser', clip: 'laser', dur: 0.62, noCounter: true, superArmor: [0, 0.4],
@@ -121,16 +125,18 @@ defSkill('gl_quantum', { name: '量子爆弹', cls: 'gun', job: 'launcher', lvRe
     onInput: (e, I) => { const g = e.act.g; if (g && g.t < g.dur) { g.x += I.dx() * 5; g.y = clamp(g.y + I.dy() * 3, 8, DEPTH - 8); } return false; } }) });
 // X-2 太阳神光炮（官方 2022 年用 X-2 取代了 X-1；技能 id 沿用 gl_x1，存档不用迁移）：手持的聚变装置把恒星的能量压成光球立即发射，不用蓄气
 defSkill('gl_x1', { name: 'X-2 太阳神光炮', cls: 'gun', job: 'launcher', lvReq: 20, mp: 80, cd: 45, type: 'indep', elem: 'fire', col: '#e0702a', pre: { gl_quantum: 1 },
-  desc: '双手托起手持式聚变装置，把恒星的能量压缩成一颗光球立即发射（不用蓄气）：光球缓缓前进，把沿途的敌人卷进来一起推走并灼烧，最后大爆炸。需要量子爆弹 Lv1。（官方现版的 X-2 取代了经典的 X-1 压缩量子炮）', pow: lv => skillDmg(21.6, 2.16, lv), ai: { kind: 'proj', r: [0, 560], dy: 60 },
+  desc: '双手托起手持式聚变装置，把恒星的能量压缩成一颗光球立即发射（不用蓄气）：光球缓缓前进，把沿途的敌人卷进来一起推走并灼烧，最后大爆炸。学会重武装改造后，发射光球时追加一道 5 段联动的蓄电激光炮。需要量子爆弹 Lv1。（官方现版的 X-2 取代了经典的 X-1 压缩量子炮）', pow: lv => skillDmg(21.6, 2.16, lv), ai: { kind: 'proj', r: [0, 560], dy: 60 },
   act: (lv) => ({ name: 'gl_x1', clip: 'laser', dur: 0.62, noCounter: true, superArmor: true,
     onStart: e => { sfx.charge(); fxCharge(e, '#ffb040', 3); },
-    events: [evAt(0.14, e => { e.play('laserFire', true); sfx.cannon(0.9); cam.shake = Math.max(cam.shake, 4); const R = 140, room = game.room;
+    events: [evAt(0.14, e => { e.play('laserFire', true); sfx.cannon(0.9); cam.shake = Math.max(cam.shake, 4); const R = 140, room = game.room, arm = skLv(e, 'gl_armor') > 0;
+      if (arm) { sfx.iai(); fxBeam(e.x + e.face * 54, e.y, e.z + 52, 1400, e.face, { w: 64, dur: 0.38, col: '#9fe8ff' });
+        for (let i = 0; i < 5; i++) game.after(0.04 + i * 0.055, () => { if (!e.dead && game.room === room) instantHit(e, { box: [40, 1400, 36, 20, 100], dmg: skillDmg(0.5, 0.05, lv), stun: 0.35, knock: 0, airLift: 40, hs: 0.015, col: '#bff0ff', elem: 'light', type: 'indep' }); }); }
       shootProj(e, { img: 'quantum', col: '#ffb040', w: 120, speed: 300, life: 1.6, z: 50, dx: 56, bw: 40, bh: 90, pierce: true, spin: 4, trail: '#ffd070',
         hit: { dmg: skillDmg(4.0, 0.4, lv), stun: 0.4, knock: 0, airLift: 60, hs: 0.04, max: 1, elem: 'fire', type: 'indep', col: '#ffd090', onHit: (a, t) => addStatus(t, 'burn', 3, { dps: a.atk * 0.06, src: a }) },
         update: (pr, dt) => { if (Math.random() < 0.5) fxSpr('flame', pr.x + rnd(-20, 20), pr.y, pr.z + rnd(-20, 20), { w: 40, dur: 0.25, rot: -Math.PI / 2 });
           for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - pr.x, (t.y - pr.y) * 1.4) < R && !(t.boss && hasSA(t))) { t.x = damp(t.x, pr.x + pr.face * 20, 5, dt); t.y = damp(t.y, pr.y, 5, dt); } },
         onEnd: pr => { if (e.dead || game.room !== room) return; fxSpr('explosion', pr.x, pr.y, 40, { w: 440, dur: 0.55 }); fxSpr('quantum', pr.x, pr.y, 40, { w: 380, dur: 0.5, grow: [0.4, 1.4], col: '#ffc060' }); fxShock(pr.x, pr.y, 330, '#ffb060'); cam.shake = 10; cam.flash = 0.12; cam.flashCol = '#fff0c0'; sfx.boom(1.2);
-          lblast(e, pr.x, pr.y, 220, { dmg: skillDmg(17.6, 1.76, lv), launch: 480, knock: 140, hs: 0.12, big: 1.8, col: '#ffe0a0', elem: 'fire', downHit: true, onHit: (a, t) => addStatus(t, 'burn', 3, { dps: a.atk * 0.06, src: a }) }, { zMax: 200 }); } }); })] }) });
+          lblast(e, pr.x, pr.y, 220, { dmg: skillDmg(arm ? 15.1 : 17.6, arm ? 1.51 : 1.76, lv), launch: 480, knock: 140, hs: 0.12, big: 1.8, col: '#ffe0a0', elem: 'fire', downHit: true, onHit: (a, t) => addStatus(t, 'burn', 3, { dps: a.atk * 0.06, src: a }) }, { zMax: 200 }); } }); })] }) });
 /* ---- 一次觉醒：重炮掌控者（官方 48~70 级 → 本作 21~25 级）---- */
 defSkill('gl_overheat', { name: '超温重火器', cls: 'gun', job: 'launcher', tier: 1, lvReq: 21, sp: 20, mp: 0, cd: 0, type: 'indep', passive: true, col: '#e05a2a',
   desc: '【一觉被动】让重火器超负荷运转：重火器技能的攻击力提高。', infoExtra: lv => [['重火器攻击力', '+' + pct(0.16 + 0.02 * lv)]] });
@@ -205,7 +211,7 @@ defSkill('gl_fm92sw', { name: 'FM-92 mk2 SW 榴弹', cls: 'gun', job: 'launcher'
     })] }) });
 /* ---- 二次觉醒：风暴骑兵（官方 75~85 级 → 本作 26~27 级）---- */
 defSkill('gl_armor', { name: '重武装改造', cls: 'gun', job: 'launcher', tier: 2, lvReq: 26, sp: 30, mp: 0, cd: 0, type: 'indep', passive: true, col: '#7a7a8a',
-  desc: '【二觉被动】后坐力减少，普通攻击和技能攻击力提高；加农炮改成接触即炸、飞得更远的炮弹。', infoExtra: lv => [['攻击力', '+' + pct(0.025 * lv)], ['后坐力', '-25%']] });
+  desc: '【二觉被动】后坐力减少，普通攻击和技能攻击力提高；加农炮改成接触即炸、飞得更远的炮弹；施放 X-2 太阳神光炮时联动发射 5 段蓄电激光炮。', infoExtra: lv => [['攻击力', '+' + pct(0.025 * lv)], ['后坐力', '-25%'], ['X-2 联动激光', '5 段']] });
 defSkill('gl_fsc7', { name: 'FSC-7 集束炸弹', cls: 'gun', job: 'launcher', tier: 2, lvReq: 26, mp: 90, cd: 40, type: 'indep', col: '#9a6a3a',
   desc: '发射子母弹，附着在第一个命中的敌人身上，随后小炸弹向四方扩散，连锁爆炸。全程霸体。', pow: lv => skillDmg(20, 2, lv), cmdNote: '↓↑→+Z（本作指令）', ai: { kind: 'proj', r: [40, 640], dy: 24 },
   act: (lv) => ({ name: 'gl_fsc7', clip: 'cannon', dur: 0.7, superArmor: true, noCounter: true,
@@ -244,16 +250,16 @@ defSkill('gl_awaken2', { name: '火力全开', cls: 'gun', job: 'launcher', tier
       // 装甲包落地：冲击波只把周围的敌人推开
       if (t > 0.5 && !a.push) { a.push = true; e.play('armorOn', true); fxShock(e.x, e.y, 360, '#ffd070'); fxDust(e.x, e.y, 14, 36); cam.shake = 10; sfx.boom(1.1);
         lblast(e, e.x + e.face * 20, e.y, 260, { dmg: skillDmg(2, 0.6, lv), knock: 300, stun: 0.6, hs: 0.08, sure: true, downHit: true }, { zMax: 200 }); }
-      // 官方约 147 段：格林机枪每 0.04 秒一发，主激光 / 左右副激光 / 榴弹 / 火箭炮各自的节奏（总伤害与之前一致，拆成小段）
-      if (t > 0.95 && t < 3.55) { const n = Math.floor((t - 0.95) / 0.04);
-        if (n !== a.n) { a.n = n; if (n % 8 === 0) e.play(n % 16 ? 'armorFire' : 'armorOn', true);
-          fireBullet(e, { dmg: skillDmg(0.08, 0.025, lv), life: 0.9, vol: 0.4, quiet: n % 4 !== 1, hit: { type: 'indep' } });   // 格林机枪（左下）
-          if (n % 3 === 0) { fxBeam(e.x + e.face * 60, e.y + rnd(-40, 40), e.z + 70, 1400, e.face, { w: 34, dur: 0.2, col: '#8fe0ff' }); instantHit(e, { box: [40, 1400, 70, 0, 150], dmg: skillDmg(0.185, 0.055, lv), stun: 0.4, knock: 40, airLift: 120, hs: 0.02, sure: true, downHit: true, type: 'indep' }); }   // 主激光
-          if (n % 6 === 1) { const y = e.y + (n % 12 < 6 ? -18 : 18); fxBeam(e.x + e.face * 30, y, e.z + 112, 1200, e.face, { w: 14, dur: 0.18, col: '#ff9ad0' }); instantHit(e, { box: [30, 1200, 40, 60, 170], dmg: skillDmg(0.15, 0.05, lv), stun: 0.3, knock: 10, airLift: 90, hs: 0.01, sure: true, type: 'indep' }); }   // 右上副激光
-          if (n % 6 === 4) { const y = e.y + (n % 12 < 6 ? 18 : -18); fxBeam(e.x + e.face * 30, y, e.z + 124, 1200, e.face, { w: 14, dur: 0.18, col: '#ff9ad0' }); instantHit(e, { box: [30, 1200, 40, 60, 170], dmg: skillDmg(0.15, 0.05, lv), stun: 0.3, knock: 10, airLift: 90, hs: 0.01, sure: true, type: 'indep' }); }   // 左上副激光
+      // 官方约 147 段：格林机枪每 0.033 秒一发，主激光 / 左右副激光 / 榴弹 / 火箭炮各自的节奏（总伤害与之前一致，拆成小段）
+      if (t > 0.92 && t < 3.56) { const n = Math.floor((t - 0.92) / 0.033);
+        if (n !== a.n && n < 80) { a.n = n; if (n % 8 === 0) e.play(n % 16 ? 'armorFire' : 'armorOn', true);
+          fireBullet(e, { dmg: skillDmg(0.065, 0.02, lv), life: 0.9, vol: 0.4, quiet: n % 4 !== 1, sz: 1.2, hit: { type: 'indep' } });   // 格林机枪（左下）
+          if (n % 3 === 0) { fxBeam(e.x + e.face * 60, e.y + rnd(-40, 40), e.z + 70, 1400, e.face, { w: 34, dur: 0.2, col: '#8fe0ff' }); instantHit(e, { box: [40, 1400, 70, 0, 150], dmg: skillDmg(0.15, 0.045, lv), stun: 0.4, knock: 40, airLift: 120, hs: 0.02, sure: true, downHit: true, type: 'indep' }); }   // 主激光
+          if (n % 5 === 1) { const y = e.y + (n % 10 < 5 ? -18 : 18); fxBeam(e.x + e.face * 30, y, e.z + 112, 1200, e.face, { w: 14, dur: 0.18, col: '#ff9ad0' }); instantHit(e, { box: [30, 1200, 40, 60, 170], dmg: skillDmg(0.103, 0.034, lv), stun: 0.3, knock: 10, airLift: 90, hs: 0.01, sure: true, type: 'indep' }); }   // 右上副激光
+          if (n % 5 === 3) { const y = e.y + (n % 10 < 5 ? 18 : -18); fxBeam(e.x + e.face * 30, y, e.z + 124, 1200, e.face, { w: 14, dur: 0.18, col: '#ff9ad0' }); instantHit(e, { box: [30, 1200, 40, 60, 170], dmg: skillDmg(0.103, 0.034, lv), stun: 0.3, knock: 10, airLift: 90, hs: 0.01, sure: true, type: 'indep' }); }   // 左上副激光
           if (n % 16 === 0) { const tx = e.x + e.face * rnd(200, 700), ty = clamp(e.y + rnd(-80, 80), 8, DEPTH - 8); lobProj(e, tx, ty, 0.5, { img: 'grenade', h: 14, onLand: q => { meteorImpact(q, 0.7); lblast(e, q.x, q.y, 100, { dmg: skillDmg(1.4, 0.42, lv), launch: 320, knock: 80, hs: 0.05 }); } }); }   // 榴弹（右下）
-          if (n % 16 === 5) cannonShell(e, { dmg: skillDmg(0.7, 0.21, lv), boom: skillDmg(1.05, 0.31, lv), speed: 900, life: 1.0, r: 110, big: 0.75, launch: 260, hit: { type: 'indep' } }); } }   // 火箭炮
-      if (t > 3.55 && !a.fin) { a.fin = true; e.play('armorFire', true); cam.flash = 0.3; cam.flashCol = '#fff0c0'; cam.shake = 14; sfx.boom(1.5); fxBeam(e.x + e.face * 70, e.y, e.z + 60, 1400, e.face, { w: 180, dur: 0.5, col: '#ffe090' });
+          if (n % 16 === 5) cannonShell(e, { dmg: skillDmg(0.56, 0.17, lv), boom: skillDmg(0.84, 0.25, lv), speed: 900, life: 1.0, r: 110, big: 0.75, launch: 260, hit: { type: 'indep' } }); } }   // 火箭炮
+      if (t > 3.56 && !a.fin) { a.fin = true; e.play('armorFire', true); cam.flash = 0.3; cam.flashCol = '#fff0c0'; cam.shake = 14; sfx.boom(1.5); fxBeam(e.x + e.face * 70, e.y, e.z + 60, 1400, e.face, { w: 180, dur: 0.5, col: '#ffe090' });
         instantHit(e, { box: [40, 1400, 95, 0, 170], dmg: skillDmg(12, 3.5, lv), launch: 520, knock: 220, hs: 0.15, big: 2, sure: true, downHit: true, type: 'indep' }); } } }) });
 /* ---- 三次觉醒：重霄·枪炮师（官方 95~100 级 → 本作 29~30 级）---- */
 defSkill('gl_pandora', { name: 'Pandora_01', cls: 'gun', job: 'launcher', tier: 3, lvReq: 29, sp: 40, mp: 0, cd: 0, type: 'indep', passive: true, col: '#5a6a9a',

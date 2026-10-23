@@ -54,8 +54,8 @@ defSummon('pe_genbu_s', { kind: 'field', life: 3.8, max: 1, over: 'oldest', keep
     for (let i = 0; i < 8; i++) { const ang = t * 2.4 + i / 8 * TAU, r = s.sdef.r * (0.55 + 0.35 * ((i % 3) / 2));
       drawSpr(c, 'rock', sx(s.x + Math.cos(ang) * r), sy(s.y + Math.sin(ang) * r * GR, 40 + 50 * Math.abs(Math.sin(ang * 1.3 + i))), 22 + (i % 3) * 7, 0, { add: false, rot: t * 5 + i }); }
     peBeast(c, 'pe_genbu', sx(s.tx), sy(s.y, 0), 120, { flip: s.face < 0 }); c.restore(); } });
-peShikiDef('pe_genbu', { name: '式神：地之玄武', lvReq: 18, mp: 65, cd: 8, col: '#c8964a', icon: 'pe_genbu', pre: { pe_suzaku: 1 },
-  desc: '召唤玄武：玄武往前方伸手，做出一片旋转碎石的区域，竖起一根手指——区域里所有的敌人强制硬直（霸体也打断；领主时间缩短），碎石接连砸 10 下。出手前有一点预备时间。可以在普攻中施放；式神之悟：共鸣瞬发、碎石间隔 0.3 → 0.2 秒。需要式神：热炎朱雀 Lv1。',
+peShikiDef('pe_genbu', { name: '式神：地之玄武', lvReq: 18, mp: 65, cd: 8, col: '#c8964a', icon: 'pe_genbu', cmdNote: '↑→+Z', pre: { pe_suzaku: 1 },
+  desc: '召唤玄武（默认指令 ↑→+Z，兼容 ↓←+Space）：玄武往前方伸手，做出一片旋转碎石的区域，竖起一根手指——区域里所有的敌人强制硬直（霸体也打断；领主时间缩短），碎石接连砸 10 下。出手前有一点预备时间。可以在普攻中施放；式神之悟：共鸣瞬发、碎石间隔 0.3 → 0.2 秒。需要式神：热炎朱雀 Lv1。',
   pow: lv => skillDmg(4, 0.4, lv), infoExtra: () => [['段数', '10'], ['区域半径', '175px'], ['强制硬直', '3.2 秒']], ai: { kind: 'aoe', r: [60, 360], dy: 70 } },
   (e, lv) => { const s = summon(e, 'pe_genbu_s', { x: e.x + e.face * 230, y: e.y }); if (!s) return; s.per = skillDmg(4, 0.4, lv) / 10; });
 
@@ -75,8 +75,8 @@ defSummon('pe_byakko_s', { kind: 'field', life: 3.0, max: 1, over: 'oldest', kee
   drawUpright(c, s) { const a = peFade(s, 0.2, 0.3), t = s.lifeT, X = sx(s.x), Y = sy(s.y, 120 + Math.sin(t * 4) * 6);
     c.save(); c.globalAlpha = a; drawSpr(c, fxTint('orb', '#bfe6ff'), X, Y, 70 + 10 * Math.sin(t * 12), 0, {}); drawSpr(c, fxTint('thunderbolt', '#dff0ff'), X, Y, 90, 0, { rot: t * 6, alpha: 0.6 });
     if (t < 1.2) { c.globalAlpha = a * clamp((1.2 - t) / 0.3, 0, 1); peBeast(c, 'pe_byakko', sx(s.tx), sy(s.y, 0), 115, { flip: s.face < 0 }); } c.restore(); } });
-peShikiDef('pe_byakko', { name: '式神：空之白虎', lvReq: 19, mp: 65, cd: 16.5, col: '#bfe6ff', icon: 'pe_byakko', pre: { pe_genbu: 1 },
-  desc: '召唤白虎：白虎在前方放下一颗“空之珠”，化作一片雷电区域，接连落下 8 道落雷。每道落雷只打一个目标，在区域里的敌人之间轮流（只有一个敌人时 8 道都打它）。驱魔的主力伤害技能。可以在普攻中施放；式神契结：真龙 使范围 +10%。需要式神：地之玄武 Lv1。',
+peShikiDef('pe_byakko', { name: '式神：空之白虎', lvReq: 19, mp: 65, cd: 16.5, col: '#bfe6ff', icon: 'pe_byakko', cmdNote: '↓←+Z', pre: { pe_genbu: 1 },
+  desc: '召唤白虎（默认指令 ↓←+Z）：白虎在前方放下一颗“空之珠”，化作一片雷电区域，接连落下 8 道落雷。每道落雷只打一个目标，在区域里的敌人之间轮流（只有一个敌人时 8 道都打它）。驱魔的主力伤害技能。可以在普攻中施放；式神契结：真龙 使范围 +10%。需要式神：地之玄武 Lv1。',
   pow: lv => skillDmg(7, 0.7, lv), infoExtra: () => [['落雷', '8 道 × 2109%'], ['区域半径', '210px']], ai: { kind: 'aoe', r: [80, 380], dy: 80 } },
   (e, lv) => { const s = summon(e, 'pe_byakko_s', { x: e.x + e.face * 250, y: e.y }); if (!s) return; s.per = skillDmg(7, 0.7, lv) / 8; });
 
@@ -261,7 +261,7 @@ function peAutoAwaken(p) {
 /* ---- 被动效果（每 0.25 秒刷新；hide = 不在 HUD 上显示图标）---- */
 const PE_PSV = ['pe_force', 'pe_mastery', 'pe_book', 'pe_spirit', 'pe_insight', 'pe_kouryu', 'pe_general'];
 CLASSES.priest.passives.push(p => {
-  if (!peOn(p)) { for (const id of PE_PSV) setPassive(p, id, false); if (p._peElemOn) { p._peElemOn = 0; p.atkElem = p._peElem0; } return; }
+  if (!peOn(p)) { for (const id of PE_PSV) setPassive(p, id, false); if (p._peElemOn) { p._peElemOn = 0; p.atkElem = p._peElem0; delete p.atkElems; } return; }
   pePatchBase(); peAutoAwaken(p);
   const L = id => skLv(p, id);
   setPassive(p, 'pe_force', L('pe_force') > 0, { mspd: 0.1, hide: true });
@@ -273,9 +273,9 @@ CLASSES.priest.passives.push(p => {
   if (L('pe_general')) setPassive(p, 'pe_general', true, { dmg: 0.03 * L('pe_general'), lab: '×' + peRes(p).n, col: '#6ab8ff' }); else setPassive(p, 'pe_general', false);
   // 法阵：万悟 —— 魔法攻击更高时按魔法结算（物理 / 魔法合一）
   if (L('pe_zen') && p.matk !== undefined && p.atk !== undefined) p.dmgType = p.matk > p.atk ? 'mag' : 'phys';
-  // 封魔莲华：武器附带火 / 光属性（取属性强化更高的一边；武器本身有属性时不改）
-  if (p.buffs.pe_lotus) { if (!p._peElemOn) { p._peElemOn = 1; p._peElem0 = p.atkElem; } if (!p._peElem0) p.atkElem = p.elem && (p.elem.fire || 0) > (p.elem.light || 0) ? 'fire' : 'light'; }
-  else if (p._peElemOn) { p._peElemOn = 0; p.atkElem = p._peElem0; }
+  // 封魔莲华：武器同时附带火 + 光双属性（取属性强化更高的一边结算；武器本身有属性时不改）
+  if (p.buffs.pe_lotus) { if (!p._peElemOn) { p._peElemOn = 1; p._peElem0 = p.atkElem; } p.atkElems = ['fire', 'light']; if (!p._peElem0) p.atkElem = p.elem && (p.elem.fire || 0) >= (p.elem.light || 0) ? 'fire' : 'light'; }
+  else if (p._peElemOn) { p._peElemOn = 0; p.atkElem = p._peElem0; delete p.atkElems; }
 });
 
 /* ---- 登记（转职元数据在 priest.js；这里写技能 / 指令 / 动作 / 觉醒技 id）---- */
@@ -285,7 +285,7 @@ CLASSES.priest.passives.push(p => {
   Object.assign(J.anims, PE_ANIMS);
   J.skills.push('pe_zen', 'pe_force', 'pe_lurk', 'pe_plate', 'pe_gale', 'pe_mastery', 'pe_lotus', 'pe_star', 'pe_suzaku', 'pe_genbu', 'pe_book', 'pe_byakko', 'pe_chaos',
     'pe_spin', 'pe_atomic', 'pe_spirit', 'pe_awaken', 'pe_seiryu', 'pe_quake', 'pe_insight', 'pe_kouryu', 'pe_seven', 'pe_pentacle', 'pe_awaken2', 'pe_general', 'pe_blitz', 'pe_awaken3');
-  // 指令（官方默认指令；白虎官方页和玄武写成同一个，本作用 ↓←+Z）
-  CLASSES.priest.cmds.push(['df', 'pe_lotus', 'buff'], ['fu', 'pe_gale'], ['uu', 'pe_star'], ['uff', 'pe_suzaku'], ['uf', 'pe_genbu'], ['db', 'pe_byakko'], ['dd', 'pe_chaos'],
+  // 指令（官方默认指令：玄武 ↑→+Z、白虎 ↓←+Z；玄武额外兼容 ↓←+Space 避免与白虎冲突）
+  CLASSES.priest.cmds.push(['df', 'pe_lotus', 'buff'], ['fu', 'pe_gale'], ['uu', 'pe_star'], ['uff', 'pe_suzaku'], ['uf', 'pe_genbu'], ['db', 'pe_genbu', 'buff'], ['db', 'pe_byakko'], ['dd', 'pe_chaos'],
     ['bdf', 'pe_spin'], ['fbf', 'pe_atomic'], ['uudd', 'pe_awaken'], ['bdf', 'pe_seiryu', 'buff'], ['fbuf', 'pe_quake'], ['duf', 'pe_seven'], ['bff', 'pe_pentacle'],
     ['duff', 'pe_awaken2'], ['udff', 'pe_blitz'], ['bffu', 'pe_awaken3']); }

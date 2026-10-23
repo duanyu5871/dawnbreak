@@ -52,9 +52,11 @@ function fxSigil(name, x, y, z, o = {}) {
 function fxAtom(e, col = '#4a8aff') {
   const dur = 1.1;
   return addFx({ x: e.x, y: e.y, z: e.z, dur, draw(c) { const k = this.t / dur, a = k < 0.12 ? k / 0.12 : k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1, X = sx(e.x), Y = sy(e.y, e.z + 46);
-    c.save(); c.translate(X, Y); c.globalCompositeOperation = 'lighter'; c.lineWidth = 3; c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 10;
+    c.save(); c.translate(X, Y); c.globalCompositeOperation = 'lighter';
+    c.globalAlpha = a * 0.22; c.fillStyle = col; c.beginPath(); c.arc(0, 0, 34, 0, TAU); c.fill();
+    c.lineWidth = 3; c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 10;
     for (let i = 0; i < 2; i++) { const tilt = (i ? 1 : -1) * 0.62 + this.t * (i ? 0.66 : -0.66); c.globalAlpha = a * 0.9; c.beginPath(); c.ellipse(0, 0, 40, 15, tilt, 0, TAU); c.stroke();
-      for (let j = 0; j < 2; j++) { const th = this.t * 7 + i * 2 + j * Math.PI, ex = Math.cos(th) * 40, ey = Math.sin(th) * 15; c.globalAlpha = a; c.fillStyle = '#cfe4ff'; c.beginPath(); c.arc(ex * Math.cos(tilt) - ey * Math.sin(tilt), ex * Math.sin(tilt) + ey * Math.cos(tilt), 3.2, 0, TAU); c.fill(); } }
+      for (let j = 0; j < 2; j++) { const th = this.t * 7 + i * 2 + j * Math.PI, ex = Math.cos(th) * 40, ey = Math.sin(th) * 15; c.globalAlpha = a; c.fillStyle = '#e8f4ff'; c.beginPath(); c.arc(ex * Math.cos(tilt) - ey * Math.sin(tilt), ex * Math.sin(tilt) + ey * Math.cos(tilt), 3.6, 0, TAU); c.fill(); } }
     c.restore(); } });
 }
 /* ---- 蓄气：PvE 只放大范围、决斗场才加伤害（官方 2017 年以后的规则）；学了移动施法（元素师）可以边蓄边走、蓄满后按住保持、带进下一个房间；
@@ -64,7 +66,11 @@ const chargeCut = (p, basic) => clamp(buffVal(p, 'chargeCut') + (basic ? buffVal
 function mCharge(p, max, col, o = {}) {
   const clip = o.clip || 'mchan', mv = !!p && typeof hasSkill === 'function' && hasSkill(p, 'el_movecast');
   return { at: o.at ?? 0.06, max: Math.max(0.04, max * (1 - chargeCut(p, o.basic))), min: 0, dmg: game.pvp ? (o.pvp ?? 0.4) : 0, clip, hold: mv, keepRoom: mv, onRoom: o.onRoom,
-    update: (e, dt) => { if (Math.random() < 0.4) fxCharge(e, col); mageChargeMove(e, clip); if (o.update) o.update(e, dt); } };
+    update: (e, dt) => {
+      if (Math.random() < 0.4) fxCharge(e, col);
+      if (e.act && !e.act._fullFlash && (e.act.chargeK || 0) >= 0.98) { e.act._fullFlash = true; sfx.magic(); fxAura(e, col || '#ffffff', 0.45); fxShock(e.x, e.y, 78, col || '#fff6a0'); fxSpr('spark', e.x, e.y + 1, e.z + 62, { w: 68, dur: 0.22, col: '#ffffff' }); }
+      mageChargeMove(e, clip); if (o.update) o.update(e, dt);
+    } };
 }
 function mageChargeMove(e, clip) {
   if (!e.pad || typeof hasSkill !== 'function' || !hasSkill(e, 'el_movecast')) return;
@@ -124,12 +130,16 @@ defSkill('mg_orb', { name: '魔法星弹', cls: 'mage', lvReq: 1, mp: 6, cd: 0.5
   infoExtra: lv => [['穿透几率', pct(Math.min(0.95, 0.7 + 0.025 * (lv - 1)))]],
   act: (lv) => ({ name: 'mg_orb', clip: 'mcast', dur: 0.36, cancelFrom: 0.2,
     events: [evAt(0.1, e => magicOrb(e, { dmg: skillDmg(1.1, 0.11, lv), col: '#ffe070', size: 30, speed: 600, life: 0.9, steer: true, home: true, elem: 'light', pierceP: Math.min(0.95, 0.7 + 0.025 * (lv - 1)) }))] }) });
-defSkill('mg_sky', { name: '天击', cls: 'mage', lvReq: 1, mp: 10, cd: 2, type: 'phys', col: '#5a8ae0', noSA: true,   // 官方：天击滑动、非霸体
+defSkill('mg_sky', { name: '天击', cls: 'mage', lvReq: 1, mp: 10, cd: 2, type: 'phys', col: '#5a8ae0', noSA: true,   // 官方：天击滑动、非霸体；亮白+魔法辉光双层上挑弧光
   desc: '挥杖向上猛击把敌人打上天。施放时按住 ↑ 或 ↓ 会先向该方向侧滑再攻击。', pow: lv => skillDmg(1.8, 0.18, lv), ai: { kind: 'launch', r: [0, 86], dy: 24 },
   act: (lv) => ({ name: 'mg_sky', clip: 'sky', dur: 0.48, cancelFrom: 0.28,
     onStart: e => { const dy = e.pad ? e.pad.dy() : 0; if (dy) e.act.move = [[0, 0.1, 0, undefined, dy * 420]]; },
-    hits: [HB(0.12, 0.2, [0, 90, 32, 0, 130], skillDmg(1.8, 0.18, lv), { launch: 540 + lv * 6, knock: 30, hs: 0.08, snd: 'blunt', shake: 2, big: 1.2, chaser: 'light' })],
-    events: [slashAt(0.11, { a0: 1.4, a1: -1.9, r: 72, w: 12, off: [10, 50], col: '#e0c0ff' })], onEnd: e => { e.vy = 0; } }) });
+    hits: [HB(0.12, 0.2, [0, 90, 32, 0, 130], skillDmg(1.8, 0.18, lv), { launch: 540 + lv * 6, knock: 30, hs: 0.09, snd: 'blunt', shake: 2.5, big: 1.3, chaser: 'light',
+      onHit: (a, t) => { fxBurst(t.x, t.y, t.z + 55, 85, '#f4f8ff'); fxSpr('spark', t.x, t.y + 1, t.z + 55, { w: 48, dur: 0.22, col: '#ffffff' }); } })],
+    events: [slashAt(0.11, { a0: 1.45, a1: -1.95, r: 76, w: 16, off: [12, 50], col: '#b8dcff', dur: 0.2 }),
+      slashAt(0.115, { a0: 1.35, a1: -1.85, r: 72, w: 10, off: [12, 50], col: '#ffffff', dur: 0.16, heavy: true }),
+      evAt(0.11, e => { sfx.swing(true); fxSpr('spark', e.x + e.face * 44, e.y + 1, e.z + 68, { w: 42, dur: 0.18, col: '#ffffff' }); })],
+    onEnd: e => { e.vy = 0; } }) });
 defSkill('mg_fang', { name: '龙牙', cls: 'mage', lvReq: 5, mp: 12, cd: 2, type: 'phys', col: '#c0c8e0',
   desc: '挥杖向前长距离直刺，命中的敌人陷入长时间僵直；命中后可以立即接天击、落花掌。', pow: lv => skillDmg(1.5, 0.15, lv), ai: { kind: 'poke', r: [0, 150], dy: 22 },
   act: (lv, p) => ({ name: 'mg_fang', clip: 'fang', dur: 0.46, cancelFrom: 0.2,
@@ -156,17 +166,18 @@ function jackBomb(e, lv, k, air) {
       blast(e, pr.x, pr.y, 75 * (1 + k * 0.5), { dmg: skillDmg(1.1, 0.11, lv), launch: 260, knock: 70, hs: 0.06, snd: 'fire', col: '#ffb060', elem: 'fire', type: 'mag' }, { zMax: Math.max(40, pr.z + 40) }); },
     draw(c, pr) { drawSpr(c, img, sx(pr.x), sy(pr.y, pr.z + 6), sz, 0, { add: false, rot: Math.sin(pr.t * 14) * 0.2, flip: pr.face < 0 }); } });
 }
-defSkill('mg_jack', { name: '杰克爆弹', cls: 'mage', lvReq: 5, mp: 12, cd: 1, type: 'mag', elem: 'fire', col: '#e07a2a', cast: true, excl: NO_BM,
+defSkill('mg_jack', { name: '杰克爆弹', cls: 'mage', lvReq: 5, mp: 12, cd: 1, type: 'mag', elem: 'fire', col: '#e07a2a', cast: true, excl: NO_BM, backOk: true,
   airIf: p => hasSkill(p, 'mg_jackair') && (p._jackAir || 0) < 2,
-  desc: '向前方的敌人射出燃烧的南瓜灯（发射瞬间锁定方向），碰到敌人小范围爆炸。按住技能键蓄气（最长 0.6 秒）让南瓜变大、飞得更远。学会“空中施放”后跳跃中也能放。', pow: lv => skillDmg(1.6, 0.16, lv), ai: { kind: 'proj', r: [40, 520], dy: 40 },
+  desc: '向前方的敌人射出燃烧的南瓜灯（发射瞬间锁定方向），碰到敌人小范围爆炸。按住技能键蓄气（最长 0.6 秒）让南瓜变大、飞得更远。学会“空中施放”后跳跃或后跳中也能放。', pow: lv => skillDmg(1.6, 0.16, lv), ai: { kind: 'proj', r: [40, 520], dy: 40 },
   act: (lv, p) => {
-    if (p && p.z > 2) return { name: 'mg_jack', clip: 'mjatk', dur: 0.34, airOnly: true, lowGrav: 0.4, cancelFrom: 0.2,
-      onStart: e => { e._jackAir = (e._jackAir || 0) + 1; }, events: [evAt(0.08, e => { jackBomb(e, lv, 0, true); e.vz = Math.max(e.vz, 150); })] };
+    const inBack = !!(p && p.st === 'act' && p.act && p.act.name === 'back' && hasSkill(p, 'mg_jackair') && (p._jackAir || 0) < 2);
+    if ((p && p.z > 2) || inBack) return { name: 'mg_jack', clip: 'mjatk', dur: 0.34, airOnly: !!(p && p.z > 2), lowGrav: 0.4, cancelFrom: 0.2,
+      onStart: e => { e._jackAir = (e._jackAir || 0) + 1; if (e.z <= 2) e.z = 8; }, events: [evAt(0.08, e => { jackBomb(e, lv, 0, true); e.vz = Math.max(e.vz, 150); })] };
     return { name: 'mg_jack', clip: 'jack', dur: 0.5, cancelFrom: 0.34, charge: mCharge(p, 0.6, '#ffb060', { at: 0.1, clip: 'jackHold', basic: true }),
       events: [evAt(0.2, e => jackBomb(e, lv, e.act.chargeK || 0))] };
   } });
-defSkill('mg_jackair', { name: '空中施放：杰克爆弹', cls: 'mage', lvReq: 15, maxLv: 1, passive: true, type: 'mag', elem: 'fire', col: '#c05a2a', icon: 'mg_jack', excl: NO_BM,
-  desc: '【被动】跳跃中可以施放杰克爆弹：斜向下射出，后坐力让自己略微上浮；空中不能蓄气，每次跳跃最多 2 发。' });
+defSkill('mg_jackair', { name: '空中施放：杰克爆弹', cls: 'mage', lvReq: 15, maxLv: 1, passive: true, type: 'mag', elem: 'fire', col: '#c05a2a', icon: 'mg_jack', excl: NO_BM, backOk: true,
+  desc: '【被动】跳跃或后跳中可以施放杰克爆弹：斜向下射出，后坐力让自己略微上浮；空中不能蓄气，每次跳跃最多 2 发。' });
 // 光电鳗：3 只发光鳗鱼绕施放点旋转并逐渐向外扩散，持续 5 秒以上；可以叠放多组；蓄气（下蹲）变大、持续更久
 defSkill('mg_eel', { name: '光电鳗', cls: 'mage', lvReq: 5, mp: 18, cd: 2, type: 'mag', elem: 'light', col: '#e0d02a', cast: true, excl: NO_BM,
   desc: '召出 3 只光电鳗，环绕施放位置旋转并逐渐向外扩散，持续 5 秒，碰到的敌人受到光属性伤害并硬直。可以叠放多组。蓄气（最长 0.6 秒）变大、持续更久。', pow: lv => skillDmg(2.6, 0.26, lv), ai: { kind: 'aoe', r: [0, 160], dy: 60 },
@@ -198,8 +209,8 @@ function hodorBomb(s, x, y) {
 defSummon('hodor', { kind: 'follower', name: '机甲赫德尔', bundle: 'goblinCaptain', model: () => hodorModel(), clips: BEAST_CLIPS, w: 12, d: 11, h: 76, scale: 1.02, speed: 150, runSpeed: 300, pref: 40, sight: 560,
   life: 200, max: 1, col: '#c8d0e0', tags: ['contract'],
   attacks: [
-    { clip: 'club', range: [0, 80], dy: 22, cd: [0.9, 1.6], w: 3, act: { dur: 0.8, hits: [{ t0: 0.4, t1: 0.48, box: [0, 82, 26, 0, 80], dmg: 0.55, stun: 0.4, knock: 110, hs: 0.06, snd: 'blunt' }], events: [evAt(0.36, e => sfx.swing(true))] } },
-    { clip: 'axe', range: [0, 100], dy: 26, cd: [6, 9], w: 1.2, act: { dur: 1.1, superArmor: true, hits: [{ t0: 0.6, t1: 0.7, box: [0, 104, 34, 0, 90], dmg: 1.3, stun: 0.6, knock: 200, hs: 0.1, snd: 'blunt', shake: 3, heavy: true, onHit: (a, t) => { if (Math.random() < 0.4) addStatus(t, 'stun', 1.0, { src: a.owner }); } }], events: [evAt(0.55, e => sfx.swing(true)), evAt(0.62, e => fxShock(e.x + e.face * 60, e.y, 120, '#e0d0a0'))] } },
+    { clip: 'club', range: [0, 80], dy: 22, cd: [0.9, 1.6], w: 3, act: { dur: 0.8, hits: [{ t0: 0.4, t1: 0.48, box: [0, 82, 26, 0, 80], dmg: 0.55, stun: 0.4, knock: 110, hs: 0.06, snd: 'blunt' }], events: [evAt(0.36, e => { sfx.swing(true); fxSlashOn(e, { a0: -2.0, a1: 0.8, r: 54, w: 10, off: [12, 46], col: '#e8d8b0' }); })] } },
+    { clip: 'axe', range: [0, 100], dy: 26, cd: [6, 9], w: 1.2, act: { dur: 1.1, superArmor: true, hits: [{ t0: 0.6, t1: 0.7, box: [0, 104, 34, 0, 90], dmg: 1.3, stun: 0.6, knock: 200, hs: 0.1, snd: 'blunt', shake: 3, heavy: true, onHit: (a, t) => { if (Math.random() < 0.4) addStatus(t, 'stun', 1.0, { src: a.owner }); } }], events: [evAt(0.55, e => { sfx.swing(true); fxSlashOn(e, { a0: -2.3, a1: 0.9, r: 72, w: 16, off: [16, 48], col: '#ffe090', heavy: true }); }), evAt(0.62, e => fxShock(e.x + e.face * 60, e.y, 120, '#e0d0a0'))] } },
     { clip: 'throw', range: [90, 360], dy: 60, cd: [2.4, 3.6], w: 2, act: { dur: 0.9, events: [evAt(0.45, e => hodorRock(e, summonTarget(e), Math.random() < 0.35 ? 3 : 1))] } },
     { clip: 'throw', range: [100, 360], dy: 80, cd: [8, 11], w: 1, act: { dur: 0.9, events: [evAt(0.45, e => hodorRock(e, summonTarget(e), Math.random() < 0.5 ? 5 : 1, Math.random() < 0.5))] } },
     // 自我加速：移速 + 攻速提高一段时间（官方基础招式）
@@ -218,12 +229,12 @@ function keepawayBlast(e, x, y, z, lv) {
 defSkill('mg_keepaway', { name: '别过来！', cls: 'mage', lvReq: 5, mp: 20, cd: 6, type: 'mag', elem: 'dark', col: '#6a3a8a', excl: NO_BM,
   desc: '往面前的敌人身上贴一个诅咒人偶把它定住，然后引爆。施放后背身抱头蹲下，人偶爆炸之前无敌。对霸体或无法抓取的敌人会直接爆炸。判定很窄。', pow: lv => skillDmg(2.4, 0.24, lv), ai: { kind: 'grab', r: [0, 60], dy: 16 },
   act: (lv) => ({ name: 'mg_keepaway', clip: 'cower', dur: 1.0, noCounter: true, invul: [0.08, 0.92],
-    hits: [HB(0.03, 0.09, [0, 58, 16, 0, 110], 0.1, { grab: true, stun: 0.3, hs: 0.03, snd: 'blunt', type: 'mag' })],
-    onGrab: (e, t) => { e.act.gx = t.x; e.act.gy = t.y; fxText('！', t.x, t.y, t.z + 20, { col: '#c79aff', size: 16 }); },
-    hold: (e, t) => { const a = e.act; t.x = a.gx ?? t.x; t.y = a.gy ?? t.y; t.z = 0; },
-    events: [evAt(0.1, e => { if (!e.grabbed) { const x = e.x + e.face * 46; keepawayBlast(e, x, e.y, 0, lv); e.act.dur = 0.45; } else sfx.magic(); }),
-      evAt(0.85, e => { const t = e.grabbed; if (!t) return; keepawayBlast(e, t.x, t.y, t.z, lv); throwGrab(e, { dmg: 0.1, down: true, downLift: 200, knock: 140, hs: 0.04, type: 'mag', elem: 'dark' }); })],
-    update: e => { const t = e.grabbed; if (t && Math.random() < 0.5) fxSpr('rune', t.x, t.y, t.z + 50, { w: 22, dur: 0.1, col: '#c79aff' }); } }) });
+  hits: [HB(0.03, 0.09, [0, 58, 16, 0, 110], 0.1, { grab: true, stun: 0.3, hs: 0.03, snd: 'blunt', type: 'mag' })],
+  onGrab: (e, t) => { e.act.gx = t.x; e.act.gy = t.y; fxText('！', t.x, t.y, t.z + 20, { col: '#c79aff', size: 16 }); },
+  hold: (e, t) => { const a = e.act; t.x = a.gx ?? t.x; t.y = a.gy ?? t.y; t.z = 0; },
+  events: [evAt(0.1, e => { if (!e.grabbed) { const x = e.x + e.face * 46; keepawayBlast(e, x, e.y, 0, lv); e.act.dur = 0.45; } else sfx.magic(); }),
+    evAt(0.85, e => { const t = e.grabbed; if (!t) return; keepawayBlast(e, t.x, t.y, t.z, lv); throwGrab(e, { dmg: 0.1, down: true, downLift: 200, knock: 140, hs: 0.04, type: 'mag', elem: 'dark' }); })],
+  update: e => { const t = e.grabbed; if (t && Math.random() < 0.5) fxSpr('rune', t.x, t.y, t.z + 50, { w: 22, dur: 0.1, col: '#c79aff' }); } }) });
 // 冰霜雪人：雪人头贴地弹跳前进，每弹一次就转向最近的敌人；按 ↑ 高抛、按 ↓ 贴地；满蓄时变成冰爆（100% 减速、几率冰冻）
 defSkill('mg_snowman', { name: '冰霜雪人', cls: 'mage', lvReq: 10, mp: 14, cd: 1, type: 'mag', elem: 'ice', col: '#6ac0e8', cast: true, excl: NO_BM, pre: ['mg_jack'],
   desc: '甩出一颗雪人头，一路弹跳前进，每弹一次都会转向最近的敌人。施放时按 ↑ 高抛、按 ↓ 贴地弹跳。蓄满（0.5 秒）后变成寒冰爆炸，溅射周围敌人，100% 减速并有几率冰冻。', pow: lv => skillDmg(1.6, 0.16, lv), ai: { kind: 'proj', r: [0, 380], dy: 60 },
@@ -233,8 +244,9 @@ defSkill('mg_snowman', { name: '冰霜雪人', cls: 'mage', lvReq: 10, mp: 14, c
         hit: { dmg: skillDmg(1.6, 0.16, lv), stun: 0.35, knock: 60, hs: 0.05, elem: 'ice', type: 'mag', col: '#bfefff', onHit: (a, t) => { if (!full) addStatus(t, 'slow', 2, { src: a }); } },
         onGround(pr) { if (pr.vz >= 0) return; pr.z = 0.01; pr.vz = bv; sfx.ice(); fxDust(pr.x, pr.y, 2, 4, '#dff4ff');
           const t = nearestFoe(e, 460); if (t) { const dx = t.x - pr.x, dyy = t.y - pr.y, l = Math.hypot(dx, dyy * 1.5) || 1; pr.vx = dx / l * sp; pr.vy = dyy / l * sp * 0.6; if (Math.abs(pr.vx) > 5) pr.face = Math.sign(pr.vx); } },
-        update(pr) { if (pr.z <= 0.02 && pr.vz < 0) { pr.z = 0.01; pr.onGround(pr); } },
-        onEnd(pr) { if (full) { sfx.ice(); fxSpr('frost', pr.x, pr.y, 0, { w: 220, dur: 0.5, ay: 0.75, grow: [0.4, 1.1] }); fxShock(pr.x, pr.y, 105, '#bfefff');
+        update(pr) { if (pr.z <= 0.02 && pr.vz < 0) { pr.z = 0.01; pr.onGround(pr); }
+          if (Math.random() < 0.55) addFx({ x: pr.x + rnd(-6, 6), y: pr.y + 0.3, z: pr.z + 14, dur: 0.24, draw(c) { const q = this.t / this.dur; drawSpr(c, fxTint('spark', '#9fe6ff'), sx(this.x), sy(this.y, this.z), 16 * (1 - q), 16 * (1 - q), { alpha: 0.75 * (1 - q) }); } }); },
+        onEnd(pr) { if (full) { sfx.ice(); cam.shake = Math.max(cam.shake, 3); fxSpr('frost', pr.x, pr.y, 0, { w: 220, dur: 0.5, ay: 0.75, grow: [0.4, 1.1] }); fxShock(pr.x, pr.y, 105, '#bfefff');
           blast(e, pr.x, pr.y, 105, { dmg: skillDmg(0.8, 0.08, lv), launch: 200, knock: 60, hs: 0.06, elem: 'ice', type: 'mag', col: '#bfefff' }, { zMax: 100, status: 'slow', sdur: 3 });
           for (const t of ents) if (foe(e, t) && inGround(t, pr.x, pr.y, 105) && Math.random() < 0.35) addStatus(t, 'freeze', 1.2, { src: e }); } else fxBurst(pr.x, pr.y, pr.z + 20, 50, '#dff4ff'); },
         draw(c, pr) { drawSpr(c, 'snowman', sx(pr.x), sy(pr.y, pr.z) + 2, 0, full ? 48 : 38, { ay: 0.9, add: false, flip: pr.face < 0, rot: Math.sin(pr.t * 12) * 0.25 }); } }); })] }) });
@@ -243,17 +255,19 @@ defSkill('mg_cat', { name: '暗影夜猫', cls: 'mage', lvReq: 10, mp: 14, cd: 1
   desc: '放出一只暗影夜猫向前飞扑，穿透所有敌人，然后飞回你当前所在的位置（你移动时它会跟着改道），一去一回最多攻击同一敌人 2 次。蓄气（最长 0.6 秒）增加射程和体积。', pow: lv => skillDmg(1.5, 0.15, lv) * 2, ai: { kind: 'proj', r: [0, 280], dy: 24 },
   act: (lv, p) => ({ name: 'mg_cat', clip: 'cast3', dur: 0.4, cancelFrom: 0.28, charge: mCharge(p, 0.6, '#c79aff', { at: 0.06, clip: 'charge', basic: true }),
     events: [evAt(0.12, e => { sfx.magic(); const k = e.act.chargeK || 0, R = 278 * (1 + k * 0.4), sc = 1.25 * (1 + k * 0.3), x0 = e.x, dir = e.face;
+      fxBurst(x0 + dir * 24, e.y, 34, 55, '#ff9af0');
       spawnProj({ owner: e, x: x0, y: e.y, z: 30, face: dir, life: 3, w: 20 * sc, d: 18 * sc, h: 40 * sc, pierce: true, back: false,
-        hit: { dmg: skillDmg(1.5, 0.15, lv), stun: 0.4, knock: 60, airLift: 150, hs: 0.05, rep: 0.3, max: 2, elem: 'dark', type: 'mag', col: '#c79aff' },
+        hit: { dmg: skillDmg(1.5, 0.15, lv), stun: 0.4, knock: 60, airLift: 150, hs: 0.06, rep: 0.3, max: 2, elem: 'dark', type: 'mag', col: '#e870d8', snd: 'slash',
+          onHit: (a, t) => fxSpr('spark', t.x, t.y + 1, t.z + 45, { w: 36, dur: 0.18, col: '#ff9af0' }) },
         update(pr, dt) {
           if (!pr.back) { pr.x += dir * 620 * dt; if ((pr.x - x0) * dir >= R) { pr.back = true; pr.face = -dir; } }
           else { const dx = e.x - pr.x, dy = e.y - pr.y, l = Math.hypot(dx, dy) || 1; pr.x += dx / l * 640 * dt; pr.y += dy / l * 640 * dt; pr.face = Math.sign(dx) || pr.face; if (l < 24 || e.dead) pr.t = pr.life; }
           pr.z = 24 + Math.sin(pr.t * TAU * 2) * 8;
-          if (Math.random() < 0.7) addFx({ x: pr.x, y: pr.y + 0.3, z: pr.z, dur: 0.3, draw(c) { const q = this.t / this.dur; drawSpr(c, fxTint('orb', '#e050c8'), sx(this.x), sy(this.y, this.z), 26 * (1 - q), 26 * (1 - q), { alpha: 0.7 * (1 - q) }); } }); },   // 官方：洋红拖尾
+          if (Math.random() < 0.75) addFx({ x: pr.x, y: pr.y + 0.3, z: pr.z, dur: 0.3, draw(c) { const q = this.t / this.dur; drawSpr(c, fxTint('orb', '#e050c8'), sx(this.x), sy(this.y, this.z), 28 * (1 - q), 28 * (1 - q), { alpha: 0.75 * (1 - q) }); } }); },   // 官方：洋红 / 粉白闪光 + 紫红拖尾
         draw(c, pr) { const X = sx(pr.x), Y = sy(pr.y, pr.z); c.save(); c.translate(X, Y); c.scale(pr.face * sc, sc); c.globalCompositeOperation = 'lighter';
-          drawSpr(c, 'darkorb', -6, -4, 44, 26, { alpha: 0.7 }); c.globalCompositeOperation = 'source-over'; c.fillStyle = '#1a0a26';
+          drawSpr(c, 'darkorb', -6, -4, 46, 28, { alpha: 0.78 }); c.globalCompositeOperation = 'source-over'; c.fillStyle = '#1a0a26';
           c.beginPath(); c.ellipse(0, 0, 14, 8, 0, 0, TAU); c.fill(); c.beginPath(); c.arc(12, -6, 7, 0, TAU); c.fill(); c.beginPath(); c.moveTo(8, -12); c.lineTo(10, -18); c.lineTo(13, -12); c.moveTo(14, -12); c.lineTo(17, -18); c.lineTo(18, -10); c.fill();
-          c.fillStyle = '#ffe070'; c.fillRect(14, -8, 2, 2); c.restore(); } }); })] }) });
+          c.fillStyle = '#ffe070'; c.fillRect(14, -8, 2.2, 2.2); c.restore(); } }); })] }) });
 // 鞭挞：向前挥出魔法鞭；打中敌人造成伤害，抽到自己的召唤兽让它攻击力 / 攻速 / 移速提高 20 秒（不会让召唤兽硬直）
 defSkill('mg_whip', { name: '鞭挞', cls: 'mage', lvReq: 10, mp: 8, cd: 1, type: 'mag', col: '#8a3ab0', excl: NO_BM,
   desc: '向前挥出魔法长鞭造成伤害。抽到队友时队友移速提高 20 秒；抽到自己的召唤兽时，让它 20 秒内攻击力、攻击速度和移动速度提高（不会让召唤兽硬直）。召唤师学了“绝对支配”后范围扩大、增益持续 40 秒，并可再按一次追加上挑。', pow: lv => skillDmg(1.2, 0.12, lv),
@@ -292,7 +306,7 @@ defSkill('mg_phase', { noHitCheck: true, name: '替身草人', cls: 'mage', lvRe
     onStart: e => { const x0 = e.x, y0 = e.y, dx = e.pad ? e.pad.dx() : 0, dy = e.pad ? e.pad.dy() : 0, dir = dx || (dy ? 0 : -e.face);
       const real = hasSkill(e, 'bm_realphase');   // 战斗法师：实战型替身草人（随时可放、冷却 −5 秒、不留草人，改为自己加速 5 秒）
       if (e.cool) e.cool.mg_phase = Math.max(21, 31 - lv) - (real ? 5 : 0);
-      sfx.magic(); fxBurst(x0, y0, 50, 90, '#ffe070'); e.warp(x0 + dir * 170, y0 + dy * 60, 0); e.setState('act'); e.invul = Math.max(e.invul, 0.8); fxBurst(e.x, e.y, 50, 70, '#ffe070');
+      sfx.magic(); fxBurst(x0, y0, 50, 90, '#ffe070'); fxDust(x0, y0, 6, 8, '#d8c088'); fxShock(x0, y0, 65, '#ffe070'); e.warp(x0 + dir * 170, y0 + dy * 60, 0); e.setState('act'); e.invul = Math.max(e.invul, 0.8); fxBurst(e.x, e.y, 50, 70, '#ffe070'); fxDust(e.x, e.y, 5, 7, '#d8c088');
       if (real) { e.buffs.mg_doll = { t: 5, aspd: 0.1, mspd: 0.1 }; fxAura(e, '#ffe070', 0.5); } else summon(e, 'strawdoll', { x: x0, y: y0 }); } }) });
 // 落花掌：突进一掌把敌人击飞，被击飞的敌人撞到其他敌人也造成伤害；可蓄气 0.3 秒，满蓄时霸体，把敌人撞到墙上会反弹并追加伤害
 defSkill('mg_palm', { name: '落花掌', cls: 'mage', lvReq: 15, mp: 20, cd: 3, type: 'phys', col: '#e07ab0',

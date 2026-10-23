@@ -110,9 +110,24 @@ function atkOf(e, type) {
 }
 const defOf = (e, type) => type === 'mag' ? (e.mdef ?? e.def) : e.def;
 const critOf = (e, type) => type === 'mag' && e.mcrit !== undefined ? e.mcrit + buffVal(e, 'crit') : (e.crit || 0);
-function elemMul(a, t, elem) { if (!elem) return 1; return clamp(1 + (((a.elem && a.elem[elem]) || 0) - ((t.res && t.res[elem]) || 0)) / 220, 0.3, 3); }
+function elemMul(a, t, elem) {
+  if (!elem) return 1;
+  if (Array.isArray(elem)) { let m = 0; for (const el of elem) m = Math.max(m, elemMul(a, t, el)); return m || 1; }
+  return clamp(1 + (((a.elem && a.elem[elem]) || 0) - ((t.res && t.res[elem]) || 0)) / 220, 0.3, 3);
+}
 const stunMul = (a, t) => clamp(1 + ((a.stagger || 0) + buffVal(a, 'stagger') - (t.hardness || 0)) / 250, 0.5, 1.6);
 const ELEM_COL = { fire: '#ff9a50', ice: '#9fe6ff', light: '#fff38a', dark: '#c79aff' };
+const ELEM_SND = { fire: 'fire', ice: 'ice', light: 'elec', dark: 'dark' };
+function defaultHitSnd(a, h, elem) {
+  if (h.snd) return h.snd;
+  const wt = typeof wtypeOf === 'function' && a && a.fighter ? wtypeOf(a) : null;
+  if (wt === 'club' || wt === 'gauntlet' || wt === 'boxing' || wt === 'knuckle' || wt === 'tonfa') return 'blunt';
+  if (wt === 'claw' || wt === 'scythe') return 'slash';
+  if (a && (a.cls === 'fighter' || a.cls === 'priest')) return 'blunt';
+  if (elem && ELEM_SND[elem]) return ELEM_SND[elem];
+  if (a && a.cls === 'gun') return 'stab';
+  return 'slash';
+}
 
 /* ---- 命中判定：每帧检查所有激活中的攻击框 ---- */
 // 技能攻击范围倍率（a.rngMul，默认没有 = 1；战斗法师装矛 +20%）：只对带技能 id 的非觉醒技能生效，普攻和觉醒不受影响
@@ -178,7 +193,12 @@ function applyHit(a, t, h, opt = {}) {
   if (bh && bh.block) return false;
   if (bh && bh.noStatus) t._noStatusT = game.t;
   const type = h.type || opt.type || (act && act.type) || a.dmgType || 'phys';
-  const elem = h.elem || opt.elem || (act && act.elem) || a.atkElem || null;   // 没有指定属性时用武器附带属性
+  const elems = h.elems || opt.elems || (act && act.elems) || (Array.isArray(h.elem) ? h.elem : null);
+  let elem = h.elem || opt.elem || (act && act.elem) || a.atkElem || null;   // 没有指定属性时用武器附带属性
+  if (elems && elems.length) {
+    elem = elems[0]; let best = -Infinity;
+    for (const el of elems) { const v = ((a.elem && a.elem[el]) || 0) - ((t.res && t.res[el]) || 0); if (v > best) { best = v; elem = el; } }
+  }
   const pvp = isPvp(a, t);
   // ---- 命中 / 回避 ----
   if (!h.sure && !h.grab) {
@@ -194,7 +214,7 @@ function applyHit(a, t, h, opt = {}) {
   const guard = t.st === 'act' && t.act && t.act.guard && !h.grab && !h.unblockable && Math.sign(src.x - t.x || 1) === t.face;
   const crit = !guard && Math.random() < critOf(a, type) + (back ? COMBAT.backCrit : 0) + (h.critBonus || 0);
   const defV = Math.max(0, defOf(t, h.defType || type) || 0);
-  let dmg = atkOf(a, type) * (h.dmg ?? 1) * (opt.mul || (act && !opt.proj ? act.dmgMul : 1) || 1) * (1 - defV / (defV + 1200)) * elemMul(a, t, elem) * rnd(0.95, 1.05);
+  let dmg = atkOf(a, type) * (h.dmg ?? 1) * (opt.mul || (act && !opt.proj ? act.dmgMul : 1) || 1) * (1 - defV / (defV + 1200)) * elemMul(a, t, elems || elem) * rnd(0.95, 1.05);
   if (crit) dmg *= (a.critDmg || 1.5) + buffVal(a, 'critDmg');
   if (counter) dmg *= COMBAT.counterMul;
   if (pvp) dmg *= PVP.dmg * (h.pvp ?? (act && act.pvp) ?? 1);
@@ -220,16 +240,18 @@ function applyHit(a, t, h, opt = {}) {
   // ---- 表现 ----
   const hx = (Math.max(Math.min(t.x + t.w, src.x + (h.box ? h.box[1] : 20) * src.face), t.x - t.w) + t.x) / 2;
   const hz = clamp(src.z + (h.box ? (h.box[3] + h.box[4]) / 2 : 40), t.z + 10, t.z + t.hurtH() - 8);
+  const snd = defaultHitSnd(a, h, elem);
   addNumber(dmg, t.x, t.y, t.z, { crit, player: t.team === 'p' && !t.summon });
-  fxHit(hx, t.y, hz, src.face, { col: h.col || (elem && ELEM_COL[elem]) || (a.team === 'p' ? '#bfe8ff' : '#ffd0a0'), big: h.big || 1, crit });
+  fxHit(hx, t.y, hz, src.face, { col: h.col || (elem && ELEM_COL[elem]) || (a.team === 'p' ? '#bfe8ff' : '#ffd0a0'), big: h.big || 1, crit, kind: snd, heavy: !!h.heavy, counter });
   if (counter) fxText('COUNTER', t.x, t.y, t.z, { col: '#ff4a2a' });
   else if (back && a.fighter) fxText('BACK ATTACK', t.x, t.y, t.z, { col: '#ffb030', size: 11 });
-  t.flash = 0.08;
+  t.flash = h.heavy || crit ? 0.1 : 0.08;
   const hs = (h.hs ?? 0.06) + (crit ? 0.02 : 0) + (counter ? 0.03 : 0);
   if (!opt.proj) a.hitstop = Math.max(a.hitstop, hs);
   t.hitstop = Math.max(t.hitstop, hs + 0.01);
-  if (h.shake) cam.shake = Math.max(cam.shake, h.shake * (crit ? 1.4 : 1));
-  sfx.hit(h.snd || (crit ? 'crit' : 'slash'), crit);
+  const shk = h.shake || (h.heavy ? 2.2 : crit || counter ? 1.3 : 0);
+  if (shk) cam.shake = Math.max(cam.shake, shk * (crit ? 1.35 : 1) * (counter ? 1.15 : 1));
+  sfx.hit(snd, crit, !!h.heavy);
   if (a.team === 'p') game.onPlayerHit(t, dmg, crit, counter, back);
   if (t.team === 'p' && !t.summon) game.onPlayerHurt(t, dmg, a);   // 召唤物挨打不算玩家被击
   t._jInst = jugInst(a, opt);   // 组队：队员的命中包带上它（net/coop.js localHit），主机按同一招算追击额度
@@ -237,7 +259,8 @@ function applyHit(a, t, h, opt = {}) {
   const Ca = a.fighter && CLASSES[a.cls]; if (Ca && Ca.onHit) Ca.onHit(a, t, h, dmg, opt.proj ? null : act, opt);   // 职业命中钩子（狂暴出血、炫纹……）
   if (t.onDamaged) t.onDamaged(t, a, dmg, crit, h);
   if (t.status) statusOnHit(t, a, dmg, h);   // 感电追加伤害、睡眠被打醒
-  if (elem === 'fire' && t.status && t.status.freeze) { delete t.status.freeze; if (t.st === 'hit') t.stun = Math.min(t.stun, 0.2); }   // 火属性攻击解冻
+  const hasFire = elem === 'fire' || (elems && elems.includes('fire'));
+  if (hasFire && t.status && t.status.freeze) { delete t.status.freeze; if (t.st === 'hit') t.stun = Math.min(t.stun, 0.2); }   // 火属性攻击解冻
   // ---- 死亡 ----
   if (t.hp <= 0) {
     t.hp = 0;

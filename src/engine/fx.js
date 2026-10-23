@@ -64,14 +64,20 @@ function fxStreak(o) {
       drawSpr(c, this.img, sx(this.x) + (this.face > 0 ? 0 : 0), sy(this.y, this.z), len, h, { ax: 0, ay: 0.5, flip: this.face < 0, alpha: 1 - easeIn(k) });
     } });
 }
-/* ---- 打击火花：星形爆闪素材（暴击用更大的橙红爆闪） ---- */
-function fxHit(x, y, z, face, { col = '#ffe7a0', big = 1, crit = false } = {}) {
-  const S = (crit ? 70 : 42) * big;
-  addFx({ x, y: y + 1, z, dur: 0.16 + big * 0.04 + (crit ? 0.08 : 0), add: true, rot: rnd(0, TAU), S, crit,
+/* ---- 打击火花：星形爆闪 + 染色外焰 + 斩击刀痕 / 钝击冲击环（暴击用更大的橙红十字爆闪） ---- */
+function fxHit(x, y, z, face = 1, { col = '#ffe7a0', big = 1, crit = false, kind = 'slash', heavy = false, counter = false } = {}) {
+  const S = (crit ? 74 : heavy ? 54 : 44) * big, jx = x + rnd(-6, 6), jz = z + rnd(-7, 7);
+  const tintSpark = fxTint('spark', col), slashAng = (face < 0 ? Math.PI : 0) + rnd(-0.45, 0.45);
+  const slashImg = (kind === 'slash' || kind === 'stab' || crit) ? fxTint('thrust', crit ? '#fff4b8' : col) : null;
+  const ringImg = (kind === 'blunt' || heavy || counter) ? fxTint('ring', counter ? '#ff6a3a' : col) : null;
+  addFx({ x: jx, y: y + 1, z: jz, dur: 0.16 + big * 0.04 + (crit ? 0.08 : 0), add: true, rot: rnd(0, TAU), S, crit, tintSpark, slashImg, slashAng, ringImg,
     draw(c) {
-      const k = this.t / this.dur, s = this.S * (0.5 + easeOut(Math.min(1, k * 3)) * 0.65), X = sx(this.x), Y = sy(this.y, this.z);
-      drawSpr(c, this.crit ? 'crit' : 'spark', X, Y, s, s, { rot: this.rot + k * 0.5, alpha: 1 - k * k });
-      if (this.crit && k < 0.5) drawSpr(c, 'spark', X, Y, s * 0.7, s * 0.7, { rot: -this.rot, alpha: 1 - k * 2 });
+      const k = this.t / this.dur, e = easeOut(Math.min(1, k * 3.2)), s = this.S * (0.5 + e * 0.68), X = sx(this.x), Y = sy(this.y, this.z);
+      if (this.ringImg && k < 0.75) { const rs = this.S * (0.45 + e * 0.95); drawSpr(c, this.ringImg, X, Y, rs, rs * 0.65, { rot: this.rot, alpha: (1 - k / 0.75) * 0.75 }); }
+      if (this.slashImg && k < 0.65) { const sl = this.S * (1.15 + e * 0.75), sh = Math.max(6, this.S * 0.22 * (1 - k)); drawSpr(c, this.slashImg, X, Y, sl, sh, { rot: this.slashAng, alpha: (1 - k / 0.65) * 0.9 }); }
+      drawSpr(c, this.tintSpark, X, Y, s * 1.12, s * 1.12, { rot: this.rot + k * 0.5, alpha: (1 - k * k) * 0.85 });
+      drawSpr(c, this.crit ? 'crit' : 'spark', X, Y, s * 0.82, s * 0.82, { rot: -this.rot + k * 0.4, alpha: 1 - k * k });
+      if (this.crit && k < 0.55) drawSpr(c, 'spark', X, Y, s * 0.72, s * 0.72, { rot: -this.rot * 1.3, alpha: 1 - k / 0.55 });
     } });
 }
 /* ---- 尘土：卡通烟团素材，向上飘散 ---- */

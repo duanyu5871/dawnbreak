@@ -45,3 +45,6 @@
 - 暴怒狂斩 / 爆发之刃 / 怒气爆发 / 死亡抗拒 / 暴走 / 狂怒暴掠 / 致命血陨：颜色（红）、刀光形状（弧形新月、X 交叉斩）一致，未发现可见差异。
 改动的共享文件：src/engine/entity.js（act.recMul，一行，向后兼容：没写 recMul 的动作不受影响）、src/engine/combat.js（回避判定加上 buff 的 evade 键，一行）、src/content/avatar/job_looks.js（狂战士新增 bz_armor 外观状态）。
 测试：skillshots 0 问题；skillaudit 0 项未说明；sword.mjs 无 FAIL；classes.mjs 无报错；awkcancel.mjs 全部通过；pvp_balance.mjs 10：狂战士 49%（魔法师未转职 32%、召唤师 38% 超出区间，不是本职业改动造成）。
+
+## 追加（第三次）：狂暴血气重击手感强化
+- 怒气爆发（`outrage`）、嗜魂封魔斩（`bz_twister`）、崩山裂地斩（`quake`）、狂怒暴掠（`bz_snatch`）、血魔·弑天（`bz_awaken2`）、血魔极道：灭世（`bz_awaken3`）：强化收尾血爆的顿帧（`hs`）、震屏（`shake`）与深红/亮红双层血气喷发（`fxBurst` + `fxShock` + `fxSlashX`），突出狂战士大开大合的狂暴砸地与血气撕裂感。

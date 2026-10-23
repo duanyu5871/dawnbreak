@@ -164,11 +164,14 @@ function chainStage(lv, n) {
   if (n === 1) return { ...base, dur: 1.3,
     update: e => { const a = e.act, k = Math.floor((e.actT - 0.08) / 0.2), cx = e.x + e.face * 110;   // 官方：第 1 击最多 6 段，间隔 0.2 秒
       if (e.actT > 0.08 && k < 6 && k !== a.k) { a.k = k; chainLine(e, cx, 70, 0.2); bladeSlash(e, { a0: -Math.PI + k, a1: k + 0.5, r: 64, off: [100, 70], silent: k % 2 === 1 });
+        if (k % 2 === 0) fxShock(cx, e.y, 130, '#ffb0c0');
         instantHit(e, { box: [20, 230, 55, 0, 120], dmg: skillDmg(0.55, 0.055, lv), stun: 0.3, knock: 0, airLift: 90, hs: 0.02, snd: 'slash', col: '#ffb0b0',
-          onHit: (a2, t) => { if (!hasSA(t) && !t.boss) { t.x = lerp(t.x, cx, 0.35); t.y = lerp(t.y, e.y, 0.3); } } }); } } };
+          onHit: (a2, t) => { chainLine(e, t.x, t.z + 45, 0.14, '#ffb0c0'); if (!hasSA(t) && !t.boss) { t.x = lerp(t.x, cx, 0.35); t.y = lerp(t.y, e.y, 0.3); } } }); } } };
   return { ...base, dur: 0.55,
-    events: [evAt(0.08, e => { const push = n === 2; chainLine(e, e.x + e.face * (push ? 280 : 240), 70, 0.2); sfx.swing(true);
-      instantHit(e, { box: [20, push ? 280 : 250, 50, 0, 120], dmg: skillDmg(1.2, 0.12, lv), stun: 0.5, knock: push ? 260 : 220, pull: !push, hs: 0.06, heavy: true, snd: 'slash', col: '#ffb0b0' }); })] };
+    events: [evAt(0.08, e => { const push = n === 2; chainLine(e, e.x + e.face * (push ? 280 : 240), 70, 0.22, '#ff8a9a'); sfx.swing(true);
+      bladeSlash(e, { a0: push ? -2.2 : 1.8, a1: push ? 1.4 : -2.0, r: 95, w: 18, off: [80, 65], col: '#ff8a9a' }); fxShock(e.x + e.face * (push ? 180 : 120), e.y, 160, '#ff6a7a');
+      instantHit(e, { box: [20, push ? 280 : 250, 50, 0, 120], dmg: skillDmg(1.2, 0.12, lv), stun: 0.5, knock: push ? 260 : 220, pull: !push, hs: 0.06, heavy: true, snd: 'slash', col: '#ffb0b0',
+        onHit: (a2, t) => chainLine(e, t.x, t.z + 50, 0.18, '#ff8a9a') }); })] };
 }
 defSkill('g_backshot', { name: '致命回射', cls: 'gun', job: 'ranger', lvReq: 18, mp: 30, cd: 12.5, type: 'phys', col: '#9a3a4a', pre: { g_head: 1 },
   desc: '先向后退一小步，不转身，把枪口甩向身后，朝背后的敌人开一发致命射击（致命射击 120%，打完仍然面朝前方，可以接着向前攻击）。需要致命射击 Lv1。', pow: lv => skillDmg(4.6, 0.46, lv), ai: { kind: 'burst', r: [0, 760], dy: 16 },
@@ -191,13 +194,15 @@ defSkill('g_rapid', { name: '枪舞', cls: 'gun', job: 'ranger', lvReq: 19, mp: 
       if (n !== a.n && e.actT < a.dur - 0.12) { a.n = n; const f = e.face; e.face = n % 2 ? -f : f;
         fireBullet(e, { up: n % 4 === 2, low: n % 4 === 3, dmg: skillDmg(0.24, 0.024, lv) * shotDmgOf(e), lift: 200, life: 0.5, vol: 0.45, quiet: n % 2 === 1 }); e.face = f; }
       const b = Math.floor(e.actT / (0.09 * (1 - (a.fast || 0)))); if (b !== a.b && e.actT < a.dur - 0.1) { a.b = b; if (b % 2 === 0) bladeSlash(e, { a0: b % 4 ? 0.5 : -2.6, a1: b % 4 ? -2.6 : 0.5, r: 100, off: [0, 60], silent: true, col: '#8fd4ff' });   // 官方：枪刃直击是蓝白色刀光，共 20 下
+        if (b % 3 === 0) fxSpr('petal', e.x + rnd(-90, 90), e.y + rnd(-30, 30), e.z + rnd(30, 100), { w: 44, dur: 0.38, col: '#ff5a7a', rot: rnd(0, TAU) });
+        if (b % 4 === 0) fxShock(e.x, e.y, 170, '#8fd4ff');
         for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < 230 && Math.abs(t.y - e.y) < 75 && !hasSA(t) && !t.boss) { t.x = lerp(t.x, e.x + Math.sign(t.x - e.x || 1) * 50, 0.25); }
         instantHit(e, { box: [-130, 130, 56, 0, 130], dmg: skillDmg(0.17, 0.017, lv), stun: 0.3, knock: 0, airLift: 200, launch: 200, hs: 0.02, snd: 'slash', col: '#bfe4ff' }); } } }) });
 const MOVING_AMMO = { revolver: 30, autopistol: 50, rifle: 30, handcannon: 20, bowgun: 45 };
 defSkill('g_moving', { name: '移动射击', cls: 'gun', job: 'ranger', lvReq: 19, mp: 40, cd: 24.3, type: 'phys', col: '#6a8a3a',
-  desc: '进入移动射击模式：方向键自由移动，X（或按住技能键）射击，Z 调转方向，C 退出。子弹打完就结束（左轮 30 发、自动手枪 50、步枪 30、手炮 20、手弩 45）。全程霸体。', pow: lv => skillDmg(0.4, 0.04, lv) * 30,
-  infoExtra: () => [['弹数', '左轮 30 发']], ai: { kind: 'mode' },
-  act: (lv) => ({ name: 'g_moving', clip: 'moveShot', dur: 20, noCounter: true, superArmor: true,
+  desc: '进入移动射击模式：方向键自由移动，X（或按住技能键）射击，Z 调转方向，C 退出。子弹打完就结束（左轮 30 发、自动手枪 50、步枪 30、手炮 20、手弩 45）。地下城中全程霸体并发射贯穿敌人的破裂子弹（决斗场中无霸体、发射普通子弹）。', pow: lv => skillDmg(0.4, 0.04, lv) * 30,
+  infoExtra: () => [['弹数', '左轮 30 发'], ['地下城', '霸体 + 贯穿破裂子弹']], ai: { kind: 'mode' },
+  act: (lv) => ({ name: 'g_moving', clip: 'moveShot', dur: 20, noCounter: true, superArmor: !game.pvp,
     onStart: e => { e.act.ammo = MOVING_AMMO[wtypeOf(e)] || 30; },
     onInput: (e, I) => {
       const a = e.act, dx = I.dx(), dy = I.dy(), sp = e.speed * mspdOf(e) * 0.75;
@@ -205,7 +210,9 @@ defSkill('g_moving', { name: '移动射击', cls: 'gun', job: 'ranger', lvReq: 1
       if (I.buffered('cmd')) { I.consume('cmd'); e.face = -e.face; }
       if (I.buffered('jump') && e.actT > 0.1) { I.consume('jump'); a.dur = Math.min(a.dur, e.actT + 0.05); }
       if ((I.buffered('attack') || I.is('attack') || (a.key && a.key[0] === 's' && I.is(a.key))) && !(a.cdT > e.actT) && a.ammo > 0) {
-        I.consume('attack'); a.cdT = e.actT + 0.12 / aspdOf(e); a.ammo--; fireBullet(e, { dmg: skillDmg(0.4, 0.04, lv) * shotDmgOf(e) });
+        I.consume('attack'); a.cdT = e.actT + 0.12 / aspdOf(e); a.ammo--; const pve = !game.pvp;
+        fireBullet(e, { dmg: skillDmg(0.4, 0.04, lv) * shotDmgOf(e), pierce: pve, col: pve ? '#ffd890' : undefined, sz: pve ? 1.2 : 1,
+          hit: pve ? { onHit: (a2, t) => { fxSpr('spark', t.x, t.y, t.z + 45, { w: 68, dur: 0.16, col: '#ffb870' }); fxBurst(t.x, t.y, t.z + 45, 36, '#ffd080'); } } : undefined });
         if (a.ammo <= 0) a.dur = Math.min(a.dur, e.actT + 0.25); }
       a.walking = !!(dx || dy);
       return true;   // 模式中按键都由这里处理（Z 调转方向、C 退出）
@@ -221,9 +228,9 @@ defSkill('g_multi', { name: '多重射击', cls: 'gun', job: 'ranger', lvReq: 19
         const ys = a.dy < 0 ? [e.y - 90, e.y + 10] : a.dy > 0 ? [e.y - 10, e.y + 90] : [e.y - 50, e.y + 50];
         const L = ents.filter(t => hittable(e, t) && (t.x - e.x) * e.face > 0 && Math.abs(t.x - e.x) < 660 && t.y > ys[0] && t.y < ys[1]);
         const t = L.length ? L[n % L.length] : null, px = t ? t.x : e.x + e.face * rnd(120, 560), py = t ? t.y : clamp(rnd(ys[0], ys[1]), 8, DEPTH - 8), pz = t ? t.z + t.hurtH() * 0.75 : 60;
-        muzzle(e); sfx.gun(1.1); e.play('headShot', true);
-        addFx({ x: e.x + e.face * 34, y: Math.max(e.y, py) + 1, z: e.z + 64, tx: px, ty: py, tz: pz, dur: 0.1, add: true, draw(c) { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(255,220,120,${1 - this.t / this.dur})`; c.lineWidth = 3; c.beginPath(); c.moveTo(sx(this.x), sy(this.y, this.z)); c.lineTo(sx(this.tx), sy(this.ty, this.tz)); c.stroke(); c.restore(); } });
-        if (t && hittable(e, t)) applyHit(e, t, { dmg: skillDmg(1.8, 0.18, lv) * shotDmgOf(e), stun: 0.45, knock: 60, hs: 0.05, critBonus: 0.3, snd: 'stab', col: '#ffe0a0', sure: true }, { proj: true });
+        muzzle(e); fxShell(e, 64); sfx.gun(1.15); cam.shake = Math.max(cam.shake, 2.5); e.play('headShot', true);
+        addFx({ x: e.x + e.face * 34, y: Math.max(e.y, py) + 1, z: e.z + 64, tx: px, ty: py, tz: pz, dur: 0.12, add: true, draw(c) { const k = 1 - this.t / this.dur, X0 = sx(this.x), Y0 = sy(this.y, this.z), X1 = sx(this.tx), Y1 = sy(this.ty, this.tz); c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(255,90,110,${k * 0.7})`; c.lineWidth = 6; c.beginPath(); c.moveTo(X0, Y0); c.lineTo(X1, Y1); c.stroke(); c.strokeStyle = `rgba(255,235,160,${k})`; c.lineWidth = 2.5; c.stroke(); c.beginPath(); c.arc(X1, Y1, 14 * k, 0, TAU); c.stroke(); c.restore(); } });
+        if (t && hittable(e, t)) { fxSpr('spark', px, py, pz, { w: 64, dur: 0.15, col: '#ffd080' }); applyHit(e, t, { dmg: skillDmg(1.8, 0.18, lv) * shotDmgOf(e), stun: 0.45, knock: 60, hs: 0.05, critBonus: 0.3, snd: 'stab', col: '#ffe0a0', sure: true }, { proj: true }); }
         else fxDust(px, py, 3, 8, '#a89878'); } } }) });
 defSkill('g_hawk', { name: '双鹰回旋', cls: 'gun', job: 'ranger', lvReq: 20, mp: 60, cd: 44.6, type: 'phys', icon: 'g_hawk', col: '#2aa0a0', pre: { g_multi: 1 },
   desc: '把两把左轮旋转着掷出，飞出去再飞回来，一路自动开火。掷出时按方向键决定方向：前方、斜上 / 斜下（纵深）、身后。枪在外面飞的时候可以自由行动；接住飞回来的枪后可以再按技能键再掷（最多 3 次），每掷一次范围更大、转得更快；接枪和掷枪时霸体。需要多重射击 Lv1。', pow: lv => skillDmg(8.1, 0.81, lv) * 3, ai: { kind: 'proj', r: [0, 460], dy: 24 },
@@ -241,10 +248,10 @@ function hawkGun2(e, i, dmg, n, dir = e.face, dy = 0) {
   spawnProj({ owner: e, x: x0, y: e.y, z: z0, face: dir, life: T, w: 18 + n * 4, d: 24 + n * 5, h: 22, pierce: true, spin: 0, sndT: 0,
     hit: { dmg, stun: 0.3, knock: 20, airLift: 150, hs: 0.03, rep: 0.14 - 0.02 * (n - 1), col: '#bfefff', onHit: (a, t) => { if (ctx.x != null && !hasSA(t) && !t.boss) t.x = lerp(t.x, ctx.x, 0.25); } },   // 官方：枪刃相连，把大范围的敌人拉向火力中心
     update(pr, dt) { ctx.x = pr.x; const u = clamp(pr.t / T, 0, 1); pr.x = lerp(x0, e.x, u) + dir * R * Math.sin(Math.PI * u); pr.y = clamp(damp(pr.y, e.y + dy * 110 * Math.sin(Math.PI * u), 6, dt), 4, DEPTH - 4); pr.spin += dt * (30 + n * 8); pr.sndT -= dt;
-      if (pr.sndT <= 0) { pr.sndT = 0.15; sfx.swing(false); sfx.gun(0.25); }
-      if (Math.random() < 0.3) addFx({ x: pr.x, y: pr.y + 1, z: pr.z, dur: 0.06, add: true, rot: rnd(0, TAU), draw(c) { drawSpr(c, 'muzzle', sx(this.x), sy(this.y, this.z), 26, 0, { ax: 0.2, rot: this.rot, alpha: 1 - this.t / this.dur }); } }); },   // 旋转中自动开火的枪口火光
+      if (pr.sndT <= 0) { pr.sndT = 0.15; sfx.swing(false); sfx.gun(0.25); fxBurst(pr.x, pr.y, pr.z, 26 + n * 5, '#9fe8ff'); }
+      if (Math.random() < 0.35) addFx({ x: pr.x, y: pr.y + 1, z: pr.z, dur: 0.06, add: true, rot: rnd(0, TAU), draw(c) { drawSpr(c, 'muzzle', sx(this.x), sy(this.y, this.z), 28, 0, { ax: 0.2, rot: this.rot, alpha: 1 - this.t / this.dur }); } }); },   // 旋转中自动开火的枪口火光
     onEnd() { if (--e._hawkOut <= 0 && !e.dead && e.st !== 'held' && e.st !== 'down') { e._hawk = { n: n + 1, t: game.t }; if (n < 3) { e.superArmor = Math.max(e.superArmor, 0.3); fxText('接枪', e.x, e.y, e.z + 20, { col: '#bfefff', size: 10 }); } } },
-    draw(c, pr) { const X = sx(pr.x), Y = sy(pr.y, pr.z); c.save(); c.translate(X, Y); c.rotate(pr.spin); c.globalCompositeOperation = 'lighter'; c.strokeStyle = 'rgba(160,230,255,.5)'; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, 18 + n * 4, 0, TAU * 0.7); c.stroke(); c.globalCompositeOperation = 'source-over'; c.rotate(Math.PI / 2); c.scale(1.4, 1.4); drawGun(c, PAL_GUN); c.restore(); } });
+    draw(c, pr) { const X = sx(pr.x), Y = sy(pr.y, pr.z), r = 20 + n * 4; c.save(); c.translate(X, Y); c.rotate(pr.spin); c.globalCompositeOperation = 'lighter'; c.strokeStyle = 'rgba(160,230,255,.65)'; c.lineWidth = 3.5; c.beginPath(); c.arc(0, 0, r, 0, TAU * 0.78); c.stroke(); c.strokeStyle = 'rgba(255,110,140,.45)'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, r + 5, Math.PI, Math.PI + TAU * 0.6); c.stroke(); c.globalCompositeOperation = 'source-over'; c.rotate(Math.PI / 2); c.scale(1.4, 1.4); drawGun(c, PAL_GUN); c.restore(); } });
 }
 /* ---- 一次觉醒：沾血蔷薇（官方 48~70 级 → 本作 21~25 级）---- */
 defSkill('g_hidecut', { name: '隐匿切割', cls: 'gun', job: 'ranger', tier: 1, lvReq: 21, sp: 20, mp: 0, cd: 0, type: 'phys', passive: true, col: '#a0203a',
@@ -308,7 +315,9 @@ defSkill('g_suppress', { name: '压制射击', cls: 'gun', job: 'ranger', tier: 
   act: (lv) => ({ name: 'g_suppress', clip: 'gunDance', dur: 1.75, noCounter: true, superArmor: true,
     onInput: (e, I) => { const a = e.act; if (I.buffered('attack') || (a.key && I.buffered(a.key))) { I.consume('attack'); if (a.key) I.consume(a.key); a.fast = Math.min(0.27, (a.fast || 0) + 0.05); } if (I.buffered('jump')) { I.consume('jump'); a.dur = Math.min(a.dur, e.actT + 0.05); } return false; },
     update: e => { const a = e.act, n = Math.floor(e.actT / (0.11 * (1 - (a.fast || 0))));
-      if (n !== a.n && e.actT > 0.15 && e.actT < a.dur - 0.1) { a.n = n; fireBullet(e, { up: n % 5 === 1, low: n % 5 === 3, dmg: skillDmg(1.4, 0.14, lv) * shotDmgOf(e), lift: 160, knock: 30, life: 0.72, vol: 0.45, quiet: n % 2 === 1 }); } } }) });
+      if (n !== a.n && e.actT > 0.15 && e.actT < a.dur - 0.1) { a.n = n; if (n % 3 === 0) fxShock(e.x + e.face * 60, e.y, 130, '#ffb070');
+        fxStreak({ x: e.x + e.face * 34, y: e.y, z: e.z + 60, face: e.face, len: 240, w: 4.5, col: '#ffd080', dur: 0.08 });
+        fireBullet(e, { up: n % 5 === 1, low: n % 5 === 3, dmg: skillDmg(1.4, 0.14, lv) * shotDmgOf(e), lift: 160, knock: 30, life: 0.72, vol: 0.45, quiet: n % 2 === 1 }); } } }) });
 /* ---- 二次觉醒：绯红玫瑰（官方 75~85 级 → 本作 26~27 级）---- */
 defSkill('g_bladeup', { name: '枪刃改良', cls: 'gun', job: 'ranger', tier: 2, lvReq: 26, sp: 30, mp: 0, cd: 0, type: 'phys', passive: true, col: '#b01a3a',
   desc: '【二觉被动】普通攻击和技能的攻击力提高，出血持续更久、伤害更高。', infoExtra: lv => [['攻击力', '+' + pct(0.02 * lv)], ['出血', '+' + pct(0.03 * lv)]] });
@@ -320,11 +329,13 @@ defSkill('g_deathchain', { name: '死亡锁链', cls: 'gun', job: 'ranger', tier
       e._dchain = { t: game.t, list: L, fx: [] };
       for (const t of L) { chainLine(e, t.x, t.z + 50, 0.3, '#ff8a9a'); e._dchain.fx.push(bindFx(e, t)); if (!t.boss) t.face = e.face; applyHit(e, t, { dmg: skillDmg(3.0, 0.3, lv), stun: 0.5, knock: 0, hs: 0.05, snd: 'stab', col: '#ff8a9a', sure: true }, { proj: true });
         if (!t.dead) addStatus(t, STATUS_NAME.root ? 'root' : 'stun', 5, { src: e }); } })] }) });   // 定身 root（不能动也不能出招；领主会自动变成减速）
-// 钉住敌人的锁链：一直连在手和敌人之间，5 秒后或被斩断时消失
+// 钉住敌人的锁链：一直连在手和敌人之间，同时在敌人身上缠绕十字血链，5 秒后或被斩断时消失
 function bindFx(e, t) {
   return addFx({ x: e.x, y: e.y + 0.5, z: 0, dur: 5, draw(c) { if (t.dead || t.remove) { this.dur = Math.min(this.dur, this.t + 0.2); }
     const k = this.t > this.dur - 0.25 ? Math.max(0, (this.dur - this.t) / 0.25) : 1, X0 = sx(e.x + e.face * 20), Y0 = sy(e.y, e.z + 62), X1 = sx(t.x), Y1 = sy(t.y, t.z + t.hurtH() * 0.5);
-    drawChain(c, X0, Y0, X1, Y1, { col: '#ff8a9a', glow: 'rgba(255,40,80,.22)', tip: true, sag: 8, alpha: k }); } });
+    drawChain(c, X0, Y0, X1, Y1, { col: '#ff8a9a', glow: 'rgba(255,40,80,.22)', tip: true, sag: 8, alpha: k });
+    drawChain(c, X1 - 16, Y1 - 14, X1 + 16, Y1 + 14, { col: '#ff6a8a', glow: 'rgba(255,30,70,.3)', sag: 3, alpha: k });
+    drawChain(c, X1 - 16, Y1 + 14, X1 + 16, Y1 - 14, { col: '#ff6a8a', glow: 'rgba(255,30,70,.3)', sag: -3, alpha: k }); } });
 }
 function deathChainFire(lv, p) {
   const D = p._dchain || {}; let L = (D.list || []).filter(t => !t.dead && !t.remove); p._dchain = null;
@@ -335,8 +346,11 @@ function deathChainFire(lv, p) {
   return { name: 'g_deathchain2', clip: 'headShot', dur: 0.95, noCounter: true, superArmor: true,
     update: e => { const a = e.act, n = Math.floor((e.actT - 0.05) / 0.07);
       if (!a.coin) { a.coin = true; addFx({ x: e.x + e.face * 20, y: e.y + 0.5, z: e.z + 60, dur: 0.6, draw(c) { const k = this.t / this.dur, zz = this.z + 110 * Math.sin(Math.PI * Math.min(1, k)); drawSpr(c, 'bullet', sx(this.x), sy(this.y, zz), 30, 5, { rot: -Math.PI / 2 + k * 9 }); } }); }   // 官方：先向上弹出一发子弹，快速连射后再接住它打出终结
-      if (e.actT > 0.05 && n !== a.n && n < 10) { a.n = n; muzzle(e); sfx.gun(n === 9 ? 1.8 : 1); e.play('headShot', true);
+      if (e.actT > 0.05 && n !== a.n && n < 10) { a.n = n; muzzle(e); fxShell(e, 62); sfx.gun(n === 9 ? 1.8 : 1); cam.shake = Math.max(cam.shake, n === 9 ? 6 : 2); e.play('headShot', true);
         for (const t of L) if (hittable(e, t)) { if (n === 9 && t.status) { delete t.status.root; delete t.status.stun; }   // 终结射击前先解开定身（定身中的目标不会被击飞）
+          const tz = t.z + t.hurtH() * 0.55;
+          addFx({ x: e.x + e.face * 34, y: Math.max(e.y, t.y) + 1, z: e.z + 62, tx: t.x, ty: t.y, tz, dur: 0.1, add: true, fin: n === 9, draw(c) { const k = 1 - this.t / this.dur; c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = this.fin ? `rgba(255,70,100,${k})` : `rgba(255,220,130,${k})`; c.lineWidth = this.fin ? 6 : 2.8; c.beginPath(); c.moveTo(sx(this.x), sy(this.y, this.z)); c.lineTo(sx(this.tx), sy(this.ty, this.tz)); c.stroke(); c.restore(); } });
+          if (n === 9) { fxShock(t.x, t.y, 130, '#ff4a6a'); bladeShards(t.x, t.y, 45, 5); }
           applyHit(e, t, { dmg: skillDmg(n === 9 ? 5 : 0.78, n === 9 ? 0.5 : 0.078, lv) * shotDmgOf(e), stun: 0.3, knock: n === 9 ? 240 : 0, down: n === 9, hs: 0.04, critBonus: 0.2, snd: 'stab', col: '#ffe0a0', sure: true }, { proj: true }); } } } };
 }
 defSkill('g_chaincut', { name: '锁链切割', cls: 'gun', job: 'ranger', tier: 2, lvReq: 26, mp: 90, cd: 45, type: 'phys', col: '#a01a2a',
@@ -403,7 +417,8 @@ defSkill('g_awaken3', { name: '盛放·绯红花园', cls: 'gun', job: 'ranger',
       if (t > 0.9 && t < 2.2) { a.hang = true; e.vz = 0; e.z = damp(e.z, 130, 8, dt); e.x = damp(e.x, cx - e.face * 40, 5, dt); e.drawFlip = true; e.rot = Math.PI * Math.exp(18 * dt);   // 实体每帧把 rot 往 0 衰减，这里预先补偿
         const kk = Math.floor((t - 0.9) / 0.09);
         if (kk !== a.k && kk < 13) { a.k = kk; const shoot = kk % 2 === 0; e.play(shoot ? 'headShot' : kk % 4 === 1 ? 'carnival' : 'carnival2', true); pull();
-          if (shoot) { muzzle(e); sfx.gun(0.8); addFx({ x: e.x, y: e.y + 1, z: e.z + 40, tx: cx + rnd(-200, 200), dur: 0.08, add: true, draw(c) { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = 'rgba(255,220,140,.9)'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(sx(this.x), sy(this.y, this.z)); c.lineTo(sx(this.tx), sy(this.y, 0)); c.stroke(); c.restore(); } }); }
+          if (kk % 2 === 1) fxSpr('petal', cx + rnd(-260, 260), e.y + rnd(-80, 80), rnd(20, 140), { w: 42, dur: 0.55, col: '#ff4a6a', rot: rnd(0, TAU) });
+          if (shoot) { muzzle(e); fxShell(e, 40); sfx.gun(0.8); addFx({ x: e.x, y: e.y + 1, z: e.z + 40, tx: cx + rnd(-200, 200), dur: 0.08, add: true, draw(c) { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = 'rgba(255,220,140,.9)'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(sx(this.x), sy(this.y, this.z)); c.lineTo(sx(this.tx), sy(this.y, 0)); c.stroke(); c.restore(); } }); }
           else bladeSlash(e, { a0: kk * 1.7, a1: kk * 1.7 + 2.2, r: 90, off: [40, 20], silent: kk % 4 === 3 });
           hit(pc(shoot ? 7653 : 4464)); } }
       else if (t >= 2.2 && a.hang) { a.hang = false; e.drawFlip = false; e.rot = 0; }

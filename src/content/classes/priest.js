@@ -95,8 +95,9 @@ function priestActsFor(F) {
       events: [evAt(0.06, e => pPunch(e, 96, true))] },
     // 막타：巨兵从头顶砸下，击退（四段里唯一挥巨兵的一下，武器距离只在这一下起作用）
     atk4: { name: 'atk4', clip: 'atk3', dur: 0.56, basic: true, speed: 'aspd', move: [[0.04, 0.16, 150]],
-      hits: [HB(0.16, 0.24, R([0, 126, 40, 0, 135]), 1.55, { stun: S(0.55), knock: 220, hs: 0.09, shake: 3, heavy: true, big: 1.3, snd: 'blunt' })],
-      events: [slashAt(0.14, { a0: -2.7, a1: 1.1, r: 94, w: 24, off: [12, 60], squash: 0.85, heavy: true }), evAt(0.2, e => fxDust(e.x + e.face * 80, e.y, 4, 14))] },
+      hits: [HB(0.16, 0.24, R([0, 126, 40, 0, 135]), 1.55, { stun: S(0.55), knock: 220, hs: 0.095, shake: 4, heavy: true, big: 1.35, snd: 'blunt' })],
+      events: [slashAt(0.14, { a0: -2.7, a1: 1.1, r: 98, w: 26, off: [12, 60], squash: 0.85, heavy: true }),
+        evAt(0.2, e => { const x = e.x + e.face * 84; fxDust(x, e.y, 6, 18); fxShock(x, e.y, 110, P_COL.holy); fxSpr('wave', x, e.y, 16, { h: 72, dur: 0.24, col: P_COL.holy }); })] },
     // 跑攻 滑步猛击：不击倒（官方接勾拳追击），后半段按 X 派生勾拳追击（keyLinks）
     dash: { name: 'dash', dur: 0.46, basic: true, speed: 'aspd', move: [[0, 0.26, 400]], noCounter: true, keyLinks: { attack: 'p_second' }, linkFrom: 0.12,
       hits: [HB(0.05, 0.26, R([0, 100, 36, 10, 112]), 1.3, { stun: S(0.6), knock: 70, hs: 0.07, shake: 2, snd: 'blunt' })],
@@ -117,8 +118,9 @@ function priestSwingActsFor(F) {
       hits: [HB(0.08, 0.15, R([0, 116, 36, 16, 115]), 1.1, { stun: S(0.34), knock: 55, hs: 0.055, snd: 'blunt' })],
       events: [slashAt(0.07, { a0: 0.9, a1: -2.2, r: 84, w: 18, off: [12, 54] })] },
     atk3: { name: 'atk3', dur: 0.56, basic: true, speed: 'aspd', move: [[0.04, 0.16, 150]],
-      hits: [HB(0.16, 0.24, R([0, 126, 40, 0, 135]), 1.6, { stun: S(0.55), knock: 220, hs: 0.09, shake: 3, heavy: true, big: 1.3, snd: 'blunt' })],
-      events: [slashAt(0.14, { a0: -2.7, a1: 1.1, r: 94, w: 24, off: [12, 60], squash: 0.85, heavy: true }), evAt(0.2, e => fxDust(e.x + e.face * 80, e.y, 4, 14))] } };
+      hits: [HB(0.16, 0.24, R([0, 126, 40, 0, 135]), 1.6, { stun: S(0.55), knock: 220, hs: 0.095, shake: 4, heavy: true, big: 1.35, snd: 'blunt' })],
+      events: [slashAt(0.14, { a0: -2.7, a1: 1.1, r: 98, w: 26, off: [12, 60], squash: 0.85, heavy: true }),
+        evAt(0.2, e => { const x = e.x + e.face * 84; fxDust(x, e.y, 6, 18); fxShock(x, e.y, 110, P_COL.holy); })] } };
 }
 // 转职手写的普攻表也按武器手感缩放：前沿 × reach（身后框 / 前沿 0 的不动）、硬直 × stun；按武器缓存（cache / key 由调用方给），返回新表不改原表
 function pFeelActs(A, F, cache, key) {
@@ -145,21 +147,23 @@ defSkill('p_launcher', { name: '空斩打', cls: 'priest', lvReq: 1, lvStep: 3, 
   pow: lv => skillDmg(1.8, 0.18, lv), infoExtra: lv => [['身后攻击力', pct(skillDmg(0.9, 0.09, lv))], ['霸体', '整个动作']], ai: { kind: 'launch', r: [0, 110], dy: 24 },
   act: (lv, p) => { const M = pMod(p, 'p_launcher'), F = pFeelOf(p);
     return { name: 'p_launcher', clip: 'up', dur: 0.62, cancelFrom: 0.4, superArmor: [0, 0.62], move: [[0.02, 0.1, 110]], type: M.type,
-      hits: [HB(0.1, 0.19, [0, Math.round(118 * F.reach * M.range), 38, 0, 140], skillDmg(1.8, 0.18, lv) * M.dmg, { launch: 580 + lv * 6, knock: 40, hs: 0.08, shake: 2, big: 1.2, snd: 'blunt' }),
-        HB(0.3, 0.38, [-Math.round(84 * M.range), 0, 36, 0, 120], skillDmg(0.9, 0.09, lv) * M.dmg, { radial: true, down: true, downLift: 120, knock: 60, hs: 0.06, snd: 'blunt' })],
-      events: [slashAt(0.09, { a0: 1.5, a1: -1.9, r: 92, w: 22, off: [10, 52], heavy: true }), evAt(0.1, e => fxDust(e.x - e.face * 30, e.y, 3, 10)),
+      hits: [HB(0.1, 0.19, [0, Math.round(118 * F.reach * M.range), 38, 0, 140], skillDmg(1.8, 0.18, lv) * M.dmg, { launch: 580 + lv * 6, knock: 40, hs: 0.09, shake: 3, big: 1.25, snd: 'blunt' }),
+        HB(0.3, 0.38, [-Math.round(96 * M.range), 0, 36, 0, 120], skillDmg(0.9, 0.09, lv) * M.dmg, { radial: true, down: true, downLift: 120, knock: 60, hs: 0.07, shake: 2, snd: 'blunt' })],
+      events: [slashAt(0.09, { a0: 1.5, a1: -1.9, r: 96, w: 24, off: [10, 52], heavy: true }),
+        evAt(0.1, e => { fxDust(e.x - e.face * 30, e.y, 4, 12); fxShock(e.x + e.face * 48, e.y, 90, P_COL.holy); }),
         // 前挑之后回扫身后：先前后判定（0.10 前挑 → 0.30 回扫），不再同时出现
-        evAt(0.29, e => { fxSlash({ x: e.x, y: e.y, z: e.z, face: -e.face, col: e.slashCol || '#8fd8ff', a0: -1.9, a1: 1.3, r: 84, w: 18, off: [10, 52], heavy: true }); sfx.swing(true); fxDust(e.x - e.face * 50, e.y, 3, 10); })] }; } });
+        evAt(0.29, e => { fxSlash({ x: e.x, y: e.y, z: e.z, face: -e.face, col: e.slashCol || '#8fd8ff', a0: -1.9, a1: 1.3, r: 86, w: 20, off: [10, 52], heavy: true }); sfx.swing(true); fxDust(e.x - e.face * 50, e.y, 4, 12); })] }; } });
 // 虎袭：抓住身前的敌人推着冲刺，沿路撞到的敌人多段伤害，最后把抓住的敌人扔出去（扔出去的敌人砸到沿路的敌人）；冲刺中按 X 立即扔出、伤害 +20%
 const P_SMASH_R = 130;
 function pSmashThrow(e, lv, M, quick) {
   const a = e.act; if (!a || a.name !== 'p_smasher' || a.thrown) return; a.thrown = true;
-  const t = e.grabbed; e.vx = 0; e.play('throw', true); sfx.swing(true); cam.shake = Math.max(cam.shake, 3);
+  const t = e.grabbed; e.vx = 0; e.play('throw', true); sfx.swing(true); cam.shake = Math.max(cam.shake, 4);
   a.dur = e.actT + 0.3; a.update = null;
   if (!t) return;
-  fxBurst(t.x, t.y, t.z + 40, quick ? 130 : 100, P_COL.holy); if (quick) fxText('+20%', t.x, t.y, t.z + 50, { col: '#ffe07a', size: 11 });
-  throwArc(e, t, { dx: 200, h: 70, dur: 0.38, other: { dmg: skillDmg(1.45, 0.145, lv) * M.dmg, type: M.type, down: true, knock: 150, hs: 0.05, snd: 'blunt' },
-    hit: { dmg: skillDmg(2.9, 0.29, lv) * M.dmg * (quick ? 1.2 : 1), type: M.type, down: true, downLift: 140, knock: 120, hs: 0.1, shake: 3, big: 1.4, snd: 'blunt' } });
+  fxBurst(t.x, t.y, t.z + 40, quick ? 140 : 110, P_COL.holy); fxShock(t.x, t.y, quick ? 150 : 120, '#ffd890'); fxDust(t.x, t.y, 6, 22);
+  if (quick) fxText('+20%', t.x, t.y, t.z + 50, { col: '#ffe07a', size: 11 });
+  throwArc(e, t, { dx: 200, h: 70, dur: 0.38, other: { dmg: skillDmg(1.45, 0.145, lv) * M.dmg, type: M.type, down: true, knock: 150, hs: 0.06, snd: 'blunt' },
+    hit: { dmg: skillDmg(2.9, 0.29, lv) * M.dmg * (quick ? 1.2 : 1), type: M.type, down: true, downLift: 140, knock: 120, hs: 0.11, shake: 4, big: 1.45, snd: 'blunt' } });
 }
 defSkill('p_smasher', { name: '虎袭', cls: 'priest', lvReq: 1, sp: 15, mp: 15, cd: 5, type: 'phys', grab: true, col: '#d08a3a', req: pReq('p_smasher'),
   desc: '抓住身前的敌人，推着他向前冲一段距离后扔出去。冲刺中撞到的其他敌人受到多段伤害，被扔出去的敌人还会砸到沿路的敌人。冲刺中按攻击键立即扔出，伤害 +20%。能抓住霸体、格挡中的敌人；抓不住领主等不可抓取的敌人（只受到一次撞击）。可以在普攻中取消施放。',
@@ -169,7 +173,7 @@ defSkill('p_smasher', { name: '虎袭', cls: 'priest', lvReq: 1, sp: 15, mp: 15,
       hits: [HB(0.04, 0.18, [0, 100, 36, 0, 125], bump * 0.2, { grab: true, grabInvul: true, stun: 0.4, knock: 30, hs: 0.05, snd: 'blunt',
         onGrabFail: (a, t) => applyHit(a, t, { dmg: bump, type: M.type, sure: true, stun: 0.45, knock: 140, hs: 0.06, snd: 'blunt' }) })],
       onGrab: (e, t) => { const a = e.act; if (a.gT !== undefined) return; a.gT = e.actT; a.dur = e.actT + 0.9; a.move = null; a.bumpN = 0; a.bumpT = 0; t.heldClip = 'hit2';
-        e.play('carry', true); sfx.swing(true); fxDust(e.x, e.y, 3, 10); },
+        e.play('carry', true); sfx.swing(true); fxDust(e.x, e.y, 4, 12); },
       update: e => { const a = e.act; if (a.gT === undefined || a.thrown) return;
         const k = e.actT - a.gT, R = game.room; e.vx = e.face * 460;
         if (R && (e.x <= R.x0 + e.w + 4 || e.x >= R.x1 - e.w - 4)) { pSmashThrow(e, lv, M, false); return; }
@@ -185,19 +189,20 @@ defSkill('p_lucky', { name: '直拳冲击', cls: 'priest', lvReq: 5, sp: 15, mp:
   act: (lv, p) => { const M = pMod(p, 'p_lucky'), r = M.range, jab = skillDmg(0.42, 0.042, lv) * M.dmg;
     return { name: 'p_lucky', clip: 'jab', dur: 0.62, type: M.type, move: [[0.04, 0.44, 110]],
       update: e => { const a = e.act; if (a.dir !== undefined || e.actT < 0.02) return; a.dir = e.pad ? e.pad.dx() * e.face : 0; a.move = a.dir > 0 ? [[0.04, 0.44, 230]] : a.dir < 0 ? null : [[0.04, 0.44, 110]]; },
-      hits: [HB(0.05, 0.1, [0, Math.round(110 * r), 34, 30, 115], jab, { stun: 0.35, knock: 60, hs: 0.04, snd: 'blunt' }),
-        HB(0.2, 0.25, [0, Math.round(110 * r), 34, 30, 115], jab, { stun: 0.35, knock: 60, hs: 0.04, snd: 'blunt' }),
-        HB(0.38, 0.44, [0, Math.round(124 * r), 36, 30, 118], skillDmg(1.26, 0.126, lv) * M.dmg, { critBonus: 0.2, stun: 0.5, knock: 260, heavy: true, hs: 0.09, shake: 2, big: 1.3, snd: 'blunt' })],
-      events: [evAt(0.04, e => { e.play('jab', true); pPunch(e, 80); }), evAt(0.19, e => { e.play('jab', true); pPunch(e, 80); }), evAt(0.36, e => { e.play('straight', true); pPunch(e, 120, true); })] }; } });
+      hits: [HB(0.05, 0.1, [0, Math.round(110 * r), 34, 30, 115], jab, { stun: 0.35, knock: 60, hs: 0.045, snd: 'blunt' }),
+        HB(0.2, 0.25, [0, Math.round(110 * r), 34, 30, 115], jab, { stun: 0.35, knock: 60, hs: 0.045, snd: 'blunt' }),
+        HB(0.38, 0.44, [0, Math.round(124 * r), 36, 30, 118], skillDmg(1.26, 0.126, lv) * M.dmg, { critBonus: 0.2, stun: 0.5, knock: 260, heavy: true, hs: 0.095, shake: 3, big: 1.35, snd: 'blunt' })],
+      events: [evAt(0.04, e => { e.play('jab', true); pPunch(e, 80); }), evAt(0.19, e => { e.play('jab', true); pPunch(e, 80); }),
+        evAt(0.36, e => { e.play('straight', true); pPunch(e, 124, true); fxShock(e.x + e.face * 70, e.y, 95, '#ffaa60'); fxSpr('wave', e.x + e.face * 80, e.y, 50, { h: 80, dur: 0.22, col: P_COL.holy }); fxDust(e.x + e.face * 30, e.y, 4, 12); })] }; } });
 // 勾拳追击：跑攻（滑步猛击）中按 X 接一记上勾拳挑空，上勾拳动作中霸体；贴身时打两下。也可以直接按技能键施放
 defSkill('p_second', { name: '勾拳追击', cls: 'priest', lvReq: 10, sp: 15, mp: 10, cd: 2, type: 'phys', col: '#e08a3a', cmdNote: '跑攻中 X', req: pReq('p_second'),
   desc: '跑动攻击（滑步猛击）中按 X，紧接着打出一记上勾拳把敌人挑到空中，上勾拳动作中霸体；贴得很近时会打中两次。也可以直接按技能键施放。',
   pow: lv => skillDmg(1.8, 0.18, lv), infoExtra: lv => [['贴身追加', pct(skillDmg(0.4, 0.04, lv))]], ai: { kind: 'launch', r: [0, 100], dy: 22 },
   act: (lv, p) => { const M = pMod(p, 'p_second');
     return { name: 'p_second', clip: 'upper', dur: 0.48, superArmor: [0, 0.3], move: [[0.02, 0.1, 140]], type: M.type,
-      hits: [HB(0.08, 0.16, [0, Math.round(100 * M.range), 36, 0, 140], skillDmg(1.8, 0.18, lv) * M.dmg, { launch: 600 + lv * 6, knock: 50, hs: 0.08, shake: 2, big: 1.25, snd: 'blunt' }),
+      hits: [HB(0.08, 0.16, [0, Math.round(100 * M.range), 36, 0, 140], skillDmg(1.8, 0.18, lv) * M.dmg, { launch: 600 + lv * 6, knock: 50, hs: 0.085, shake: 3, big: 1.25, snd: 'blunt' }),
         HB(0.09, 0.17, [0, 42, 30, 0, 130], skillDmg(0.4, 0.04, lv) * M.dmg, { launch: 620, knock: 30, hs: 0.04, snd: 'blunt' })],
-      events: [evAt(0.07, e => { fxStreak({ x: e.x + e.face * 30, y: e.y, z: e.z + 40, face: e.face, len: 70, w: 12, col: P_COL.holy, dur: 0.16 }); sfx.swing(true); })] }; } });
+      events: [evAt(0.07, e => { fxStreak({ x: e.x + e.face * 30, y: e.y, z: e.z + 40, face: e.face, len: 76, w: 14, col: P_COL.holy, dur: 0.18 }); fxShock(e.x + e.face * 36, e.y, 80, P_COL.holy); sfx.swing(true); })] }; } });
 // 缓慢愈合：945px 内 HP 比例最低的一名队员（单刷时是自己）20 秒持续回复；施放者体力越高回复越多（组队走 partyCast 'buff' + to，回复由目标自己的客户端每秒结算）
 const pHealPct = (p, lv) => Math.min(0.6, (0.24 + 0.02 * (lv - 1)) * (1 + ((p && p.vit) || 0) * 0.002));
 defSkill('p_slowheal', { name: '缓慢愈合', cls: 'priest', lvReq: 5, lvStep: 3, sp: 15, mp: 28, cd: 10, type: 'mag', buff: true, cast: true, noHitCheck: true, col: '#7ae0a0', req: pReq('p_slowheal'),
@@ -221,21 +226,22 @@ defSkill('p_grab', { name: '恶魔之手', cls: 'priest', lvReq: 10, sp: 15, mp:
   pow: lv => skillDmg(1.07, 0.107, lv) + skillDmg(2.13, 0.213, lv), infoExtra: lv => [['束缚几率', pct(pGrabBind(lv))], ['束缚时间', '2 秒'], ['距离', '260px']], ai: { kind: 'poke', r: [40, 250], dy: 26 },
   act: (lv, p) => { const M = pMod(p, 'p_grab'), L = Math.round(260 * M.range), hand = fxTint('bloodhand', P_COL.dark);
     return { name: 'p_grab', clip: 'cast', dur: 0.78, noCounter: true, type: M.type || 'mag',
-      hits: [HB(0.3, 0.38, [30, L, 42, 0, 100], skillDmg(1.07, 0.107, lv) * M.dmg, { type: M.type || 'mag', elem: 'dark', downHit: true, stun: 0.45, knock: 40, pull: true, hs: 0.05, col: '#c89aff' }),
-        HB(0.5, 0.58, [20, L - 20, 44, 0, 110], skillDmg(2.13, 0.213, lv) * M.dmg, { type: M.type || 'mag', elem: 'dark', stun: 0.6, knock: 90, pull: true, hs: 0.08, shake: 2, big: 1.3, col: '#c89aff',
+      hits: [HB(0.3, 0.38, [30, L, 42, 0, 100], skillDmg(1.07, 0.107, lv) * M.dmg, { type: M.type || 'mag', elem: 'dark', downHit: true, stun: 0.45, knock: 40, pull: true, hs: 0.055, col: '#c89aff' }),
+        HB(0.5, 0.58, [20, L - 20, 44, 0, 110], skillDmg(2.13, 0.213, lv) * M.dmg, { type: M.type || 'mag', elem: 'dark', stun: 0.6, knock: 90, pull: true, hs: 0.09, shake: 3, big: 1.35, col: '#c89aff',
           onHit: (a, t) => { if (Math.random() < pGrabBind(lv)) addStatus(t, 'bind', 2, { src: a }); } })],
       events: [evAt(0.02, e => fxCharge(e, P_COL.dark, 2)),
-        evAt(0.28, e => { sfx.swing(true); for (let i = 0; i < 3; i++) fxSpr('darkorb', e.x + e.face * (60 + i * (L - 60) / 2), e.y, e.z + 30, { w: 60, dur: 0.3, col: P_COL.dark, alpha: 0.6, grow: [0.5, 1] });
+        evAt(0.28, e => { sfx.swing(true); fxShock(e.x + e.face * (L * 0.5), e.y, 90, P_COL.dark);
+          for (let i = 0; i < 3; i++) fxSpr('darkorb', e.x + e.face * (60 + i * (L - 60) / 2), e.y, e.z + 30, { w: 60, dur: 0.3, col: P_COL.dark, alpha: 0.6, grow: [0.5, 1] });
           addFx({ x: e.x, y: e.y + 0.6, z: e.z, face: e.face, dur: 0.34, img: hand, draw(c) { const k = easeOut(Math.min(1, this.t / 0.14)); drawSpr(c, this.img, sx(this.x + this.face * (40 + (L - 40) * k)), sy(this.y, this.z + 50), 150, 0, { flip: this.face < 0, alpha: this.t > 0.26 ? (0.34 - this.t) / 0.08 : 1 }); } }); }),
-        evAt(0.48, e => { fxBurst(e.x + e.face * (L * 0.6), e.y, e.z + 50, 120, P_COL.dark); sfx.boom(0.4); })] }; } });
+        evAt(0.48, e => { const gx = e.x + e.face * (L * 0.6); cam.shake = Math.max(cam.shake, 3); fxBurst(gx, e.y, e.z + 50, 130, P_COL.dark); fxShock(gx, e.y, 130, '#c89aff'); sfx.boom(0.45); })] }; } });
 // 纯白之刃：双臂交叉凝出十字形圣光之刃斩向前方（光属性，独立攻击），被斩中的敌人长时间硬直；只有圣骑士能学
 defSkill('p_purity', { name: '纯白之刃', cls: 'priest', lvReq: 15, sp: 15, mp: 27, cd: 2, type: 'indep', elem: 'light', col: '#fff0a0', only: ['crusader'], req: pReq('p_purity'),
   desc: '双臂交叉，凝聚出十字形的圣光之刃斩向前方（光属性，独立攻击），被斩中的敌人长时间硬直。可以在普攻中取消施放。只有圣骑士能学。',
   pow: lv => skillDmg(1.8, 0.18, lv), infoExtra: () => [['硬直', '×2.4']], ai: { kind: 'poke', r: [0, 150], dy: 28 },
   act: (lv, p) => { const M = pMod(p, 'p_purity'), L = Math.round(150 * M.range);
     return { name: 'p_purity', clip: 'cross', dur: 0.46, move: [[0.02, 0.1, 80]], type: 'indep',
-      hits: [HB(0.12, 0.2, [0, L, 40, 0, 135], skillDmg(1.8, 0.18, lv) * M.dmg, { type: 'indep', elem: 'light', stun: 0.85, knock: 60, hs: 0.08, shake: 2, big: 1.3, col: P_COL.light })],
-      events: [evAt(0.02, e => fxCharge(e, P_COL.light, 2)), evAt(0.11, e => { fxSpr('crossx', e.x + e.face * L * 0.55, e.y, e.z + 64, { w: 170, dur: 0.36, col: P_COL.light, grow: [0.5, 1.15], flip: e.face < 0 }); sfx.swing(true); })] }; } });
+      hits: [HB(0.12, 0.2, [0, L, 40, 0, 135], skillDmg(1.8, 0.18, lv) * M.dmg, { type: 'indep', elem: 'light', stun: 0.85, knock: 60, hs: 0.085, shake: 3, big: 1.35, col: P_COL.light })],
+      events: [evAt(0.02, e => fxCharge(e, P_COL.light, 2)), evAt(0.11, e => { fxSpr('crossx', e.x + e.face * L * 0.55, e.y, e.z + 64, { w: 180, dur: 0.36, col: P_COL.light, grow: [0.5, 1.18], flip: e.face < 0 }); fxShock(e.x + e.face * L * 0.55, e.y, 90, P_COL.light); sfx.swing(true); })] }; } });
 // 落凤锤：跳起后把巨兵插进地面，插中的敌人受到直接伤害 + 冲击波打周围；跳起时方向键调前后落点；下落时霸体，拔出巨兵时无敌
 const pPhoenixR = (lv, M) => 165 * (1 + 0.02 * (lv - 1)) * ((M && M.range) || 1);
 defSkill('p_phoenix', { name: '落凤锤', cls: 'priest', lvReq: 15, sp: 20, mp: 28, cd: 6, type: 'phys', col: '#e0a040', noForce: p => jobOf(p) !== 'exorcist', req: pReq('p_phoenix'),
@@ -248,17 +254,18 @@ defSkill('p_phoenix', { name: '落凤锤', cls: 'priest', lvReq: 15, sp: 20, mp:
       update: e => { const a = e.act; if (!a.dive && a.onLand && e.actT > 0.3 / J) { a.dive = true; e.vz = -900 * J; e.play('thrust', true); } },
       onLand: e => { const a = e.act; if (e.actT < 0.1) { e.vz = 0; return; }
         a.onLand = null; a.update = null; e.vx = e.vy = 0; e.play('thrust', true); a.dur = e.actT + 0.42; a.invul = [e.actT + 0.12, e.actT + 0.42];
-        const x = e.x + e.face * 26; cam.shake = Math.max(cam.shake, 5); sfx.boom(0.7);
-        fxShock(x, e.y, R + 20, '#ffd890'); fxShock(x, e.y, R * 0.6, '#fff4c8'); fxDust(x, e.y, 10, R * 0.5);
+        const x = e.x + e.face * 26; cam.shake = Math.max(cam.shake, 6); sfx.boom(0.75);
+        fxShock(x, e.y, R + 24, '#ffd890'); fxShock(x, e.y, R * 0.65, '#fff4c8'); fxDust(x, e.y, 12, R * 0.55);
+        fxSpr('burst', x, e.y, 24, { w: R * 1.4, dur: 0.35, col: '#ffe390', grow: [0.5, 1.1] });
         for (let i = 0; i < 6; i++) { const ang = i / 6 * TAU; fxSpr('rock', x + Math.cos(ang) * R * 0.45, e.y + Math.sin(ang) * R * 0.15, 10 + rnd(0, 20), { w: rnd(16, 26), dur: 0.5, add: false, spin: rnd(-6, 6), grow: [1, 0.6] }); }
-        fxSpr('pillar', x, e.y, 0, { w: 70, h: 150, dur: 0.35, col: P_COL.holy, ay: 1, grow: [0.6, 1] });
-        instantHit(e, { box: [-10, 70, 32, 0, 80], dmg: skillDmg(0.65, 0.065, lv) * M.dmg, type: M.type, launch: 420, knock: 40, hs: 0.07, downHit: true, snd: 'blunt' });
-        blast(e, x, e.y, R, { dmg: skillDmg(2.6, 0.26, lv) * M.dmg, type: M.type, launch: 460, knock: 90, hs: 0.07, downHit: true, snd: 'blunt', big: 1.2 }, { zMax: 70 }); } }; } });
+        fxSpr('pillar', x, e.y, 0, { w: 76, h: 165, dur: 0.38, col: P_COL.holy, ay: 1, grow: [0.6, 1.05] });
+        instantHit(e, { box: [-10, 70, 32, 0, 80], dmg: skillDmg(0.65, 0.065, lv) * M.dmg, type: M.type, launch: 420, knock: 40, hs: 0.08, downHit: true, snd: 'blunt' });
+        blast(e, x, e.y, R, { dmg: skillDmg(2.6, 0.26, lv) * M.dmg, type: M.type, launch: 460, knock: 90, hs: 0.09, shake: 4, downHit: true, snd: 'blunt', big: 1.3 }, { zMax: 70 }); } }; } });
 // 化魔（痛苦的喜悦）：8 秒内每 2 秒消耗最大 HP 的 3%，回复最大 MP 的 6%；HP 太低不能施放；圣骑士不能学（复仇者版本由复仇者块改写：恶魔能量 / 自动施放）
 const P_RAPTURE = { t: 8, every: 2, hp: 0.03, mp: 0.06 };
 defSkill('p_rapture', { name: '化魔', cls: 'priest', lvReq: 15, maxLv: 1, sp: 20, mp: 0, cd: 8, type: 'mag', buff: true, noHitCheck: true, col: '#b04a6a', excl: ['crusader'],
   req: p => { const r = pReq('p_rapture')(p); return r !== true ? r : p.hp > p.hpMax * 0.25 || 'HP 不足'; },
-  desc: '痛苦的喜悦：8 秒内每 2 秒消耗最大 HP 的 3%，回复最大 MP 的 6%。HP 低于 25% 时不能施放。圣骑士不能学。',
+  desc: '痛苦的喜悦（官方现名：化魔）：8 秒内每 2 秒消耗最大 HP 的 3%，回复最大 MP 的 6%。HP 低于 25% 时不能施放。圣骑士不能学。',
   infoExtra: () => [['持续', P_RAPTURE.t + ' 秒'], ['每 2 秒', `HP -${pct(P_RAPTURE.hp)} / MP +${pct(P_RAPTURE.mp)}`]], ai: { kind: 'buff' },
   act: () => ({ name: 'p_rapture', clip: 'rapture', dur: 0.4, noCounter: true,
     onStart: e => { e.buffs.p_rapture = { t: P_RAPTURE.t, next: P_RAPTURE.t - 0.01, name: '化魔', col: P_COL.blood }; fxAura(e, P_COL.blood, 0.6); fxText('化魔', e.x, e.y, e.z + 20, { col: '#ff9ab8', size: 11 }); sfx.charge(); } }) });
@@ -275,10 +282,10 @@ defSkill('p_emblem', { name: '升天阵', cls: 'priest', lvReq: 16, sp: 20, mp: 
   act: (lv, p) => { const M = pMod(p, 'p_emblem'), R = 120 * M.range;
     return { name: 'p_emblem', clip: 'cast', dur: 0.62, noCounter: true, type: M.type || 'mag',
       events: [evAt(0.03, e => { fxCharge(e, P_COL.light, 3); sfx.charge(); }),
-        evAt(0.4, e => { const x = e.x + e.face * 150; sfx.boom(0.4);
+        evAt(0.4, e => { const x = e.x + e.face * 150; cam.shake = Math.max(cam.shake, 3); sfx.boom(0.45);
           fxSpr('hexagram', x, e.y, 2, { w: R * 2.2, h: R * 0.8, dur: 0.6, col: P_COL.light, grow: [0.4, 1] });
-          fxSpr('heal', x, e.y, 0, { w: R * 0.9, h: 200, dur: 0.5, col: '#fffaf0', ay: 1, grow: [0.5, 1] }); fxBurst(x, e.y, 40, R * 1.4, '#ffd23a');
-          blast(e, x, e.y, R, { dmg: skillDmg(2.9, 0.29, lv) * M.dmg, type: M.type || 'mag', elem: 'light', launch: 400, knock: M.pull ? -140 : 20, hs: 0.07, downHit: true, col: P_COL.light, big: 1.2 }, { zMax: 90 }); })] }; } });
+          fxSpr('heal', x, e.y, 0, { w: R * 0.95, h: 215, dur: 0.5, col: '#fffaf0', ay: 1, grow: [0.5, 1.05] }); fxBurst(x, e.y, 40, R * 1.45, '#ffd23a'); fxShock(x, e.y, R * 1.15, P_COL.light);
+          blast(e, x, e.y, R, { dmg: skillDmg(2.9, 0.29, lv) * M.dmg, type: M.type || 'mag', elem: 'light', launch: 400, knock: M.pull ? -140 : 20, hs: 0.08, shake: 3, downHit: true, col: P_COL.light, big: 1.25 }, { zMax: 90 }); })] }; } });
 
 /* ---- 职业定义 ---- */
 CLASSES.priest = { name: '圣职者', ready: true, hp0: 1900, hpPer: 155, mp0: 760, mpPer: 44, atk0: 480, atkPer: 58, def0: 320, defPer: 30, crit: 0.07, speed: 155, runSpeed: 285,

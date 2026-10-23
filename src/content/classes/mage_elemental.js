@@ -126,12 +126,12 @@ defSkill('mg_thunder', { name: '天雷', cls: 'mage', job: EL, lvReq: 19, mp: 60
       if ((I.buffered('attack') || auto) && e.actT > a.cd && a.n < 3) { I.consume('attack'); a.n++; a.cd = e.actT + 0.25 * iv; a.lastT = e.actT; const big = (a.chargeK || 0) > 0.95, r = big ? 105 : 85;
         const rb = elArc(e), col = rb ? ELC[(a.n - 1) % 4] : '#fff6a0';   // 元素奥义：全属性（彩虹色），落雷把周围的敌人聚过来
         if (rb) { mgPull(e, a.cx, a.cy, r * 2.8, 0.75); fxShock(a.cx, a.cy, r * 2.2, col); }
-        lightningStrike({ x: a.cx, y: a.cy }); fxShock(a.cx, a.cy, r, col); sfx.zap();
-        blast(e, a.cx, a.cy, r, { dmg: skillDmg(2.2, 0.22, lv) * (a.up ? 1 + THUNDER_UP.dmg : 1), stun: 0.6, knock: 20, hs: 0.08, snd: 'crit', col, elem: rb ? elBest(e) : 'light', type: 'mag' }, { zMax: 220, status: big ? 'stun' : null, sdur: 1.2 });
+        lightningStrike({ x: a.cx, y: a.cy }); fxShock(a.cx, a.cy, r, col); fxBurst(a.cx, a.cy, 20, r * 1.35, col); cam.shake = Math.max(cam.shake, big ? 6 : 4); sfx.zap();
+        blast(e, a.cx, a.cy, r, { dmg: skillDmg(2.2, 0.22, lv) * (a.up ? 1 + THUNDER_UP.dmg : 1), stun: 0.6, knock: 20, hs: 0.08, big: big ? 1.5 : 1.2, snd: 'crit', col, elem: rb ? elBest(e) : 'light', type: 'mag' }, { zMax: 220, status: big ? 'stun' : null, sdur: 1.2 });
         if (a.n >= 3) a.dur = e.actT + 0.35; }
       return true; },
     update: e => { const a = e.act; if (!a.chargeDone) return; addFx({ x: a.cx, y: a.cy + 1, z: 0, dur: 0.02, draw(c) { const X = sx(this.x), Y = sy(this.y, 0); c.strokeStyle = 'rgba(255,240,120,.85)'; c.lineWidth = 2; c.beginPath(); c.ellipse(X, Y, 85, 85 * GR, 0, 0, TAU); c.stroke(); c.beginPath(); c.moveTo(X - 95, Y); c.lineTo(X + 95, Y); c.moveTo(X, Y - 42); c.lineTo(X, Y + 42); c.stroke(); } }); } }) });
-// 极冰盛宴：身前展开大魔法阵，冰柱连续突刺 8 段（几率冰冻）；引导施法：霸体、不能移动，连按 X 加快突刺，按跳跃中断；蓄满时阵内敌人减速
+// 极冰盛宴：身前展开大魔法阵，冰柱连续突刺 8 段（几率冰冻）；引导施法：霸体、不能移动，连按 X 加速突刺，按跳跃中断；蓄满时阵内敌人减速
 defSkill('mg_icefeast', { name: '极冰盛宴', cls: 'mage', job: EL, lvReq: 19, mp: 70, cd: 19, type: 'mag', elem: 'ice', col: '#3a8ae0', cast: true,
   desc: '在身前展开冰之魔法阵，阵内冰柱连续突刺 8 次，有几率冰冻敌人。引导施法期间霸体、不能移动；连按 X 加快突刺，按跳跃键中断。蓄气（最长 1 秒）蓄满时阵内敌人减速。', pow: lv => skillDmg(1.0, 0.1, lv) * 8, ai: { kind: 'aoe', r: [60, 320], dy: 80 },
   act: (lv, p) => ({ name: 'mg_icefeast', clip: 'wall', dur: 3.2, superArmor: true, noCounter: true, charge: mCharge(p, 1.0, '#bfefff', { at: 0.05, clip: 'mchan', onRoom: e => { const at = aimAhead(e, 180, 360); e.act.cx = at.x; e.act.cy = at.y; } }),
@@ -148,7 +148,12 @@ defSkill('mg_icefeast', { name: '极冰盛宴', cls: 'mage', job: EL, lvReq: 19,
 // 极冰盛宴的一次突刺：阵内随机位置冒出冰柱，整个魔法阵结算一次（几率冰冻）；rb = 元素奥义的全属性彩虹版
 function icefeastSpike(e, cx, cy, lv, i, rb) {
   const x = cx + rnd(-150, 150), y = clamp(cy + rnd(-65, 65), 6, DEPTH - 6), col = rb ? ELC[i % 4] : '#bfefff'; sfx.ice();
-  addFx({ x, y: y + 1, z: 0, dur: 0.35, draw(c) { const q = this.t / this.dur; drawSpr(c, rb ? fxTint('icespike', col) : 'icespike', sx(this.x), sy(this.y, 0) - 40 * (1 - Math.min(1, q * 4)), 0, 120, { rot: -Math.PI / 2, ay: 0.5, add: true, alpha: 1 - Math.max(0, q - 0.6) / 0.4 }); } });
+  if (i % 2 === 0) cam.shake = Math.max(cam.shake, 2.5);
+  spark(x, y, 22, col, 5, 120, 0.26); fxShock(x, y, 65, col);
+  addFx({ x, y: y + 1, z: 0, dur: 0.35, draw(c) { const q = this.t / this.dur, sp = rb ? fxTint('icespike', col) : 'icespike', al = 1 - Math.max(0, q - 0.6) / 0.4, Y0 = sy(this.y, 0) - 40 * (1 - Math.min(1, q * 4));
+    drawSpr(c, sp, sx(this.x) - 18, Y0 + 8, 0, 82, { rot: -Math.PI / 2 - 0.24, ay: 0.5, add: true, alpha: al * 0.75 });
+    drawSpr(c, sp, sx(this.x) + 18, Y0 + 8, 0, 82, { rot: -Math.PI / 2 + 0.24, ay: 0.5, add: true, alpha: al * 0.75 });
+    drawSpr(c, sp, sx(this.x), Y0, 0, 128, { rot: -Math.PI / 2, ay: 0.5, add: true, alpha: al }); } });
   blast(e, cx, cy, 185, { dmg: skillDmg(1.0, 0.1, lv), stun: 0.4, airLift: 140, knock: 10, hs: 0.04, elem: rb ? elBest(e) : 'ice', type: 'mag', col, downHit: true }, { zMax: 200 });
   for (const t of ents) if (foe(e, t) && inGround(t, cx, cy, 185) && Math.random() < 0.08) addStatus(t, 'freeze', 1.2, { src: e });
 }
@@ -161,16 +166,23 @@ defSkill('mg_hole', { name: '湮灭黑洞', cls: 'mage', job: EL, lvReq: 19, mp:
       const pr = e._hole = spawnProj({ owner: e, x: at.x, y: at.y, z: 20, face: e.face, life: 4, w: 66, d: 44, h: 110, pierce: true,
         hit: { dmg: skillDmg(0.27, 0.027, lv), stun: 0.35, knock: 0, airLift: 60, hs: 0.02, rep: 0.27, col: '#d0a0ff', elem: el, type: 'mag' },
         update(q, dt) { for (const t of ents) if (foe(e, t) && Math.hypot(t.x - q.x, t.y - q.y) < R && !(t.boss && hasSA(t)) && t.st !== 'held') { t.x = damp(t.x, q.x, pull, dt); t.y = damp(t.y, q.y, pull, dt); } },
-        onEnd(q) { q.gone = true; sfx.boom(0.9); cam.shake = Math.max(cam.shake, 6); blast(e, q.x, q.y, 185, { dmg: skillDmg(4.5, 0.45, lv), launch: 400, knock: 160, hs: 0.1, big: 1.6, col: '#e0b0ff', elem: el, type: 'mag', downHit: true }, { zMax: 220 }); fxBurst(q.x, q.y, 40, 300, '#c080ff'); fxShock(q.x, q.y, 185, '#c080ff'); if (rb) for (let i = 0; i < 4; i++) fxShock(q.x, q.y, 220 + i * 40, ELC[i]); },
-        draw(c, q) { const X = sx(q.x), Y = sy(q.y, q.z), k = q.t / q.life, s = Math.min(1, k * 8) * (k > 0.95 ? (1 - k) / 0.05 : 1); const HR = Math.max(0.5, 70 * s), gr = c.createRadialGradient(X, Y, HR * 0.2, X, Y, HR); gr.addColorStop(0, 'rgba(8,2,22,.96)'); gr.addColorStop(0.75, 'rgba(30,8,70,.9)'); gr.addColorStop(1, 'rgba(150,80,255,.85)'); c.fillStyle = gr; c.beginPath(); c.ellipse(X, Y, HR, HR * 0.85, 0, 0, TAU); c.fill();   // 官方是大块深紫黑球体加亮紫边
-          
-          if (rb) for (let i = 0; i < 4; i++) drawSpr(c, fxTint('vortex', ELC[i]), X, Y, (115 + i * 26) * s, (115 + i * 26) * s, { rot: -game.t * (4 + i) + i }); else { drawSpr(c, fxTint('vortex', '#5a20a0'), X, Y, 230 * s, 230 * s, { rot: -game.t * 5, alpha: 0.9 }); const g2 = c.createRadialGradient(X, Y, 2, X, Y, HR * 1.05); g2.addColorStop(0, 'rgba(6,2,16,.97)'); g2.addColorStop(0.7, 'rgba(14,4,36,.85)'); g2.addColorStop(1, 'rgba(14,4,36,0)'); c.fillStyle = g2; c.beginPath(); c.ellipse(X, Y, HR * 1.05, HR * 0.9, 0, 0, TAU); c.fill(); } } }); })] }) });
+        onEnd(q) { q.gone = true; sfx.boom(0.95); cam.shake = Math.max(cam.shake, 8); blast(e, q.x, q.y, 185, { dmg: skillDmg(4.5, 0.45, lv), launch: 400, knock: 160, hs: 0.1, big: 1.6, col: '#e0b0ff', elem: el, type: 'mag', downHit: true }, { zMax: 220 }); fxBurst(q.x, q.y, 40, 310, '#c080ff'); fxShock(q.x, q.y, 120, '#ffffff'); fxShock(q.x, q.y, 200, '#c080ff'); if (rb) for (let i = 0; i < 4; i++) fxShock(q.x, q.y, 220 + i * 40, ELC[i]); },
+        draw(c, q) { const X = sx(q.x), Y = sy(q.y, q.z), k = q.t / q.life, s = Math.min(1, k * 8) * (k > 0.95 ? (1 - k) / 0.05 : 1), HR = Math.max(2, 68 * s);
+          if (rb) { for (let i = 0; i < 4; i++) drawSpr(c, fxTint('vortex', ELC[i]), X, Y, (130 + i * 28) * s, (130 + i * 28) * s, { rot: -game.t * (4.5 + i) + i, alpha: 0.82 }); }
+          else { drawSpr(c, fxTint('vortex', '#5a20a0'), X, Y, 240 * s, 240 * s, { rot: -game.t * 5, alpha: 0.9 }); drawSpr(c, fxTint('vortex', '#9a40ff'), X, Y, 165 * s, 165 * s, { rot: -game.t * 8, alpha: 0.75 }); }
+          c.save(); c.translate(X, Y); c.scale(1, 0.86);
+          for (let i = 0; i < 3; i++) { const a = -game.t * 6.5 + i * TAU / 3; c.strokeStyle = rb ? ELC[i % 4] : 'rgba(210,145,255,0.65)'; c.lineWidth = 2.5 * s; c.beginPath(); c.arc(0, 0, HR * (1.18 + 0.16 * Math.sin(game.t * 8 + i)), a, a + 1.35); c.stroke(); }
+          const gr = c.createRadialGradient(0, 0, HR * 0.12, 0, 0, HR * 1.08);
+          gr.addColorStop(0, 'rgba(4,1,12,0.99)'); gr.addColorStop(0.62, 'rgba(16,4,38,0.96)'); gr.addColorStop(0.86, 'rgba(68,18,136,0.92)'); gr.addColorStop(0.96, 'rgba(196,112,255,0.92)'); gr.addColorStop(1, 'rgba(196,112,255,0)');
+          c.fillStyle = gr; c.beginPath(); c.arc(0, 0, HR * 1.08, 0, TAU); c.fill();
+          c.strokeStyle = 'rgba(225,165,255,0.88)'; c.lineWidth = 2.2 * s; c.beginPath(); c.arc(0, 0, HR * 0.92, 0, TAU); c.stroke();
+          c.restore(); } }); })] }) });   // 官方是大块深紫黑奇点球体（source-over 盖在旋涡之上）加亮紫视界边缘
 // 杰克降临：巨型南瓜斜着砸向前方——先小范围撞击（约两成伤害），落地冲击波大范围爆炸（约八成）；蓄气放大
 defSkill('mg_jackfall', { name: '杰克降临', cls: 'mage', job: EL, lvReq: 20, mp: 60, cd: 45, type: 'mag', elem: 'fire', col: '#e0702a', cast: true,
   desc: '从天空召唤巨型南瓜斜着砸向前方：先是小范围的撞击，落地后冲击波大范围爆炸。每次南瓜的表情都不一样。蓄气（最长 1 秒）让南瓜和爆炸变大。', pow: lv => skillDmg(7.5, 0.75, lv), ai: { kind: 'aoe', r: [80, 320], dy: 60 },
   act: (lv, p) => ({ name: 'mg_jackfall', clip: 'jackfall', dur: 0.8, superArmor: true, noCounter: true, cancelFrom: 0.62, charge: mCharge(p, 1.0, '#ffb060', { at: 0.08, clip: 'mchan' }),
     events: [evAt(0.15, e => { const at = aimAhead(e, 200, 380), rb = elArc(e), sc = (1 + (e.act.chargeK || 0) * 0.2) * (rb ? 1.1 : 1), el = rb ? elBest(e) : 'fire', flip = Math.random() < 0.5; sfx.charge();   // 元素奥义：南瓜 +10%、全属性、落地后小陨石
-      telegraph({ x: at.x, y: at.y, r: 180 * sc, dur: 0.75, kind: 'hex', col: '#ff9a3a', friendly: true, fire: g => { meteorImpact(g, 1.5 * sc); fxShock(g.x, g.y, 300 * sc, '#ffb060');
+      telegraph({ x: at.x, y: at.y, r: 180 * sc, dur: 0.75, kind: 'hex', col: '#ff9a3a', friendly: true, fire: g => { meteorImpact(g, 1.6 * sc); cam.shake = Math.max(cam.shake, 9); fxShock(g.x, g.y, 180 * sc, '#fff0a0'); fxShock(g.x, g.y, 300 * sc, '#ffb060'); spark(g.x, g.y, 28, '#ff9a3a', 12, 240, 0.45);
         blast(e, g.x, g.y, 75 * sc, { dmg: skillDmg(1.5, 0.15, lv), launch: 300, knock: 60, hs: 0.08, snd: 'fire', col: '#ffb060', elem: el, type: 'mag' }, { zMax: 200 });
         game.after(0.08, () => blast(e, g.x, g.y, 185 * sc, { dmg: skillDmg(6.0, 0.6, lv), launch: 460, knock: 160, hs: 0.12, big: 1.8, snd: 'fire', col: '#ffb060', elem: el, type: 'mag', downHit: true }, { zMax: 220 }));
         if (rb) for (let i = 0; i < 5; i++) mgAfter(e, 0.15 + i * 0.14, () => { const x = g.x + rnd(-180, 180) * sc, y = clamp(g.y + rnd(-70, 70), 6, DEPTH - 6), col = ELC[i % 4];
@@ -187,8 +199,8 @@ function astralFinale(e, lv) {
   const a = e.act; if (!a || a.fin) return; a.fin = true; a.dur = e.actT + 1.1;
   for (let i = 0; i < 5; i++) game.after(0.12 * i, () => { const [el, col] = ELEM4[i % 4], x = a.cx + rnd(-a.r, a.r) * 0.5, y = clamp(a.cy + rnd(-a.r, a.r) * 0.2, 6, DEPTH - 6);
     addFx({ x, y: y + 2, z: 0, dur: 0.3, col, draw(c) { const k = this.t / this.dur; drawSpr(c, 'elemmeteor', sx(this.x) - 160 * (1 - k), sy(this.y, 0) - 360 * (1 - k), 190, 0, { ax: 0.8, ay: 0.82 }); } });
-    game.after(0.3, () => { meteorImpact({ x, y }, 1.2); blast(e, x, y, 125, { dmg: skillDmg(3, 0.9, lv), launch: 360, knock: 80, hs: 0.06, elem: el, type: 'mag', col, downHit: true, sure: true }, { zMax: 240 }); }); });
-  game.after(0.9, () => { cam.flash = 0.2; cam.flashCol = '#fff0d0'; cam.shake = 10; sfx.boom(1.2); fxShock(a.cx, a.cy, a.r + 60, '#ffe070'); fxShock(a.cx, a.cy, a.r * 0.7, '#fff6d0'); blast(e, a.cx, a.cy, a.r + 60, { dmg: skillDmg(6, 1.8, lv), launch: 480, knock: 160, hs: 0.12, big: 2, type: 'mag', col: '#ffe070', downHit: true, sure: true }, { zMax: 260 }); });
+    game.after(0.3, () => { meteorImpact({ x, y }, 1.25); cam.shake = Math.max(cam.shake, 6); fxShock(x, y, 135, col); blast(e, x, y, 125, { dmg: skillDmg(3, 0.9, lv), launch: 360, knock: 80, hs: 0.06, elem: el, type: 'mag', col, downHit: true, sure: true }, { zMax: 240 }); }); });
+  game.after(0.9, () => { cam.flash = 0.22; cam.flashCol = '#fff0d0'; cam.shake = 12; sfx.boom(1.2); fxShock(a.cx, a.cy, a.r + 60, '#ffe070'); fxShock(a.cx, a.cy, a.r * 0.7, '#fff6d0'); for (let i = 0; i < 4; i++) fxShock(a.cx, a.cy, a.r * (0.45 + i * 0.18), ELEM4[i][1]); blast(e, a.cx, a.cy, a.r + 60, { dmg: skillDmg(6, 1.8, lv), launch: 480, knock: 160, hs: 0.12, big: 2, type: 'mag', col: '#ffe070', downHit: true, sure: true }, { zMax: 260 }); });
 }
 defSkill('mg_awaken', { name: '陨星幻灭', cls: 'mage', job: EL, lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'mag', elemNote: 'all', awaken: true, icon: 'mg_awaken', col: '#ffd23a',
   desc: '【觉醒】展开巨大的法阵（方向键移动，移动时法阵缩小、结晶更密集），火、冰、光、暗四属性结晶接连坠落。按技能键或跳跃键立即砸下最后 5 颗大结晶并引发大爆炸。施放中无敌。', pow: lv => skillDmg(30, 8, lv), ai: { kind: 'awaken', r: [0, 460], dy: 120 },
@@ -205,7 +217,7 @@ defSkill('mg_awaken', { name: '陨星幻灭', cls: 'mage', job: EL, lvReq: 21, m
       const n = Math.floor((e.actT - 1.0) / 0.06);   // 官方 40 颗、每 0.06 秒一颗（移动时法阵小、落点密，停住时法阵大）
       if (e.actT > 1.0 && n !== a.n && n < 40) { a.n = n; const [el, col] = ELEM4[n % 4], x = a.cx + rnd(-a.r, a.r) * 0.7, y = clamp(a.cy + rnd(-a.r, a.r) * 0.25, 6, DEPTH - 6);
         addFx({ x, y: y + 2, z: 0, dur: 0.3, col, draw(c) { const k = this.t / this.dur; drawSpr(c, 'elemmeteor', sx(this.x) - 160 * (1 - k), sy(this.y, 0) - 360 * (1 - k), 130, 0, { ax: 0.8, ay: 0.82 }); } });
-        game.after(0.3, () => { meteorImpact({ x, y }, 0.8); blast(e, x, y, 115, { dmg: skillDmg(0.55, 0.16, lv), launch: 300, knock: 60, hs: 0.04, elem: el, type: 'mag', col, downHit: true }, { zMax: 240 }); }); } } }) });
+        game.after(0.3, () => { meteorImpact({ x, y }, 0.8); cam.shake = Math.max(cam.shake, 3.2); fxShock(x, y, 105, col); blast(e, x, y, 115, { dmg: skillDmg(0.55, 0.16, lv), launch: 300, knock: 60, hs: 0.04, elem: el, type: 'mag', col, downHit: true }, { zMax: 240 }); }); } } }) });
 CLASSES.mage.jobs.elemental = { art: 'job/elemental', name: '元素师', role: '远程 · 范围', armor: 'cloth', awaken: 'mg_awaken', awakenName: '大魔导师',
   desc: '把元素的力量发挥到极限的纯魔法师。大多数技能可以蓄气，学会移动施法后能边走边蓄；轮换火、冰、光、暗四种属性点亮元素标记来提高伤害。',
   skills: ['el_memorize', 'el_movecast', 'mg_flame', 'mg_void', 'el_burn', 'mg_icewall', 'mg_vortex', 'el_mastery', 'mg_thunder', 'el_thunderup', 'mg_icefeast', 'mg_hole', 'mg_jackfall', 'el_amplify', 'mg_awaken'] };
@@ -220,3 +232,37 @@ CLASSES.mage.passives.push(p => {
 });
 // 所有魔法师技能施放时把属性记给元素点燃（包一层 act；不影响技能本身）
 for (const id in SKILLS) { const S = SKILLS[id], el = S.elemNote || S.elem; if (S.cls !== 'mage' || !S.act || !el) continue; const f = S.act; S.act = (lv, p) => { if (p && p.buffs && p.buffs.el_burn) elNote(p, el); return f(lv, p); }; }
+// 二觉 / 三觉元素技能演出强化（元素之门 4 属性立体传送门光环与齐射轰炸震屏）
+queueMicrotask(() => {
+  const G = SKILLS.el_gate;
+  if (G && G.act) {
+    if (!SKILLS.mg_gate) SKILLS.mg_gate = G;
+    const gAct = G.act;
+    G.act = (lv, p) => {
+      const a = gAct(lv, p), oStart = a.onStart;
+      a.onStart = e => {
+        if (oStart) oStart(e);
+        const P4 = [[-54, -14, 128, '#ff7a30', 'fire'], [-18, -6, 146, '#7ce0ff', 'ice'], [18, 6, 146, '#fff070', 'light'], [54, 14, 128, '#c478ff', 'dark']];
+        addFx({ ent: e, y: e.y + 1, z: 0, dur: 1.45, draw(c) {
+          const u = this.t / this.dur, s = Math.min(1, u * 7) * (u > 0.86 ? (1 - u) / 0.14 : 1);
+          for (let i = 0; i < 4; i++) {
+            const [dx, dy, dz, col] = P4[i], X = sx(e.x + e.face * 24 + dx), Y = sy(e.y + dy, e.z + dz);
+            c.save(); c.translate(X, Y); c.scale(0.62 * s, 1.05 * s);
+            drawSpr(c, fxTint('vortex', col), 0, 0, 74, 74, { rot: game.t * (5 + i), alpha: 0.85 });
+            drawSpr(c, fxTint('hexagram', col), 0, 0, 62, 62, { rot: -game.t * 3.5, alpha: 0.9 });
+            c.strokeStyle = col; c.lineWidth = 2.6; c.beginPath(); c.arc(0, 0, 26, 0, TAU); c.stroke();
+            c.fillStyle = 'rgba(12,6,26,0.78)'; c.beginPath(); c.arc(0, 0, 17, 0, TAU); c.fill();
+            c.restore();
+          }
+        } });
+        for (let i = 0; i < 10; i++) game.after(0.24 + i * 0.08, () => { if (!e.dead) cam.shake = Math.max(cam.shake, 2.8); });
+      };
+      return a;
+    };
+  }
+  for (const [id, sh, dt] of [['el_curtain', 5, 0.3], ['el_quake', 6, 0.45], ['el_crystal', 7, 0.5], ['el_awaken2', 11, 1.8], ['el_awaken3', 13, 2.4]]) {
+    const S = SKILLS[id]; if (!S || !S.act) continue;
+    const f = S.act; S.act = (lv, p) => { const a = f(lv, p), o = a.onStart; a.onStart = e => { if (o) o(e); game.after(dt, () => { if (!e.dead) cam.shake = Math.max(cam.shake, sh); }); }; return a; };
+  }
+});
+

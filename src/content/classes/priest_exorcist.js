@@ -47,8 +47,8 @@ function peBeast(c, name, x, y, h, o = {}) {
 }
 // 战斧砸地：冲击环 + 碎石 + 尘土（col = 光的颜色）
 function peSlamFx(x, y, r, col = PE_COL.axe, big = 1) {
-  cam.shake = Math.max(cam.shake, 5 * big); sfx.boom(0.5 + 0.4 * big);
-  fxShock(x, y, r, col); fxShock(x, y, r * 0.55, '#fff4c8'); fxDust(x, y, Math.round(6 * big), r * 0.35);
+  cam.shake = Math.max(cam.shake, 6 * big); sfx.boom(0.55 + 0.4 * big);
+  fxShock(x, y, r, col); fxShock(x, y, r * 0.6, '#fff4c8'); fxBurst(x, y, 22, 110 * big, col); fxDust(x, y, Math.round(7 * big), r * 0.38);
   for (let i = 0; i < 5 + big * 2; i++) { const a = rnd(0, TAU); fxSpr('rock', x + Math.cos(a) * r * 0.35, y + Math.sin(a) * r * 0.12, rnd(8, 30), { w: rnd(14, 26), dur: 0.5, add: false, spin: rnd(-7, 7), grow: [1, 0.6] }); }
 }
 // 地面的裂缝（逆鳞震 / 式神灭却）：几条发光的折线从落点往外裂
@@ -153,14 +153,16 @@ peDef('pe_book', { name: '驱魔之书', lvReq: 18, maxLv: 10, sp: 15, passive: 
   desc: '【被动】参透驱魔典籍：驱魔技能攻击力提高、冷却时间 −10%（觉醒除外）。', infoExtra: lv => [['技能攻击力', '+' + pct(0.006 * lv)], ['冷却时间', '−10%']] });
 peDef('pe_spirit', { name: '斗志散发', lvReq: 21, maxLv: 10, sp: 20, passive: true, col: '#ff4a2a',
   desc: '【被动】（2024 起常驻，不再需要蓄满斗志）斗志外放：普攻和技能攻击力常驻提高。', infoExtra: lv => [['攻击力', '+' + pct(0.02 + 0.004 * lv)]] });
-// 封魔莲华：永久 BUFF，武器附带火 / 光属性（取强化更高的一边）、攻击力 / 直接攻击的硬直提高
-defSkill('pe_lotus', { name: '封魔莲华', cls: 'priest', job: PE, lvReq: 16, mp: 40, cd: 5, buff: true, cast: true, col: '#ff8a3a',
-  desc: '【BUFF · 永久】施放 0.7 秒：以莲华封印加持巨兵，武器附带火 / 光属性（取你属性强化更高的一边），攻击力、命中率、直接攻击的硬直提高。永久持续（决斗场 30 秒）。',
-  infoExtra: lv => [['攻击力', '+' + pct(0.03 + 0.01 * lv)], ['硬直', '+' + pct(0.03 * lv)], ['武器属性', '火 / 光'], ['施放时间', '0.7 秒']], ai: { kind: 'buff' },
+// 封魔莲华：永久 BUFF，武器同时附带火 + 光双属性（取强化更高的一边结算）、攻击力 / 直接攻击的硬直提高
+defSkill('pe_lotus', { name: '封魔莲华', cls: 'priest', job: PE, lvReq: 16, mp: 40, cd: 5, buff: true, cast: true, elem: 'fire', elems: ['fire', 'light'], col: '#ff8a3a',
+  desc: '【BUFF · 永久】施放 0.7 秒：以赤焰与圣光交织的莲华封印加持巨兵，武器同时附带火 + 光双属性（取你属性强化更高的一边结算），攻击力、命中率、直接攻击的硬直提高。永久持续（决斗场 30 秒）。',
+  infoExtra: lv => [['攻击力', '+' + pct(0.03 + 0.01 * lv)], ['硬直', '+' + pct(0.03 * lv)], ['武器属性', '火 + 光（双属性）'], ['施放时间', '0.7 秒']], ai: { kind: 'buff' },
   act: lv => ({ name: 'pe_lotus', clip: 'peSeal', dur: 0.7, noCounter: true,
-    events: [evAt(0.05, e => { fxCharge(e, PE_COL.fire, 3); peTalisman(e, 3); sfx.charge(); }),
-      evAt(0.55, e => { e.buffs.pe_lotus = { t: game.pvp ? 30 : 1e6, atk: 0.03 + 0.01 * lv, stagger: 8 * lv, lv, name: '封魔莲华', col: '#ff8a3a' };
-        fxSpr('petal', e.x, e.y, e.z + 60, { w: 150, dur: 0.6, col: '#ff8a3a', grow: [0.4, 1.2] }); fxSpr('rune', e.x, e.y, 2, { w: 180, h: 70, dur: 0.7, col: '#ff6a2a', grow: [0.4, 1] });
+    events: [evAt(0.05, e => { fxCharge(e, PE_COL.fire, 3); fxCharge(e, PE_COL.gold, 2); peTalisman(e, 4); sfx.charge(); }),
+      evAt(0.55, e => { e.buffs.pe_lotus = { t: game.pvp ? 30 : 1e6, atk: 0.03 + 0.01 * lv, stagger: 8 * lv, elem: 'fire', elems: ['fire', 'light'], lv, name: '封魔莲华', col: '#ff8a3a' };
+        fxSpr('petal', e.x, e.y, e.z + 60, { w: 170, dur: 0.65, col: '#ff6a2a', grow: [0.35, 1.3] }); fxSpr('petal', e.x, e.y, e.z + 68, { w: 135, dur: 0.6, col: '#ffe070', rot: 0.6, grow: [0.4, 1.15] });
+        fxSpr('rune', e.x, e.y, 2, { w: 200, h: 78, dur: 0.75, col: '#ff6a2a', grow: [0.4, 1.05] }); fxSpr('hexagram', e.x, e.y, 3, { w: 160, h: 62, dur: 0.7, col: '#ffe070', grow: [0.3, 1] });
+        fxSpr('pillar', e.x, e.y, 0, { h: 200, w: 90, ay: 1, dur: 0.45, col: '#ffb04a', grow: [0.4, 1.1] }); fxShock(e.x, e.y, 170, '#ffb04a');
         fxAura(e, '#ffb04a', 0.8); sfx.buff(); fxText('封魔莲华', e.x, e.y, e.z + 24, { col: '#ffb070', size: 12 }); })] }) });
 
 /* =====================================================================
@@ -214,8 +216,9 @@ defSkill('pe_chaos', { name: '狂乱锤击', cls: 'priest', job: PE, lvReq: 19, 
       update: (e, dt) => { const a = e.act; a.n = a.n || 0; if (a.fast && a.n < 4) e.actT += dt * 0.5;
         const T0 = [0.18, 0.42, 0.66, 1.02]; if (a.n < 4 && e.actT >= T0[a.n]) { const last = a.n === 3; a.n++;
           e.play(last ? 'peSwing' : 'pePlant', true); e.animT = last ? 0.14 : 0.2; const x = e.x + e.face * 95;
-          peArc(e, { a0: -2.4, a1: 1.2, r: last ? 130 : 110 }); peSlamFx(x, e.y, last ? 200 : 140, last ? PE_COL.fire : PE_COL.axe, last ? 1.3 : 0.7);
-          instantHit(e, { box: [-10, 190, 70, 0, 150], dmg: last ? fin : per, stun: last ? 0.7 : 0.45, knock: last ? 180 : 10, launch: last ? 300 : 0, hs: last ? 0.1 : 0.05, shake: last ? 5 : 2, big: last ? 1.6 : 1, downHit: true, snd: 'blunt', col: PE_COL.axe,
+          peArc(e, { a0: -2.4, a1: 1.2, r: last ? 138 : 114 }); peSlamFx(x, e.y, last ? 215 : 145, last ? PE_COL.fire : PE_COL.axe, last ? 1.4 : 0.75);
+          if (last) peCracks(x, e.y, 165, '#ffb04a', 0.65);
+          instantHit(e, { box: [-10, 190, 70, 0, 150], dmg: last ? fin : per, stun: last ? 0.7 : 0.45, knock: last ? 180 : 10, launch: last ? 300 : 0, hs: last ? 0.12 : 0.06, shake: last ? 6 : 2.5, big: last ? 1.7 : 1, downHit: true, snd: 'blunt', col: PE_COL.axe,
             onHit: (a2, t) => { pePull(t, x, e.y, 0.4); if (last) addStatus(t, 'stun', 1, { src: a2 }); } });
           if (last) a.dur = e.actT + 0.32; } } }; } });
 // 疾空旋风破：霸体抡着巨兵大回旋 7 圈，方向键移动、连按加速，把周围的敌人往身前卷，最后一圈把敌人甩上天；可以按 C 跳跃取消
@@ -225,14 +228,14 @@ defSkill('pe_spin', { name: '疾空旋风破', cls: 'priest', job: PE, lvReq: 20
   act: lv => { const T = skillDmg(8, 0.8, lv), per = T * 848 / 6862, fin = T * 1774 / 6862;
     return { name: 'pe_spin', clip: 'peSpin', dur: 2.2, noCounter: true, superArmor: true,
       onStart: e => { const a = e.act; a.n = 0; a.ring = addFx({ ent: e, x: e.x, y: e.y + 0.6, z: 0, dur: 2.2, draw(c) { const E = this.ent; if (!E.act || E.act.name !== 'pe_spin') { this.dur = this.t; return; }
-        drawSpr(c, fxTint('slash', PE_COL.axe), sx(E.x), sy(E.y, E.z + 50), 320, 110, { rot: -game.t * 14, alpha: 0.75 }); drawSpr(c, fxTint('slash', '#fff4d0'), sx(E.x), sy(E.y, E.z + 60), 260, 90, { rot: game.t * 20 + 2, alpha: 0.7 }); drawSpr(c, fxTint('shock', PE_COL.gold), sx(E.x), sy(E.y, 0), 330, 0, { alpha: 0.5 }); } }); },
+        drawSpr(c, fxTint('slash', PE_COL.axe), sx(E.x), sy(E.y, E.z + 50), 330, 115, { rot: -game.t * 14, alpha: 0.78 }); drawSpr(c, fxTint('slash', '#fff4d0'), sx(E.x), sy(E.y, E.z + 60), 270, 95, { rot: game.t * 20 + 2, alpha: 0.72 }); drawSpr(c, fxTint('shock', PE_COL.gold), sx(E.x), sy(E.y, 0), 340, 0, { alpha: 0.55 }); } }); },
       onInput: (e, I) => { const a = e.act; if (a.n < 7 && peJumpCancel(e, I)) return true;
         e.vx = I.dx() * 220; e.vy = I.dy() * 130; if (I.buffered(a.key || 'cmd')) { I.consume(a.key || 'cmd'); a.fast = 0.3; } return false; },
       update: (e, dt) => { const a = e.act; if (a.fast > 0) { a.fast -= dt; e.actT += dt * 0.6; } e.drawFlip = Math.floor(e.actT / 0.07) % 2 === 1;
         const k = Math.floor((e.actT - 0.08) / 0.27); if (e.actT > 0.08 && k !== a.k && a.n < 7) { a.k = k; a.n++; const last = a.n === 7; sfx.swing(last);
           for (const t of peFoes(e, e.x, e.y, 360, 140)) pePull(t, e.x + e.face * 60, e.y, 0.18);
-          blast(e, e.x, e.y, last ? 190 : 165, { dmg: last ? fin : per, stun: 0.35, knock: last ? 60 : -40, launch: last ? 520 : 0, airLift: last ? 0 : 60, hs: last ? 0.1 : 0.03, downHit: true, big: last ? 1.6 : 1, snd: 'blunt', col: PE_COL.axe }, { zMax: 160 });
-          if (last) { e.drawFlip = false; a.dur = e.actT + 0.3; fxShock(e.x, e.y, 260, PE_COL.gold); cam.shake = 6; } } },
+          blast(e, e.x, e.y, last ? 190 : 165, { dmg: last ? fin : per, stun: 0.35, knock: last ? 60 : -40, launch: last ? 520 : 0, airLift: last ? 0 : 60, hs: last ? 0.12 : 0.04, shake: last ? 6 : 2, downHit: true, big: last ? 1.7 : 1, snd: 'blunt', col: PE_COL.axe }, { zMax: 160 });
+          if (last) { e.drawFlip = false; a.dur = e.actT + 0.3; peSlamFx(e.x, e.y, 260, PE_COL.gold, 1.1); cam.shake = 7; } } },
       onEnd: e => { e.drawFlip = false; e.vy = 0; } }; } });
 // 无双击：抡两圈把四面八方的敌人卷到身前一处（打击型抓取），然后一记过顶重砸；卷人时霸体、砸下时无敌；按住技能键可以推迟砸下（最多 1 秒）
 defSkill('pe_atomic', { name: '无双击', cls: 'priest', job: PE, lvReq: 20, mp: 110, cd: 40, col: '#ffb040', pre: { pe_chaos: 1 },
@@ -248,22 +251,23 @@ defSkill('pe_atomic', { name: '无双击', cls: 'priest', job: PE, lvReq: 20, mp
           a.up = true; e.vz = 520; e.z = Math.max(e.z, 1); e.play('peLeap', true); a.invul = [e.actT, e.actT + 0.9]; sfx.jump(); }
         if (a.up && !a.fall && e.actT >= 0.82 + (a.wait || 0)) { a.fall = true; e.vz = -1400; e.play('peSwing', true); } },
       onLand: e => { const a = e.act; if (!a.up) { e.vz = 0; return; } if (a.slam) return; a.slam = true; e.vx = 0; a.dur = e.actT + 0.42; const x = e.x + e.face * 110;
-        cam.shake = 14; cam.flash = 0.12; cam.flashCol = '#ffe0a0'; peSlamFx(x, e.y, 300, PE_COL.fire, 2); peCracks(x, e.y, 220, '#ffb04a', 0.8); fxSpr('pillar', x, e.y, 0, { h: 260, ay: 1, dur: 0.5, col: PE_COL.gold, grow: [0.5, 1.1] });
+        cam.shake = 15; cam.flash = 0.14; cam.flashCol = '#ffe0a0'; peSlamFx(x, e.y, 310, PE_COL.fire, 2.1); peCracks(x, e.y, 230, '#ffb04a', 0.85);
+        fxSpr('pillar', x, e.y, 0, { h: 280, ay: 1, dur: 0.5, col: PE_COL.gold, grow: [0.5, 1.15] }); fxBurst(x, e.y, 60, 320, PE_COL.gold);
         for (const t of ents) if (t.status && t.status.hold && t.status.hold.src === e) delete t.status.hold;
-        blast(e, x, e.y, 200, { dmg: slam, launch: 500, knock: 120, hs: 0.16, big: 2.2, shake: 6, downHit: true, snd: 'blunt', col: '#ffe0a0' }, { zMax: 220 }); },
+        blast(e, x, e.y, 200, { dmg: slam, launch: 500, knock: 120, hs: 0.18, big: 2.3, shake: 8, downHit: true, snd: 'blunt', col: '#ffe0a0' }, { zMax: 220 }); },
       onEnd: e => { e.drawFlip = false; } }; } });
-// 逆鳞震：把巨兵往后一拉、跃起、砸地震出巨大的裂缝（单段）；按住技能键蓄力：跳得更高、范围最多 +110%
-defSkill('pe_quake', { name: '逆鳞震', cls: 'priest', job: PE, tier: 1, lvReq: 25, mp: 110, cd: 50, col: '#ff8a2a',
-  desc: '把巨兵往后一拉、纵身跃起，狠狠砸向地面震出巨大的裂缝（单段伤害）。按住技能键蓄力（最多 1 秒）：跳得更高，裂缝范围最多扩大 110%。蓄力中霸体。可以在落凤锤砸地后施放。',
-  pow: lv => skillDmg(20, 2, lv), infoExtra: () => [['半径', '220px（满蓄 460px）'], ['段数', '1']], ai: { kind: 'aoe', r: [0, 300], dy: 90 },
+// 逆鳞震：把巨兵往后一拉、跃起、砸地震出巨大的裂缝（单段，火 + 光双属性）；按住技能键蓄力：跳得更高、范围最多 +110%
+defSkill('pe_quake', { name: '逆鳞震', cls: 'priest', job: PE, tier: 1, lvReq: 25, mp: 110, cd: 50, elem: 'fire', elems: ['fire', 'light'], col: '#ff8a2a',
+  desc: '把巨兵往后一拉、纵身跃起，狠狠砸向地面震出巨大的赤焰圣光裂缝（单段，火 + 光双属性伤害）。按住技能键蓄力（最多 1 秒）：跳得更高，裂缝范围最多扩大 110%。蓄力中霸体。可以在落凤锤砸地后施放。',
+  pow: lv => skillDmg(20, 2, lv), infoExtra: () => [['属性', '火 + 光（双属性）'], ['半径', '220px（满蓄 460px）'], ['段数', '1']], ai: { kind: 'aoe', r: [0, 300], dy: 90 },
   act: lv => ({ name: 'pe_quake', clip: 'peCharge', dur: 2.2, noCounter: true, superArmor: true,
-    charge: { at: 0.12, max: 1.0, min: 0, dmg: 0, update: e => { if (Math.random() < 0.5) fxCharge(e, PE_COL.fire, 2); cam.shake = Math.max(cam.shake, 1.5); } },
+    charge: { at: 0.12, max: 1.0, min: 0, dmg: 0, update: e => { if (Math.random() < 0.5) fxCharge(e, Math.random() < 0.5 ? PE_COL.fire : PE_COL.gold, 2); cam.shake = Math.max(cam.shake, 1.5); } },
     update: e => { const a = e.act; if (!a.chargeDone || a.up) return; a.up = true; const k = a.chargeK || 0; a.k = k; e.vz = 520 + 260 * k; e.z = Math.max(e.z, 1); e.vx = e.face * 90; e.play('peLeap', true); sfx.jump(); fxDust(e.x, e.y, 5, 12); },
     onLand: e => { const a = e.act; if (!a.up) { e.vz = 0; return; } if (a.slam) return; a.slam = true; e.vx = 0; e.play('pePlant', true); a.dur = e.actT + 0.5;
-      const k = a.k || 0, R = 220 * (1 + 1.1 * k), x = e.x + e.face * 80; cam.shake = 16; cam.flash = 0.14; cam.flashCol = '#ffc080';
-      peSlamFx(x, e.y, R * 1.2, PE_COL.fire, 2); peCracks(x, e.y, R, '#ff9a3a', 1.2); fxSpr('lava', x, e.y, 0, { h: 160 + 60 * k, ay: 1, dur: 0.6, grow: [0.5, 1.1] });
-      for (let i = 0; i < 6; i++) { const ang = i / 6 * TAU; game.after(0.05 * i, () => fxSpr('pillar', x + Math.cos(ang) * R * 0.6, e.y + Math.sin(ang) * R * 0.2, 0, { h: 120, w: 40, ay: 1, dur: 0.4, col: '#ff8a2a', grow: [0.4, 1] })); }
-      blast(e, x, e.y, R, { dmg: skillDmg(20, 2, lv), launch: 520, knock: 140, hs: 0.16, big: 2.2, shake: 6, downHit: true, snd: 'blunt', col: '#ffc080' }, { zMax: 220 }); } }) });
+      const k = a.k || 0, R = 220 * (1 + 1.1 * k), x = e.x + e.face * 80; cam.shake = 17; cam.flash = 0.15; cam.flashCol = '#ffc080';
+      peSlamFx(x, e.y, R * 1.2, PE_COL.fire, 2.1); fxShock(x, e.y, R * 0.85, PE_COL.gold); peCracks(x, e.y, R, '#ff9a3a', 1.2); fxSpr('lava', x, e.y, 0, { h: 170 + 60 * k, ay: 1, dur: 0.65, grow: [0.5, 1.15] });
+      for (let i = 0; i < 6; i++) { const ang = i / 6 * TAU; game.after(0.05 * i, () => fxSpr('pillar', x + Math.cos(ang) * R * 0.6, e.y + Math.sin(ang) * R * 0.2, 0, { h: 135, w: 44, ay: 1, dur: 0.45, col: i % 2 ? '#ffe070' : '#ff8a2a', grow: [0.4, 1.05] })); }
+      blast(e, x, e.y, R, { dmg: skillDmg(20, 2, lv), elem: 'fire', elems: ['fire', 'light'], launch: 520, knock: 140, hs: 0.18, big: 2.3, shake: 8, downHit: true, snd: 'blunt', col: '#ffc080' }, { zMax: 220 }); } }) });
 // 逆龙七杀：跃起从天而降劈下第一斧，打中的第一个敌人超级硬直，接着 6 斧（第 5 下是双击）共 7 击（1:2:3:4:5:6:21）；第一斧没打中就到此为止；第一斧打中后无敌；连按技能键挥得更快
 const PE_SEVEN_T = [0.22, 0.44, 0.66, 0.88, 0.98, 1.3];   // 第 2~7 斧离第一斧的时间（第 5 下双击 = 0.88 + 0.98）
 const PE_SEVEN_U = [2, 3, 4, 5, 6, 21];
@@ -278,11 +282,11 @@ defSkill('pe_seven', { name: '逆龙七杀', cls: 'priest', job: PE, tier: 2, lv
         if (!a.dive && e.actT > 0.18) { a.dive = true; e.vz = -1200; e.play('peSwing', true); }
         if (!a.first) return; if (a.fast > 0) { a.fast -= dt; e.actT += dt * 0.6; }
         while (a.n <= 6 && e.actT - a.t0 >= PE_SEVEN_T[a.n - 1]) { const i = a.n, t = a.first, last = i === 6; a.n++;
-          e.play(i % 2 ? 'peSweep' : 'peSwing', true); e.animT = 0.1; peArc(e, { a0: i % 2 ? 1.3 : -2.4, a1: i % 2 ? -1.5 : 1.2, r: last ? 150 : 125, col: last ? '#ffe070' : PE_COL.axe }); sfx.swing(last);
-          const h = { dmg: U * PE_SEVEN_U[i - 1], stun: 0.5, knock: last ? 420 : 0, launch: last ? 460 : 0, hs: last ? 0.2 : 0.06, big: last ? 2.4 : 1.2, shake: last ? 8 : 3, downHit: true, snd: 'blunt', col: '#ffe070', box: null };
+          e.play(i % 2 ? 'peSweep' : 'peSwing', true); e.animT = 0.1; peArc(e, { a0: i % 2 ? 1.3 : -2.4, a1: i % 2 ? -1.5 : 1.2, r: last ? 155 : 128, col: last ? '#ffe070' : PE_COL.axe }); sfx.swing(last);
+          const h = { dmg: U * PE_SEVEN_U[i - 1], stun: 0.5, knock: last ? 420 : 0, launch: last ? 460 : 0, hs: last ? 0.22 : 0.06, big: last ? 2.5 : 1.2, shake: last ? 9 : 3, downHit: true, snd: 'blunt', col: '#ffe070', box: null };
           if (t && !t.dead) { if (last && t.status) delete t.status.hold; applyHit(e, t, { ...h, sure: true }, { src: e }); }
           for (const o of peFoes(e, e.x + e.face * 90, e.y, 150, 70, 200)) if (o !== t) applyHit(e, o, { ...h, dmg: h.dmg * 0.5 }, { src: e });
-          if (last) { cam.shake = 12; cam.flash = 0.18; cam.flashCol = '#fff0a0'; peSlamFx(e.x + e.face * 100, e.y, 240, '#ffe070', 1.8); fxText('七杀!', e.x, e.y, e.z + 70, { col: '#ffe070', size: 18 }); a.dur = e.actT + 0.4; } } },
+          if (last) { cam.shake = 14; cam.flash = 0.18; cam.flashCol = '#fff0a0'; peSlamFx(e.x + e.face * 100, e.y, 250, '#ffe070', 1.9); peCracks(e.x + e.face * 100, e.y, 200, '#ffe070', 0.9); fxBurst(e.x + e.face * 100, e.y, 70, 320, '#ffe070'); fxText('七杀!', e.x, e.y, e.z + 70, { col: '#ffe070', size: 18 }); a.dur = e.actT + 0.4; } } },
       onLand: e => { const a = e.act; if (a.landed) { e.vz = 0; return; } a.landed = true; e.vx = 0; peArc(e, { a0: -2.6, a1: 1.2, r: 130 }); peSlamFx(e.x + e.face * 80, e.y, 140, PE_COL.gold, 0.8);
         let tgt = null; for (const t of peFoes(e, e.x + e.face * 80, e.y, 115, 60, 200)) { if (!tgt || Math.abs(t.x - e.x) < Math.abs(tgt.x - e.x)) tgt = t; applyHit(e, t, { dmg: U, stun: 0.6, knock: 0, hs: 0.06, downHit: true, snd: 'blunt', col: PE_COL.gold, box: null }, { src: e }); }
         if (!tgt) { a.dur = e.actT + 0.35; return; }

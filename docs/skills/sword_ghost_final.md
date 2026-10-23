@@ -37,3 +37,7 @@
 - wiki 逐页核对(其余技能)：一闪 450px、回天 2 段、奈落 800px、聚渊 3 段结构、鬼灵斩 / 离魂一闪 / 无式(5+1 段)、夜奈落 4 段结构、一觉 x4，均与现状一致；鬼咲 / 睥睨万物文字与实现一致。
 - `node test/classes.mjs sword:ghostblade`、`node test/sword.mjs`（无 FAIL）、`node test/awkcancel.mjs` 全部通过。
 - `node test/skillshots.mjs sword:ghostblade`：31 个技能，问题 0 → test/shots/skills/sword-ghostblade.jpg。
+
+## 第三轮（鬼步衔接与本体/幻鬼双色刀光复核）
+- 鬼步 / 幻鬼步衔接流畅度（`gb_step` / `gbStepFinish` / `gb_retrace`）：鬼步准备姿势中剑术技能响应提前至 `0.02s`，鬼步收尾与幻鬼步落地新增 `cancelable: true` 窗口，使“鬼步→剑术收尾→幻鬼叠加→幻鬼步追击”连段无缝衔接。
+- 本体与幻鬼双色刀光对比：本体剑术采用锋利冷白青刀光（`#e8f8ff`），幻鬼与灵魂刀采用幽邃鬼蓝刀光（`#3a88e8`），在鬼连击：极、冥灵断魂斩、裂魂乱舞、无式·极影剑及一/二/三觉合击中形成鲜明的双人双色交叉斩视觉与终结顿帧。

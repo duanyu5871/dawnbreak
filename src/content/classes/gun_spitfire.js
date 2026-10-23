@@ -139,6 +139,15 @@ function sfShotMod(e, o) {
   if (el && !(e.buffs && e.buffs.g_silver)) { H.elem = el; o.col = sfElemCol(el); }
   if (booster) { if (!o.pierce && Math.random() < 0.04 * booster) o.pierce = true; H.stun = (H.stun ?? 0.22) * (1 + 0.07 * booster); }
   const extra = [];
+  if (sfOver(e)) {
+    extra.push((a, t) => {
+      const col = sfElemCol(el), tz = t.z + t.hurtH() * 0.55;
+      if (el === 'fire') fxSpr('flame', t.x, t.y, tz, { w: 42, dur: 0.18 });
+      else if (el === 'ice') fxSpr('frost', t.x, t.y, tz, { w: 44, dur: 0.22 });
+      else if (el === 'light') fxSpr('spark', t.x, t.y, tz, { w: 46, dur: 0.16, col });
+      else fxBurst(t.x, t.y, tz, 34, col);
+    });
+  }
   if (mode === 'gs_elem') {
     const lv = skLv(e, 'gs_elem');
     extra.push((a, t) => { if (Math.random() >= 0.25) return; const k = el || 'stun';
@@ -146,10 +155,10 @@ function sfShotMod(e, o) {
       else if (k === 'ice') addStatus(t, 'freeze', 2, { src: a });
       else if (k === 'light') addStatus(t, 'shock', 2, { src: a, hitDmg: atkOf(a, 'indep') * (0.06 + 0.006 * lv) });
       else addStatus(t, 'stun', 2, { src: a }); });
-  } else if (mode === 'gs_pierce') { o.pierce = true; o.life = (o.life || 0.52) * 1.2; o.speedMul = 1.5; }
+  } else if (mode === 'gs_pierce') { o.pierce = true; o.life = (o.life || 0.52) * 1.2; o.speedMul = 1.5; o.sz = 1.15; }
   else if (mode === 'gs_burst' && !o.cannon) {
     o.pierce = false; const d = o.dmg * 0.6; if (!el) o.col = '#ff9a3a'; o.sz = 1.35;   // 爆炸弹：橙红弹体、更大的弹头 / 枪口火光
-    extra.push((a, t) => { const x = t.x, y = t.y; fxSpr('explosion', x, y, t.z + 30, { w: 90, dur: 0.3, col: el ? sfElemCol(el) : undefined }); sfx.boom(0.25);
+    extra.push((a, t) => { const x = t.x, y = t.y; fxSpr('explosion', x, y, t.z + 30, { w: 90, dur: 0.3, col: el ? sfElemCol(el) : undefined }); fxShock(x, y, 65, sfElemCol(el)); sfx.boom(0.25);
       areaHit(a, x, y, 60, 0, { dmg: d, type: H.type || 'phys', elem: el || undefined, knock: 40, stun: 0.2, hs: 0.02, col: sfElemCol(el) }, { zMax: 120 }); });
   }
   if (extra.length) H.onHit = (a, t, dmg) => { if (on0) on0(a, t, dmg); for (const f of extra) f(a, t, dmg); };
@@ -281,6 +290,8 @@ defSkill('gs_cross', { name: '交叉射击', cls: 'gun', job: SF, lvReq: 17, mp:
       muzzle(e); sfx.gun(1.1); cam.shake = Math.max(cam.shake, 2);
       const box = sfAirBox(e, 0, 400, 70) || [0, 420, 70, 0, 130];
       for (const a of [-1, 1]) sfTracer(e, e.x + e.face * 30, e.z + 60, e.x + e.face * 410, air ? 0 : e.z + 60 + a * 44, col, 2.5);
+      fxSlashOn(e, { a0: -2.0, a1: 1.0, r: 95, w: 18, off: [44, 58], squash: 0.65, col }); fxSlashOn(e, { a0: 1.0, a1: -2.0, r: 95, w: 18, off: [44, 58], squash: 0.65, col });
+      if (i === 2) fxShock(e.x + e.face * 160, e.y, 130, col);
       instantHit(e, { box, dmg: skillDmg(1.5, 0.15, lv) * m, type: 'indep', elem: el || undefined, stun: 0.3, knock: i === 2 ? 120 : 30, airLift: 100, hs: 0.03, col, downHit: air, snd: 'stab' }); })) }, { recoil: 60 }) });
 defSkill('gs_g35', { name: 'G-35L 感电手雷', cls: 'gun', job: SF, lvReq: 17, mp: 25, cd: 3, charges: 3, reload: 2.5, type: 'indep', elem: 'light', col: '#d8c83a', airIf: sfCanAir,
   desc: '投出 G-35L 感电手雷，光属性爆炸使范围内的敌人感电 9 秒；命中后自己的暴击率提高 10%（30 秒）。最多装填 3 颗；地面投掷间隔 3 秒（按住 ↑ 投远、↓ 投近），空中 0.5 秒。',
@@ -322,7 +333,8 @@ defSkill('gs_buster', { name: '聚合弹', cls: 'gun', job: SF, lvReq: 19, mp: 6
   act: lv => sfAct({ name: 'gs_buster', clip: 'sfAim', dur: 0.55, superArmor: true, noCounter: true,
     onStart: e => { fxCharge(e, sfElemCol(sfElem(e)), 3); },
     events: [evAt(0.16, e => { const el = sfElem(e), col = sfElemCol(el), air = e.act.air, m = sfShootMul(e);
-      e.play('headShot', true); muzzle(e); sfx.cannon(0.7); sfx.gun(1.6); cam.shake = Math.max(cam.shake, 6); if (!air) e.vx = -e.face * 120;
+      e.play('headShot', true); muzzle(e); sfx.cannon(0.7); sfx.gun(1.6); cam.shake = Math.max(cam.shake, 6); if (!air) { e.vx = -e.face * 120; fxDust(e.x - e.face * 16, e.y, 6, 22); }
+      fxShock(e.x + e.face * 44, e.y, 110, col);
       sfTracer(e, e.x + e.face * 34, e.z + 62, e.x + e.face * 940, air ? 0 : e.z + 62, col, 11); sfTracer(e, e.x + e.face * 34, e.z + 62, e.x + e.face * 940, air ? 0 : e.z + 62, '#ffffff', 4);
       fxStreak({ x: e.x + e.face * 30, y: e.y, z: e.z + 62, face: e.face, len: 920, w: 14, col, dur: 0.25 });
       instantHit(e, { box: sfAirBox(e, 20, 900, 20) || [20, 950, 18, 30, 100], dmg: skillDmg(9.0, 0.9, lv) * m, type: 'indep', elem: el || undefined,
@@ -343,7 +355,13 @@ function sfC4Disc(e, lv) {
         if (tagged.size >= 15) { pr.t = pr.life; return; }
         // 弹向下一个没贴过的敌人
         let nx = null, bd = 260; for (const o of ents) if (foe(e, o) && !tagged.has(o)) { const d = Math.hypot(o.x - pr.x, (o.y - pr.y) * 1.5); if (d < bd) { bd = d; nx = o; } }
-        if (nx) { const d = Math.hypot(nx.x - pr.x, nx.y - pr.y) || 1; pr.vx = (nx.x - pr.x) / d * 520; pr.vy = (nx.y - pr.y) / d * 520; pr.face = pr.vx >= 0 ? 1 : -1; pr.t = Math.min(pr.t, pr.life - 0.8); }
+        if (nx) {
+          addFx({ x0: t.x, y0: t.y + 0.5, z0: t.z + 45, x1: nx.x, y1: nx.y + 0.5, z1: nx.z + 45, dur: 0.14, add: true, draw(c) {
+            const k = this.t / this.dur; c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#ff4a3a'; c.lineWidth = 2.2 * (1 - k);
+            c.beginPath(); c.moveTo(sx(this.x0), sy(this.y0, this.z0)); c.lineTo(sx(this.x1), sy(this.y1, this.z1)); c.stroke(); c.restore();
+          } });
+          const d = Math.hypot(nx.x - pr.x, nx.y - pr.y) || 1; pr.vx = (nx.x - pr.x) / d * 520; pr.vy = (nx.y - pr.y) / d * 520; pr.face = pr.vx >= 0 ? 1 : -1; pr.t = Math.min(pr.t, pr.life - 0.8);
+        }
         else pr.vx *= 0.6;
         break;
       } },
@@ -450,10 +468,12 @@ defSummon('gs_g61', { kind: 'field', life: 3, r: 230, tick: 0.25, zMax: 160, max
   update(s, dt) { for (const t of ents) if (foe(s.owner, t) && !t.dead && inGround(t, s.x, s.y, 260) && t.st !== 'held') { const k = t.boss ? 0.8 : 3.2; t.x = damp(t.x, s.x, k, dt); t.y = damp(t.y, s.y, k, dt); } },
   onTick(s, L) { for (const t of L) summonHit(s, t, { dmg: (s.dmg || 12) * 0.03, type: 'indep', stun: 0.3, hs: 0.01, downHit: true, col: '#c0a0ff' }); },
   onEnd(s, why) { if (why !== 'life') return; if (ents.indexOf(s.owner) < 0) return;
-    fxSpr('quantum', s.x, s.y, 40, { w: 420, dur: 0.5, grow: [1.2, 0.4], col: '#a07aff' }); fxSpr('explosion', s.x, s.y, 30, { w: 360, dur: 0.5 }); sfx.boom(1.2); cam.shake = 9;
+    fxSpr('quantum', s.x, s.y, 40, { w: 420, dur: 0.5, grow: [1.2, 0.4], col: '#a07aff' }); fxSpr('explosion', s.x, s.y, 30, { w: 360, dur: 0.5 }); fxShock(s.x, s.y, 260, '#c090ff'); sfx.boom(1.2); cam.shake = 9;
     summonArea(s, s.x, s.y, 230, { dmg: (s.dmg || 12) * 0.64, type: 'indep', launch: 460, knock: 60, hs: 0.12, big: 1.8, downHit: true, snd: 'fire' }, { zMax: 200 }); },
   draw(c, s) { const X = sx(s.x), Y = sy(s.y, 0); c.save(); c.translate(X, Y); c.scale(1, GR); c.rotate(-game.t * 4); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.65;
-    drawSpr(c, fxTint('vortex', '#8a6aff'), 0, 0, 460, 460, {}); c.restore(); drawSpr(c, fxTint('orb', '#b090ff'), X, Y - 24, 36, 36, { alpha: 0.9 }); } });
+    drawSpr(c, fxTint('vortex', '#8a6aff'), 0, 0, 460, 460, {});
+    c.strokeStyle = '#c090ff'; c.lineWidth = 2; for (let i = 0; i < 3; i++) { const r = 210 * (1 - ((game.t * 1.6 + i / 3) % 1)); c.globalAlpha = 0.65 * (1 - r / 210); c.beginPath(); c.arc(0, 0, r, 0, TAU); c.stroke(); }
+    c.restore(); drawSpr(c, fxTint('orb', '#b090ff'), X, Y - 24, 36, 36, { alpha: 0.9 }); } });
 // 超真空弹：切利——命中第一个敌人后在它脚下生成跟着它的真空洞，吸住周围的敌人和附近的手雷；再按技能键或时间到了就吸热爆炸。没打中时在地面留下真空洞，第一个踩上去的敌人会被粘住
 defSkill('gs_chelli', { name: '超真空弹：切利', cls: 'gun', job: SF, lvReq: 25, tier: 1, mp: 100, cd: 30, type: 'indep', col: '#3a5ad8', airIf: sfCanAir, cmdNote: '↓↑↓+Z（再按引爆）',
   desc: '射出超真空弹：命中的第一个敌人脚下出现跟着它移动的真空洞，把周围的敌人吸过去并持续造成伤害，还会把附近的手雷（G-14 / G-35L / G-18C）吸进来一起引爆。再按一次技能键或 3 秒后吸收空气中的热量爆炸。没打中时在落点留下真空洞，第一个踩上去的敌人会被粘住。',
@@ -514,7 +534,11 @@ defSkill('gs_photon', { name: '光子霰雷发射器', cls: 'gun', job: SF, lvRe
       for (let i = 0; i < 8; i++) orbs.push(spawnProj({ owner: e, x: e.x + e.face * 20, y: e.y, z: e.z + 50, vx: e.face * rnd(60, 260), vy: rnd(-90, 90), vz: rnd(120, 300), grav: 500, life: 3, w: 8, d: 8, h: 10, pierce: true, hit: null, face: e.face, i,
         update(pr, dt) { if (pr.z < 30) { pr.z = 30; pr.vz = 0; pr.vx *= 0.9; pr.vy *= 0.9; } const m = pr.mag; if (m) { pr.grav = 0; const dx = m.x - pr.x, dy = m.y - pr.y, d = Math.hypot(dx, dy) || 1, sp = 520 + pr.t * 300;
           pr.vx = dx / d * sp; pr.vy = dy / d * sp * 0.6; pr.vz = (10 - pr.z) * 4; if (d < 18 + pr.i * 2) { pr.t = pr.life; sfGrenadeBoom(e, m.x + rnd(-30, 30), m.y + rnd(-14, 14), 'light', skillDmg(3.0, 0.3, lv), 110); } } },
-        draw(c, pr) { drawSpr(c, fxTint('orb', '#8fe0ff'), sx(pr.x), sy(pr.y, pr.z), 22, 22, {}); } }));
+        draw(c, pr) {
+          const X = sx(pr.x), Y = sy(pr.y, pr.z), m = pr.mag;
+          if (m) { const mx = sx(m.x), my = sy(m.y, 10); c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = 'rgba(143,224,255,.55)'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(mx, my); c.lineTo(X, Y); c.stroke(); c.restore(); }
+          drawSpr(c, fxTint('orb', '#8fe0ff'), X, Y, 22, 22, {});
+        } }));
       e.act.orbs = orbs; }),
       evAt(0.5, e => { const at = aimAhead(e, 300, 560), x = e.x + e.face * clamp(Math.abs(at.x - e.x), 150, 520), y = at.t ? at.y : e.y, air = e.z > 2; muzzle(e); sfx.cannon(0.9); sfTracer(e, e.x + e.face * 34, e.z + 60, x, 0, '#8fe0ff', 6);   // 磁力弹打向前方最近的敌人脚下
         fxSpr('quantum', x, y, 10, { w: 200, dur: 1.4, col: '#8fe0ff' }); fxShock(x, y, 120, '#8fe0ff');

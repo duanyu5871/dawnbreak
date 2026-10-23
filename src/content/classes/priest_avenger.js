@@ -54,16 +54,30 @@ const PA_ANIMS = {
 };
 
 /* ---- 特效构件 ---- */
-// 三道爪痕（魔化的爪击 / 半魔化的攻击都带爪痕）
+// 三道爪痕（魔化的爪击 / 半魔化的攻击都带爪痕：深渊黑紫底痕 + 血红暗紫撕裂 + 亮粉白锋芒 + 飞溅暗芒）
 function paClawFx(x, y, z, face, s = 1, col = PA_COL.claw) {
-  addFx({ x, y: y + 1, z, dur: 0.28, face, draw(c) { const k = this.t / this.dur, X = sx(this.x), Y = sy(this.y, this.z), a = 1 - k * k, L = 70 * s * (0.6 + 0.6 * easeOut(Math.min(1, k * 3)));
-    c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
-    for (let i = -1; i <= 1; i++) for (const [w, cc, al] of [[9 * s, col, 0.45], [3 * s, '#ffe0ff', 1]]) { c.strokeStyle = cc; c.globalAlpha = a * al; c.lineWidth = w; c.beginPath();
-      c.moveTo(X - this.face * L * 0.5 + i * 12 * s, Y - L * 0.55 + i * 6 * s); c.quadraticCurveTo(X + this.face * 6, Y + i * 10 * s, X + this.face * L * 0.5 + i * 12 * s, Y + L * 0.5 + i * 6 * s); c.stroke(); }
+  addFx({ x, y: y + 1, z, dur: 0.3, face, draw(c) { const k = this.t / this.dur, X = sx(this.x), Y = sy(this.y, this.z), a = 1 - k * k, L = 76 * s * (0.62 + 0.58 * easeOut(Math.min(1, k * 3.2)));
+    c.save(); c.lineCap = 'round';
+    for (let i = -1; i <= 1; i++) {
+      const x0 = X - this.face * L * 0.52 + i * 13 * s, y0 = Y - L * 0.58 + i * 7 * s, cx = X + this.face * 10 * s, cy = Y + i * 11 * s, x1 = X + this.face * L * 0.54 + i * 13 * s, y1 = Y + L * 0.52 + i * 7 * s;
+      c.globalCompositeOperation = 'source-over'; c.strokeStyle = '#1a052a'; c.globalAlpha = a * 0.7; c.lineWidth = 13 * s;
+      c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(cx, cy, x1, y1); c.stroke();
+      c.globalCompositeOperation = 'lighter';
+      for (const [w, cc, al] of [[9.5 * s, col, 0.55], [5.5 * s, PA_COL.blood, 0.45], [3 * s, '#ffe4ff', 1]]) {
+        c.strokeStyle = cc; c.globalAlpha = a * al; c.lineWidth = w; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(cx, cy, x1, y1); c.stroke();
+      }
+    }
     c.restore(); } });
 }
-// 紫黑色的爆炸（暗属性的爆点：暗球 + 爆闪，都按紫色染）
-function paBoom(x, y, z, w) { fxSpr('darkorb', x, y, z, { w: w * 0.9, dur: 0.45, col: '#8a2ad8', grow: [0.3, 1.2] }); fxBurst(x, y, z, w, '#c060ff'); }
+// 紫黑色的爆炸（暗属性的爆点：暗球 + 爆闪 + 血紫星芒）
+function paBoom(x, y, z, w) { fxSpr('darkorb', x, y, z, { w: w * 0.95, dur: 0.45, col: '#8a2ad8', grow: [0.3, 1.25] }); fxSpr('spark', x, y, z, { w: w * 0.75, dur: 0.32, col: '#ff6ad8' }); fxBurst(x, y, z, w, '#c060ff'); }
+// 半魔化 / 魔化时隐藏手里的十字架巨兵（矢量模型 rarm 里前 4 个是手臂，从第 5 个开始是十字架）
+function paHideHandCross(p) {
+  const g = p && p.model && p.model.parts && p.model.parts.rarm && p.model.parts.rarm.g;
+  if (!g || g._paCross) return; g._paCross = true;
+  const off = () => paOn(p) && (paHalf(p) || paDemon(p));
+  for (let i = 4; i < g.length; i++) { const s = g[i]; if (typeof s !== 'function') g[i] = c => { if (!off()) drawElem(c, s); }; }
+}
 // 复仇之刺的暗黑尖刺：从脚下向外放射的黑色尖刺（前方长、身后短），紫色描边，长出来 → 停一下 → 缩回
 function paThorns(e, s = 1) {
   const L = []; for (let i = 0; i < 16; i++) { const back = i >= 11, ang = back ? Math.PI + (i - 13) * 0.32 : (i - 5) * 0.16, len = (back ? 100 : 150 + (i % 3) * 45) * s * rnd(0.85, 1.1); L.push([ang, len, rnd(9, 15) * s]); }
@@ -91,6 +105,7 @@ function paShade(c, E, col, alpha) {
 // 魔化的外观（跟着人画，BUFF 没了自己结束；换房间清掉特效后由被动 / 组队同步补回来）：
 //   身后 = 巨大的末日审判者虚影 + 展开的恶魔翼 + 脚下旋转的紫色魔法阵；身前 = 黑色恶魔之躯（染色剪影）、恶魔角、红眼、胸口的十字疤、脚边紫黑火焰、往上飘的暗色火星
 function paDemonFx(p) {
+  paHideHandCross(p);
   if (p._paDemonFx && fxList.includes(p._paDemonFx[0])) return;
   const alive = f => { const E = f.ent; if (!E.buffs || !E.buffs.pa_demon || E.dead || E.remove) { f.dur = f.t; return false; } f.x = E.x; return true; };
   const back = addFx({ ent: p, x: p.x, y: p.y - 0.6, z: 0, dur: 1e6, update() { if (alive(this)) this.y = this.ent.y - 0.6; },
@@ -113,11 +128,12 @@ function paDemonFx(p) {
 }
 // 半魔化：全黑剪影 + 红眼 + 身上冒黑雾（巨兵不见了，攻击带爪痕）
 function paHalfFx(p) {
+  paHideHandCross(p);
   if (p._paHalfFx && fxList.includes(p._paHalfFx)) return;
   p._paHalfFx = addFx({ ent: p, x: p.x, y: p.y + 0.02, z: 0, dur: 1e6, update() { const E = this.ent; if (!E.buffs || !E.buffs.pa_half || E.dead || E.remove) { this.dur = this.t; return; } this.x = E.x; this.y = E.y + 0.02; },
-    draw(c) { const E = this.ent; if (E.hidden) return; const t = this.t, X = sx(E.x); paShade(c, E, 'rgba(8,4,14,0.9)', Math.min(1, t / 0.3));
-      c.save(); c.globalCompositeOperation = 'lighter'; drawSpr(c, fxTint('orb', PA_COL.eye), X + E.face * 12, sy(E.y, E.z + 92), 13, 0, {});
-      c.globalAlpha = 0.5; jlCell(c, 'jv_wisp', '#5a2a8a', Math.floor(t * 8), X - E.face * 8, sy(E.y, E.z) - 20, 60, 1); c.restore(); } });
+    draw(c) { const E = this.ent; if (E.hidden) return; const t = this.t, X = sx(E.x); paShade(c, E, 'rgba(8,4,14,0.92)', Math.min(1, t / 0.25));
+      c.save(); c.globalCompositeOperation = 'lighter'; drawSpr(c, fxTint('orb', PA_COL.eye), X + E.face * 12, sy(E.y, E.z + 92), 14, 0, {});
+      c.globalAlpha = 0.55; jlCell(c, 'jv_wisp', '#5a2a8a', Math.floor(t * 8), X - E.face * 8, sy(E.y, E.z) - 20, 64, 1); c.restore(); } });
 }
 // 魔化的吼声（低沉的嘶吼 + 噪声爆裂 + 低频轰鸣；没有录音素材，用合成器拼）
 function paRoarSfx(k = 1) {
@@ -244,10 +260,15 @@ PRIEST_HOOKS.onCast.push((p, id, act, how) => {
   if (paDemon(p) && PA_DEMON[id] && PA_DEMON[id][1] !== 1 && p.cool[id] > 0) p.cool[id] *= PA_DEMON[id][1];
   const ec = skLv(p, 'pa_echo'); if (ec && S.job === PA && !S.passive) p.buffs.pa_echoB = { t: 30, mspd: 0.02 * ec, name: '幻听', col: '#9a6ad8' };
 });
-// 化魔：复仇者施放中也能用（没有施放动作，官方“可以在其他技能中施放”）
-PRIEST_HOOKS.cancelHook.push((p, a, id) => paOn(p) && id === 'p_rapture' && !!a.skill);
-// 恶之再临：魔化中受到致命伤害 → HP 留 1，再由 onHurt 变回人形回复 30%
-PRIEST_HOOKS.beforeHurt.push(p => paOn(p) && paDemon(p) && skLv(p, 'pa_rebirth') && !(p.cool.pa_rebirth > 0) && !game.pvp ? { minHp: 1 } : null);
+// 化魔：复仇者施放中也能用；原罪之力：复仇者技能施放中可以无动作瞬发魔化（不打断当前技能）
+PRIEST_HOOKS.cancelHook.push((p, a, id) => paOn(p) && !!a.skill && (id === 'p_rapture' || (id === 'pa_awaken' && !paDemon(p) && skLv(p, 'pa_evil') > 0 && a.skill.startsWith('pa_') && a.skill !== 'pa_awaken')));
+// 恶之再临：魔化中受到致命伤害 → HP 留 1，再由 onHurt 变回人形回复 30%；恶魔屏障：受到攻击不会倒地/硬直
+PRIEST_HOOKS.beforeHurt.push(p => {
+  if (!paOn(p)) return null;
+  const reb = paDemon(p) && skLv(p, 'pa_rebirth') && !(p.cool.pa_rebirth > 0) && !game.pvp;
+  const bar = !!(p.buffs && p.buffs.pa_barrier);
+  return (reb || bar) ? { ...(reb ? { minHp: 1 } : {}), ...(bar ? { noStun: true } : {}) } : null;
+});
 // 恶魔屏障：受到的伤害 −60%（BUFF 的 taken 字段已经算进 applyHit，这里只画格挡火花）
 PRIEST_HOOKS.onHurt.push((p, a, h, dmg) => {
   if (!paOn(p)) return;
@@ -291,7 +312,7 @@ paDef('pa_nightmare', { name: '恶魔唤醒', tier: 1, lvReq: 21, maxLv: 10, sp:
 paDef('pa_rebirth', { name: '恶之再临', tier: 1, lvReq: 21, maxLv: 1, sp: 0, passive: true, col: '#ff8ad8',
   desc: '【一觉被动，完成一次觉醒任务时自动学会】魔化中 HP 降到 0 时不会死亡：变回人形，回复 30% 的 HP / MP，短暂无敌。冷却 145 秒（不受冷却缩减影响）；决斗场无效。', infoExtra: () => [['冷却', '145 秒'], ['回复', '30% HP / MP']] });
 paDef('pa_evil', { name: '原罪之力', tier: 2, lvReq: 26, sp: 30, passive: true, col: '#ff6ad8',
-  desc: '【二觉被动】恶魔之力进化（残影变成粉紫色），恶魔之力伤害提高；普攻和所有技能攻击力提高。', infoExtra: lv => [['恶魔之力', '+' + pct(0.1 + 0.015 * lv)], ['攻击力', '+' + pct(0.02 * lv)]] });
+  desc: '【二觉被动】恶魔之力进化（残影变成粉紫色），恶魔之力伤害提高；普攻和所有技能攻击力提高；复仇者技能施放中可以无施放动作即时变身「魔化：末日审判者」（不打断当前技能）。', infoExtra: lv => [['恶魔之力', '+' + pct(0.1 + 0.015 * lv)], ['攻击力', '+' + pct(0.02 * lv)], ['即时魔化', '技能中无动作瞬发']] });
 paDef('pa_righteous', { name: '光之影', tier: 3, lvReq: 29, sp: 40, passive: true, col: '#fff0c0',
   desc: '【三觉被动】光与暗在体内交织：普攻和转职技能攻击力提高；魔化中 裂地锤 改为前方三个方向同时冒出暗黑石柱、同时爆炸（区域判定），回旋飞镰 在范围里必定打满（掷出 3 下 + 收回 4 下）。', infoExtra: lv => [['攻击力', '+' + pct(0.03 * lv)]] });
 
@@ -316,11 +337,11 @@ defSkill('pa_render', { name: '死亡切割', cls: 'priest', job: PA, lvReq: 15,
     return { name: 'pa_render', clip: D ? 'paSlash' : 'paSlash', dur: 0.9, noCounter: true, superArmor: true, type: 'mag',
       onInput: (e, I) => { const a = e.act; if (I.buffered(a.key || 'cmd')) { I.consume(a.key || 'cmd'); a.fast = 0.2; } return false; },
       update: (e, dt) => { const a = e.act; if (a.fast > 0) { a.fast -= dt; e.actT += dt * 0.5; }
-        const k = Math.floor((e.actT - 0.06) / 0.12); if (e.actT > 0.06 && k !== a.k && (a.n || 0) < 6) { a.k = k; a.n = (a.n || 0) + 1; e.play(a.n % 2 ? 'paSlash' : 'paSlash2', true); e.animT = 0.06;
-          if (D) paClawFx(e.x + e.face * 90, e.y, e.z + 60, a.n % 2 ? e.face : -e.face, 1.3); else fxSlashOn(e, { a0: a.n % 2 ? -2.2 : 1.4, a1: a.n % 2 ? 1.2 : -1.8, r: 118, w: 20, off: [16, 54], col: PA_COL.dark, silent: true });
-          sfx.swing(false); let n = 0;
+        const k = Math.floor((e.actT - 0.06) / 0.12); if (e.actT > 0.06 && k !== a.k && (a.n || 0) < 6) { a.k = k; a.n = (a.n || 0) + 1; const last = a.n === 6; e.play(a.n % 2 ? 'paSlash' : 'paSlash2', true); e.animT = 0.06;
+          if (D) paClawFx(e.x + e.face * 90, e.y, e.z + 60, a.n % 2 ? e.face : -e.face, last ? 1.55 : 1.3); else fxSlashOn(e, { a0: a.n % 2 ? -2.2 : 1.4, a1: a.n % 2 ? 1.2 : -1.8, r: last ? 128 : 118, w: last ? 24 : 20, off: [16, 54], col: PA_COL.dark, silent: true });
+          sfx.swing(last); let n = 0;
           for (const t of ents) if (hittable(e, t) && (t.x - e.x) * e.face > -30 && Math.abs(t.x - e.x) < (D ? 240 : 205) && Math.abs(t.y - e.y) < (D ? 64 : 52) && t.z < 150) {
-            applyHit(e, t, { dmg: per, type: 'mag', stun: 0.4, knock: -30, hs: 0.03, downHit: true, snd: 'slash', col: '#d0a0ff', box: null }, { src: e }); paPullBack(t, e); n++; }
+            applyHit(e, t, { dmg: per, type: 'mag', stun: 0.4, knock: -30, hs: last ? 0.07 : 0.035, shake: last ? 3 : 1, downHit: true, snd: 'slash', col: '#d0a0ff', box: null }, { src: e }); paPullBack(t, e); n++; }
           if (n) { e.hp = Math.min(e.hpMax, e.hp + Math.round(e.hpMax * 0.004 * n)); } }
         if (a.n >= 6 && !a.done) { a.done = true; a.dur = e.actT + 0.2; } } }; } });
 // 把敌人拉到身前并转过身去（死亡切割）
@@ -369,9 +390,9 @@ defSkill('pa_thorn', { name: '复仇之刺', cls: 'priest', job: PA, lvReq: 18, 
   act: (lv, p) => { const hurt = p.st === 'hit' || p.st === 'down' || p.st === 'air', T = skillDmg(4.8, 0.48, lv) * paDmg(p, 'pa_thorn') * (hurt ? 1.2 : 1), D = paDemon(p);
     return { name: 'pa_thorn', clip: 'paHunch', dur: 0.62, noCounter: true, superArmor: true, invul: [0.2, 0.34], type: 'mag',
       events: [evAt(0.02, e => { fxCharge(e, PA_COL.dark, 3); sfx.charge(); }),
-        evAt(0.22, e => { e.play('paRoar', true); cam.shake = Math.max(cam.shake, 5); sfx.boom(0.6); const s = D ? 1.4 : 1;
-          paThorns(e, s); fxShock(e.x, e.y, 220 * s, PA_COL.dark);
-          const hit = (d, o) => { for (const t of ents) if (hittable(e, t) && (t.x - e.x) * e.face > -130 * s && (t.x - e.x) * e.face < 240 * s && Math.abs(t.y - e.y) < 95 * s && t.z < 260) applyHit(e, t, { dmg: d, type: 'mag', hs: 0.08, downHit: true, snd: 'slash', col: '#d0a0ff', box: null, ...o }, { src: e }); };
+        evAt(0.22, e => { e.play('paRoar', true); cam.shake = Math.max(cam.shake, 6); sfx.boom(0.7); const s = D ? 1.4 : 1;
+          paThorns(e, s); fxShock(e.x, e.y, 230 * s, PA_COL.dark); fxBurst(e.x + e.face * 50, e.y, 50, 210 * s, '#9a4ae8');
+          const hit = (d, o) => { for (const t of ents) if (hittable(e, t) && (t.x - e.x) * e.face > -130 * s && (t.x - e.x) * e.face < 240 * s && Math.abs(t.y - e.y) < 95 * s && t.z < 260) applyHit(e, t, { dmg: d, type: 'mag', hs: 0.1, shake: 5, downHit: true, snd: 'slash', col: '#d0a0ff', box: null, ...o }, { src: e }); };
           if (D) { hit(T * 0.5, { stun: 1.0, knock: 0, onHit: (a, t) => addStatus(t, 'hold', 1.2, { src: a }) }); game.after(0.2, () => { if (e.dead) return; fxBurst(e.x + e.face * 90, e.y, 60, 280, PA_COL.dark); hit(T * 0.5, { stun: 1.2, knock: 120, launch: 260 }); }); }
           else hit(T, { stun: 1.2, knock: 40, airLift: 80 }); })] }; } });
 // 厄运之轮：变成巨大的锯轮直冲 400px（9 击），↑ / ↓ 调纵深；跳跃中 / 后跳中也能放；霸体；能量 +25。魔化：死亡突击 —— 瞬间冲刺斩出暗黑剑气，6 击，总伤约 2.34 倍，冲刺时短暂无敌，冷却 +50%
@@ -407,9 +428,9 @@ defSkill('pa_fist', { name: '恶魔之拳', cls: 'priest', job: PA, lvReq: 20, m
         if (e.actT > 0.15 && k !== a.k && (a.n || 0) < 10) { a.k = k; a.n = (a.n || 0) + 1; const len = L * easeOut(clamp((e.actT - 0.1) / 0.7, 0, 1));
           for (const t of ents) if (hittable(e, t) && (t.x - e.x) * e.face > 0 && (t.x - e.x) * e.face < len + 40 && Math.abs(t.y - e.y) < 60 && t.z < 170) {
             applyHit(e, t, { dmg: multi, type: 'mag', stun: 0.4, knock: 0, hs: 0.02, downHit: true, snd: 'slash', col: '#d0a0ff', box: null }, { src: e }); if (!t.boss) { addStatus(t, 'hold', 0.25, { src: e }); if ((t.x - e.x) * e.face < len * 0.5) t.x = lerp(t.x, e.x + e.face * len * 0.5, 0.3); } } }
-        if (!a.boom && e.actT >= 0.9) { a.boom = true; const x = e.x + e.face * (30 + L); cam.shake = Math.max(cam.shake, 9); sfx.boom(1.1); fxBurst(x, e.y, 60, 300, PA_COL.dark); paBoom(x, e.y, 50, 240); fxShock(x, e.y, 260, PA_COL.dark);
-          for (let i = 1; i < 4; i++) paBoom(e.x + e.face * (30 + L * i / 4), e.y, 60, 140);
-          instantHit(e, { box: [10, L + 110, D ? 80 : 66, -10, 230], dmg: boom, type: 'mag', knock: 200, launch: 380, hs: 0.12, big: 1.8, downHit: true, snd: 'slash', col: '#e0a0ff' });   // 整条手臂一起炸（近处被推到手臂中段的也吃到）
+        if (!a.boom && e.actT >= 0.9) { a.boom = true; const x = e.x + e.face * (30 + L); cam.shake = Math.max(cam.shake, 10); sfx.boom(1.2); fxBurst(x, e.y, 60, 320, PA_COL.dark); paBoom(x, e.y, 50, 260); paClawFx(x, e.y, 65, e.face, 1.8); fxShock(x, e.y, 280, PA_COL.dark);
+          for (let i = 1; i < 4; i++) paBoom(e.x + e.face * (30 + L * i / 4), e.y, 60, 150);
+          instantHit(e, { box: [10, L + 110, D ? 80 : 66, -10, 230], dmg: boom, type: 'mag', knock: 200, launch: 380, hs: 0.14, shake: 7, big: 1.9, downHit: true, snd: 'slash', col: '#e0a0ff' });   // 整条手臂一起炸（近处被推到手臂中段的也吃到）
           for (const t of ents) if (t.status && t.status.hold && t.status.hold.src === e) delete t.status.hold; } } }; } });
 // 黑暗之触（2023 复刻，占原恶魔之握的位置）：恶魔之臂从影子里伸出，打周围的敌人并把他们聚到身前，不管抓没抓到都撕裂爆炸，再把敌人拉回身前；霸体；能量 +30
 defSkill('pa_reaper', { name: '黑暗之触', cls: 'priest', job: PA, lvReq: 20, mp: 80, cd: 25, type: 'mag', col: '#6a2ab8', icon: 'pa_reaper',
@@ -420,8 +441,8 @@ defSkill('pa_reaper', { name: '黑暗之触', cls: 'priest', job: PA, lvReq: 20,
       events: [evAt(0.12, e => { const gx = e.x + e.face * 100; sfx.swing(true); fxSpr('darkorb', e.x, e.y, 10, { w: R * 1.6, h: R * 0.5, dur: 0.6, col: '#3a1a5a', grow: [0.3, 1] });
           for (let i = 0; i < 3; i++) fxSpr('bloodhand', e.x + e.face * (40 + i * 70), e.y + (i - 1) * 30, 50 + i * 20, { w: 220 * (D ? 1.5 : 1), h: 100, dur: 0.5, col: '#5a2a9a', flip: e.face < 0, grow: [0.4, 1.1] });
           for (const t of paFoes(e, R)) { applyHit(e, t, { dmg: T * 0.25, type: 'mag', stun: 0.8, knock: 0, hs: 0.05, downHit: true, snd: 'slash', col: '#d0a0ff', box: null }, { src: e }); if (!t.boss) { t.x = lerp(t.x, gx, 0.85); t.y = lerp(t.y, e.y, 0.8); addStatus(t, 'hold', 0.9, { src: e }); } } }),
-        evAt(0.55, e => { const gx = e.x + e.face * 100; cam.shake = Math.max(cam.shake, 8); sfx.boom(1); fxBurst(gx, e.y, 70, 320, PA_COL.dark); paClawFx(gx, e.y, 70, e.face, 2); fxShock(gx, e.y, 240, '#8a3ad8');
-          blast(e, gx, e.y, 150 * (D ? 1.3 : 1), { dmg: T * 0.75, type: 'mag', stun: 0.6, knock: -60, hs: 0.1, big: 1.8, downHit: true, snd: 'slash', col: '#e0a0ff' }, { zMax: 220 });
+        evAt(0.55, e => { const gx = e.x + e.face * 100; cam.shake = Math.max(cam.shake, 9); sfx.boom(1.1); fxBurst(gx, e.y, 70, 340, PA_COL.dark); paClawFx(gx, e.y, 70, e.face, 2.1); fxShock(gx, e.y, 260, '#8a3ad8');
+          blast(e, gx, e.y, 150 * (D ? 1.3 : 1), { dmg: T * 0.75, type: 'mag', stun: 0.6, knock: -60, hs: 0.12, shake: 6, big: 1.9, downHit: true, snd: 'slash', col: '#e0a0ff' }, { zMax: 220 });
           for (const t of paFoes(e, R)) { if (t.status && t.status.hold && t.status.hold.src === e) delete t.status.hold; if (!t.boss) t.x = lerp(t.x, e.x + e.face * 70, 0.5); } })] }; } });
 // 身边 r 以内（纵深减半）的敌人
 function paFoes(e, r) { const L = []; for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < r && Math.abs(t.y - e.y) < r * 0.5 && t.z < 240) L.push(t); return L; }
@@ -437,10 +458,10 @@ defSkill('pa_authority', { name: '黑暗权能', cls: 'priest', job: PA, lvReq: 
           const x = e.x + e.face * 120; fxSpr('crossx', x, e.y, 80, { w: 60 * s, h: 220 * s, dur: 0.7, col: '#8a2ad8', rot: Math.PI, grow: [0.3, 1] }); fxSpr('slash', x, e.y, 110, { w: 260 * s, h: 50, dur: 0.6, col: '#b060ff', grow: [0.3, 1.1] });
           instantHit(e, { box: [0, 240 * s, 60, 0, 190], dmg: T * 0.3, type: 'mag', stun: 0.6, knock: 0, hs: 0.06, downHit: true, snd: 'slash', col: '#e0a0ff' }); }),
         evAt(0.78, e => { const x = e.x + e.face * 120, I = e.pad, a = e.act, extra = !!(I && a.key && I.is(a.key)) && paSpend(e, 60), mul = extra ? 1.11 : 1;
-          if (extra) fxText('权能!', e.x, e.y, e.z + 110, { col: '#ff8ae8', size: 12 }); cam.shake = Math.max(cam.shake, 10); sfx.boom(1.2);
-          for (let i = 0; i < 5; i++) game.after(0.04 * i, () => paBoom(x + e.face * (i - 2) * 50 * s, e.y + rnd(-20, 20), 40 + i * 30, 150));
+          if (extra) fxText('权能!', e.x, e.y, e.z + 110, { col: '#ff8ae8', size: 12 }); cam.shake = Math.max(cam.shake, 11); sfx.boom(1.3);
+          for (let i = 0; i < 5; i++) game.after(0.04 * i, () => paBoom(x + e.face * (i - 2) * 50 * s, e.y + rnd(-20, 20), 40 + i * 30, 160));
           for (const t of ents) if (t.status && t.status.hold && t.status.hold.src === e) delete t.status.hold;
-          blast(e, x, e.y, 170 * s, { dmg: T * 0.45 * mul, type: 'mag', launch: 460, knock: 120, hs: 0.12, big: 1.8, downHit: true, snd: 'slash', col: '#e0a0ff' }, { zMax: 260 }); })] }; } });
+          blast(e, x, e.y, 170 * s, { dmg: T * 0.45 * mul, type: 'mag', launch: 460, knock: 120, hs: 0.14, shake: 7, big: 1.9, downHit: true, snd: 'slash', col: '#e0a0ff' }, { zMax: 260 }); })] }; } });
 // 堕落之魂：消耗 60 恶魔能量，获得无限时 BUFF：复仇者的基础 / 转职技能攻击力提高（技能等级跟着恶魔之力一起涨）
 defSkill('pa_fall', { name: '堕落之魂', cls: 'priest', job: PA, lvReq: 17, maxLv: 1, sp: 20, mp: 0, cd: 5, type: 'mag', buff: true, col: '#7a3ad8', icon: 'pa_fall',
   req: p => paE(p) >= 60 || paHalf(p) || '恶魔能量不足 60',

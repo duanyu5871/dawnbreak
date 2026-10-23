@@ -24,14 +24,29 @@ const fgWaveK = e => hasSkill(e, 'fg_takedown') ? 1.05 + 0.03 * skLv(e, 'fg_take
 function fgDir(e) { const I = e.pad; if (!I) return ''; if (I.is('up')) return 'u'; if (I.is('down')) return 'd'; const d = I.dx(); return d === e.face ? 'f' : d ? 'b' : ''; }
 // 以 e 为源、不乘当前动作倍率地打一下（m = 施放时记下的倍率）
 function fgHitT(e, t, h, m = 1, src) { if (!t || t.dead || t.remove) return false; return applyHit(e, t, { sure: true, noCounterBonus: true, snd: 'blunt', ...h, dmg: (h.dmg || 0) * m }, { proj: true, src: src || { x: e.x, y: e.y, z: e.z, face: e.face } }); }
-// 摔地冲击波：冲击环 + 尘土 + 碎石 + 范围伤害；范围吃「摔技强化」
+// 地面裂纹（摔地 / 大爆炸时向四周辐射的碎裂纹路）
+function fgCrackFx(x, y, r, col = FG_COL.shock) {
+  const N = 7, L = Array.from({ length: N }, (_, i) => ({ a: i / N * TAU + rnd(-0.2, 0.2), d: r * rnd(0.55, 0.92), j: rnd(-0.25, 0.25) }));
+  addFx({ x, y: y - 0.6, z: 0, dur: 0.55, draw(c) {
+    const k = this.t / this.dur, a = k > 0.6 ? (1 - k) / 0.4 : 1, X = sx(this.x), Y = sy(this.y, 0);
+    c.save(); c.lineCap = 'round';
+    for (const seg of L) {
+      const x1 = X + Math.cos(seg.a + seg.j) * seg.d * 0.5, y1 = Y + Math.sin(seg.a + seg.j) * seg.d * 0.5 * GR;
+      const x2 = X + Math.cos(seg.a) * seg.d, y2 = Y + Math.sin(seg.a) * seg.d * GR;
+      c.globalAlpha = 0.55 * a; c.strokeStyle = '#3a2e24'; c.lineWidth = 3.5; c.beginPath(); c.moveTo(X, Y); c.lineTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+      c.globalAlpha = 0.7 * a; c.strokeStyle = col; c.lineWidth = 1.6; c.beginPath(); c.moveTo(X, Y); c.lineTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    }
+    c.restore();
+  } });
+}
+// 摔地冲击波：地面裂纹 + 双层冲击环 + 尘土 + 碎石 + 范围伤害；范围吃「摔技强化」
 function fgWave(e, x, y, r, h, o = {}) {
   const R = r * fgWaveK(e), m = o.mul ?? fgMul(e), col = o.col || FG_COL.shock;
-  fxShock(x, y, R, col); fxDust(x, y, o.dust ?? 8, R * 0.35, FG_COL.dust);
-  if (o.burst !== false) fxBurst(x, y, 16, R * 1.1, o.bcol || col);
+  fgCrackFx(x, y, R * 0.85, col); fxShock(x, y, R, col); fxShock(x, y, R * 0.62, '#ffffff'); fxDust(x, y, o.dust ?? 10, R * 0.38, FG_COL.dust);
+  if (o.burst !== false) fxBurst(x, y, 16, R * 1.15, o.bcol || col);
   if (o.rocks) fgRocks(x, y, o.rocks, R);
-  cam.shake = Math.max(cam.shake, o.shake ?? 3); sfx.boom(o.boom ?? 0.5);
-  blast(e, x, y, R, { knock: 140, stun: 0.45, hs: 0.05, snd: 'blunt', col, downHit: true, ...h, dmg: (h.dmg || 0) * m }, { zMax: o.zMax ?? 70 });
+  cam.shake = Math.max(cam.shake, o.shake ?? 4); sfx.thud(0.8); sfx.boom(o.boom ?? 0.55);
+  blast(e, x, y, R, { knock: 140, stun: 0.45, hs: 0.06, snd: 'blunt', col, downHit: true, ...h, dmg: (h.dmg || 0) * m }, { zMax: o.zMax ?? 70 });
 }
 // 换色：fx 里没登记基础色相的素材（vortex 紫 273、tornado 青绿 112）按实际色相换；近白色 → 去饱和提亮（不改全局的 FX_BASE_HUE，别的职业按原样用）
 const FG_HUE = { vortex: 273, tornado: 112 };
@@ -60,9 +75,10 @@ function fgWind(x, y, h, dur, col = FG_COL.wind, o = {}) {
 }
 // 大爆炸：爆炸素材 + 冲击环 + 碎石（死亡旋律 / 裂石破天 / 疾风闪电 / 三觉）
 function fgBoom(x, y, size, col = FG_COL.fire, rocks = 10) {
+  fgCrackFx(x, y, size * 0.8, col);
   fxSpr('explosion', x, y, size * 0.35, { w: size, dur: 0.55, grow: [0.4, 1.1], col });
   fxBurst(x, y, 20, size * 1.2, col); fxShock(x, y, size * 0.9, col); fgRocks(x, y, rocks, size * 0.8);
-  cam.shake = Math.max(cam.shake, 8); sfx.boom(1);
+  cam.shake = Math.max(cam.shake, 8); sfx.thud(0.9); sfx.boom(1);
 }
 
 /* ---- 抓轰炮（被动，转职自动学会）：抓不了的敌人 → 强力推开 + 冲击波 + 无视霸体的强制硬直，伤害 = 本技能剩下的伤害 ---- */
@@ -78,10 +94,11 @@ function fgCannon(e, t, dmg, o = {}) {
   if (A) { A.fgCannoned = true; A.fgFailT = null; A.fgFinDone = true; if (!o.keep) { A.dur = Math.min(A.dur, e.actT + (o.rec ?? 0.34)); A.move = null; A.onLand = A.airOnly ? null : A.onLand; } }
   if (!t || t.dead || t.remove) return;
   const pvp = isPvp(e, t), m = o.mul ?? fgMul(e), z = t.z + t.h * 0.5, x = t.x - e.face * 8;
-  fxSpr('burst', x, t.y, z, { w: 150, dur: 0.3, col: '#ffffff', grow: [0.3, 1.2] }); fxBurst(x, t.y, z, 210, FG_COL.shock); fxShock(t.x, t.y, 150, FG_COL.shock);
-  fxSpr('wave', t.x + e.face * 20, t.y, 0, { h: 120, dur: 0.3, ay: 1, flip: e.face < 0, col: FG_COL.shock, grow: [0.6, 1.1] });
-  fxText('抓轰炮', t.x, t.y, t.z + t.h + 8, { col: '#bfe4ff', size: 12, dur: 0.7 }); cam.shake = Math.max(cam.shake, 5); sfx.boom(0.7);
-  fgHitT(e, t, { dmg, throwHit: true, knock: pvp ? 220 : 170, stun: 0.55, hs: 0.1, shake: 5, big: 1.6, heavy: true, col: FG_COL.shock }, m);
+  fxSpr('burst', x, t.y, z, { w: 165, dur: 0.3, col: '#ffffff', grow: [0.3, 1.25] }); fxBurst(x, t.y, z, 225, FG_COL.shock); fxShock(t.x, t.y, 175, FG_COL.shock); fxShock(t.x, t.y, 110, '#ffffff');
+  for (let i = -1; i <= 1; i++) fxStreak({ x: t.x - e.face * 20, y: t.y + i * 8, z: z + i * 14, face: e.face, len: 165, w: 12, col: FG_COL.shock, dur: 0.22 });
+  fxSpr('wave', t.x + e.face * 20, t.y, 0, { h: 128, dur: 0.3, ay: 1, flip: e.face < 0, col: FG_COL.shock, grow: [0.6, 1.15] });
+  fxText('抓轰炮', t.x, t.y, t.z + t.h + 8, { col: '#bfe4ff', size: 12, dur: 0.7 }); cam.shake = Math.max(cam.shake, 6); sfx.boom(0.8);
+  fgHitT(e, t, { dmg, throwHit: true, knock: pvp ? 220 : 170, stun: 0.55, hs: 0.11, shake: 6, big: 1.7, heavy: true, col: FG_COL.shock }, m);
   if (!pvp && !t.dead) addStatus(t, 'hold', o.hold ?? 1.5, { src: e });   // 无视霸体的强制硬直（领主 ×0.3，决斗场不给）
   for (const u of ents) if (u !== t && foe(e, u) && u.invul <= 0 && u.z < 70 && u.st !== 'down' && inGround(u, t.x, t.y, 120))   // 冲击波推开周围（不吃摔技强化）
     fgHitT(e, u, { dmg: dmg * 0.3, knock: 200, radial: true, stun: 0.4, hs: 0.04 }, m, { x: t.x, y: t.y, z: 0, face: e.face });
@@ -134,7 +151,7 @@ function fgSlide(A, p) {
     if (e.actT < FG_SLIDE_T && !a.slid) { e.vy = e.pad ? e.pad.dy() * 170 : 0; if (Math.random() < 0.5) fxDust(e.x - e.face * 10, e.y, 1, 6); if (!a.sfx) { a.sfx = true; fxStreak({ x: e.x - e.face * 30, y: e.y, z: e.z + 30, face: e.face, len: 120, w: 10, col: '#ffffff', dur: 0.2 }); } }
     if (up) up(e, dt);
   };
-  A.onGrab = (e, t) => { const a = e.act; if (!a.slid && e.actT < FG_SLIDE_T) { a.slid = true; a.move = (a.move || []).filter(m => m[0] >= FG_SLIDE_T); e.vx = 0; e.vy = 0; e.actT = FG_SLIDE_T; } if (og) og(e, t); };
+  A.onGrab = (e, t) => { const a = e.act; if (!a.slid && e.actT < FG_SLIDE_T) { a.slid = true; a.move = (a.move || []).filter(m => m[0] >= FG_SLIDE_T); e.vx = 0; e.vy = 0; e.actT = FG_SLIDE_T; fxAfterimage(e, '#8ac8ff'); fxShock(e.x, e.y, 80, '#8ac8ff'); } if (og) og(e, t); };
   A.fgSlide = true;
   return A;
 }
@@ -511,7 +528,7 @@ function fgKneeAct(lv, p) {
         if (d === 'd') { e.play('fgSlam', true); for (const t of G) throwGrab(e, { dmg: P * 0.3, spike: 480, down: true, bounce: 0.3, hs: 0.1, big: 1.6, shake: 5 }); fgWave(e, e.x + e.face * 30, e.y, 110, { dmg: P * 0.16, launch: 200 }, { rocks: 4 }); a.dur = e.actT + 0.3; return; }
         e.play('fgHigh', true); for (const t of G) throwGrab(e, { dmg: P * 0.36, launch: 480, knock: 60, hs: 0.1, big: 1.5 }); a.dur = e.actT + 0.3; } } }), p);
 }
-// 金刚碎（柔道家）：收招可以取消接霹雳旋踢（官方：柔道家改成肘击砸地，对倒地敌人伤害更高——动作 / 倍率归基础技能，这里只加取消）
+// 金刚碎（柔道家）：改成低跃单臂肘击砸地、对倒地敌人伤害加成更高、收招可取消接霹雳旋踢（动作与倍率见 fighter.js f_seismic；这里兜底取消链接与技能中途取消接金刚碎）
 function fgWrapBase() {
   const K = SKILLS.f_knee; if (K && K.act && !K.fgWrapped) { const a0 = K.act; K.fgWrapped = true; K.act = (lv, p) => p && fgIs(p) ? fgKneeAct(lv, p) : a0(lv, p); }
   const Sm = SKILLS.f_seismic; if (Sm && Sm.act && !Sm.fgWrapped) { const a0 = Sm.act; Sm.fgWrapped = true;
@@ -536,8 +553,9 @@ FIGHTER_HOOKS.onCast.push((p, id, act, how) => {
 });
 // 臂铠精通：装备臂铠时 MP -20%（接在职业的 MP 修正后面）
 { const mp0 = CLASSES.fighter.mpMul; CLASSES.fighter.mpMul = (p, id) => (mp0 ? mp0(p, id) : 1) * (fgIs(p) && wtypeOf(p) === 'gauntlet' && hasSkill(p, 'fg_gauntlet') ? 0.8 : 1); }
-// 彗星冲击没打中时可以取消接旋风腿（官方）
-FIGHTER_HOOKS.cancelHook.push((p, a, id) => fgIs(p) && a.name === 'fg_pierce' && id === 'f_tornado' && !p.hitsDone.size);
+// 彗星冲击没打中时可以取消接旋风腿；柔道家的金刚碎可在地面体术技能中途取消施放（官方）
+FIGHTER_HOOKS.cancelHook.push((p, a, id) => fgIs(p) && ((a.name === 'fg_pierce' && id === 'f_tornado' && !p.hitsDone.size) ||
+  (id === 'f_seismic' && p.z <= 2 && p.actT >= 0.06 && ['f_highkick', 'f_hammer', 'f_lowkick', 'fg_tackle', 'fg_necksnap', 'fg_magnum', 'fg_pierce'].includes(a.name))));
 // 普攻：暴力抓取 / 力之奥义的倍率（按武器 + 倍率缓存动作表）
 const FG_ACTS_CACHE = new Map();
 FIGHTER_ACT_PICK.push(p => {

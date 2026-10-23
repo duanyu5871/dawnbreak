@@ -390,9 +390,11 @@ defSkill('fb_backstreet', { name: '后街战术', cls: 'fighter', job: FB_JOB, l
 
 /* ---- 擒月炎（←↓→+Z）：扫腿 → 后踢把一个敌人踢起 → 侧踢引爆事先埋进去的火药（灼伤）；异常越多越痛；抓不住的敌人立即爆炸 ---- */
 function fbHookBoom(e, t, lv, n) {
-  const x = t ? t.x : e.x + e.face * 70, y = t ? t.y : e.y, z = t ? t.z : 0, big = e.buffs.fb_backstreet ? 1.3 : 1, mul = fbAbnMul(null, 0.2, n);
-  sfx.boom(0.7); cam.shake = Math.max(cam.shake, 5); fxSpr('explosion', x, y, z + 40, { w: 150 * big, dur: 0.45, grow: [0.5, 1.2] }); fxShock(x, y, 130 * big, FB_COL.fire); fxBurst(x, y, z + 40, 120 * big, '#ffb050');
-  fbArea(e, x, y, 85 * big, { dmg: skillDmg(2.6, 0.26, lv) * mul, launch: 280, knock: 90, hs: 0.1, big: 1.5, col: FB_COL.fire, snd: 'crit', downHit: true, onHit: (a, q) => fbAbn(a, q, 'burn', 6, 0.12 * lvMul(lv)) }, { zMax: 200, z });
+  const x = t ? t.x : e.x + e.face * 70, y = t ? t.y : e.y, z = t ? t.z : 0, big = e.buffs.fb_backstreet ? 1.3 : 1, st = Math.min(3, n || 0), mul = fbAbnMul(null, 0.2, n);
+  sfx.boom(0.7 + st * 0.1); cam.shake = Math.max(cam.shake, 5 + st * 1.5);
+  fxSpr('explosion', x, y, z + 40, { w: (150 + st * 18) * big, dur: 0.45, grow: [0.5, 1.2] }); fxShock(x, y, 130 * big, FB_COL.fire); fxBurst(x, y, z + 40, (120 + st * 16) * big, '#ffb050');
+  if (st > 0) { fxShock(x, y, (150 + st * 22) * big, '#ff4aa8'); fxText('异常引爆 ×' + st, x, y, z + 75, { col: '#ff90c8', size: 11, dur: 0.5 }); }
+  fbArea(e, x, y, 85 * big, { dmg: skillDmg(2.6, 0.26, lv) * mul, launch: 280, knock: 90, hs: 0.1 + st * 0.015, big: 1.5 + st * 0.15, col: FB_COL.fire, snd: 'crit', downHit: true, onHit: (a, q) => fbAbn(a, q, 'burn', 6, 0.12 * lvMul(lv)) }, { zMax: 200, z });
 }
 defSkill('fb_hook', { name: '擒月炎', cls: 'fighter', job: FB_JOB, lvReq: 16, mp: 30, cd: 5.5, type: 'mag', col: FB_COL.fire,
   desc: '扫腿打前方的敌人，把扫中的一个敌人后踢到空中，再一记侧踢引爆事先埋进他身上的火药：爆炸伤及周围并造成长时间灼伤。抓不住的敌人（领主等）直接爆炸。敌人身上每有一个异常状态，攻击 +20%（最多 3 个）。后街战术：爆炸范围变大。',
@@ -412,8 +414,8 @@ defSkill('fb_hook', { name: '擒月炎', cls: 'fighter', job: FB_JOB, lvReq: 16,
 const FB_MOUNT_FIN = 1.3;
 function fbMountAct(lv, p) {
   if (p && hasSkill(p, 'fb_vulcan')) return fbVulcanAct(lv, p);
-  const punch = (e, i) => { const t = e.grabbed; if (!t) return; e.play('fbMount', true); sfx.hit('blunt', false); cam.shake = Math.max(cam.shake, 2);
-    fxHit(t.x, t.y, 18, e.face, { col: '#ffe08a', big: 1.2 }); applyHit(e, t, { dmg: skillDmg(1.3, 0.13, lv), sure: true, noCounterBonus: true, throwHit: true, hs: 0.06, type: 'mag', snd: 'blunt', col: '#ffe08a' }); };
+  const punch = (e, i) => { const t = e.grabbed; if (!t) return; e.play('fbMount', true); sfx.hit('blunt', false); cam.shake = Math.max(cam.shake, 2.5);
+    fxHit(t.x, t.y, 18, e.face, { col: '#ffe08a', big: 1.25 }); fxDust(t.x, t.y, 3, 12); applyHit(e, t, { dmg: skillDmg(1.3, 0.13, lv), sure: true, noCounterBonus: true, throwHit: true, hs: 0.06, type: 'mag', snd: 'blunt', col: '#ffe08a' }); };
   return { name: 'fb_mount', clip: 'fbGrab', dur: 0.62, invul: true, noCounter: true, noAwk: true, speed: 'aspd',
     hits: [HB(0.06, 0.18, [-6, 104, 32, 0, 110], skillDmg(0.4, 0.04, lv), { grab: true, grabDown: true, grabInvul: true, stun: 0.5, hs: 0.05, type: 'mag', snd: 'blunt' })],
     onGrab: (e, t) => { const a = e.act; a.dur = FB_MOUNT_FIN + 0.35; a.ride = true; t.heldClip = t.clipOr('down'); fxDust(t.x, t.y, 6, 16); sfx.thud(0.8); },
@@ -423,9 +425,11 @@ function fbMountAct(lv, p) {
         e.play('fbSlam', true); sfx.boom(0.5); cam.shake = Math.max(cam.shake, 3); const x = e.x + e.face * 60; fxShock(x, e.y, 150, '#ffe08a'); fxDust(x, e.y, 6, 20);
         fbArea(e, x, e.y, 110, { dmg: skillDmg(2.0, 0.2, lv), launch: 240, knock: 60, hs: 0.06, col: '#ffe08a', downHit: true }); }),
       evAt(0.42, e => punch(e, 0)), evAt(0.7, e => punch(e, 1)), evAt(0.98, e => punch(e, 2)),
-      evAt(FB_MOUNT_FIN, e => { const t = e.grabbed; if (!t) return; e.play('fbSlam', true); sfx.boom(0.7); cam.shake = Math.max(cam.shake, 5);
+      evAt(FB_MOUNT_FIN, e => { const t = e.grabbed; if (!t) return; e.play('fbSlam', true); sfx.boom(0.75); cam.shake = Math.max(cam.shake, 6);
         throwGrab(e, { dmg: skillDmg(1.4, 0.14, lv), down: true, downLift: 120, knock: 30, hs: 0.1, big: 1.5, type: 'mag', shake: 4 });
-        fxShock(t.x, t.y, 170, '#ffe08a'); fbArea(e, t.x, t.y, 120, { dmg: skillDmg(1.2, 0.12, lv), launch: 220, knock: 70, hs: 0.05, col: '#ffe08a', downHit: true }); })] };
+        fxShock(t.x, t.y, 175, '#ffe08a'); fxDust(t.x, t.y, 8, 26);
+        for (let i = 0; i < 4; i++) fxSpr('rock', t.x + rnd(-45, 45), t.y + rnd(-15, 15), 14, { w: rnd(14, 22), dur: 0.4, add: false, spin: rnd(-6, 6) });
+        fbArea(e, t.x, t.y, 120, { dmg: skillDmg(1.2, 0.12, lv), launch: 220, knock: 70, hs: 0.05, col: '#ffe08a', downHit: true }); })] };
 }
 function fbVulcanAct(lv) {
   return { name: 'fb_mount', clip: 'fbGrab', dur: 0.95, invul: true, noCounter: true, noAwk: true, speed: 'aspd',
@@ -434,10 +438,12 @@ function fbVulcanAct(lv) {
     onGrab: (e, t) => { t.heldClip = t.clipOr('down'); fxDust(t.x, t.y, 6, 16); sfx.thud(0.8); },
     hold: (e, t) => { t.x = e.x + e.face * 16; t.y = e.y + 0.5; t.z = 0; t.face = -e.face; },
     events: [evAt(0.2, e => { e.play('fbLift', true); fxCharge(e, '#8ac8ff', 3); }),
-      evAt(0.46, e => { const a = e.act, n = a.vn || 0, mul = fbAbnMul(null, 0.2, n), R = 160 * (1 + 0.1 * Math.min(3, n)), t = e.grabbed || (a.vt && !a.vt.dead ? a.vt : null), x = t ? t.x : e.x + e.face * 60, y = t ? t.y : e.y;
-        e.play('fbSlam', true); sfx.boom(1.0); cam.shake = Math.max(cam.shake, 7); fxShock(x, y, R * 1.3, '#8ac8ff'); fxShock(x, y, R, '#e0f0ff'); fxBurst(x, y, 30, R * 1.2, '#8ac8ff'); fxSpr('spark', x, y, 20, { w: 140, dur: 0.3, col: '#bfe0ff' });
-        if (e.grabbed) throwGrab(e, { dmg: skillDmg(2.4, 0.24, lv) * mul, down: true, downLift: 180, knock: 40, hs: 0.12, big: 1.8, type: 'mag', shake: 5 });
-        else if (t) applyHit(e, t, { dmg: skillDmg(2.4, 0.24, lv) * mul, sure: true, stun: 0.5, knock: 40, hs: 0.1, big: 1.8, type: 'mag', snd: 'blunt' }, { proj: true });
+      evAt(0.46, e => { const a = e.act, n = a.vn || 0, st = Math.min(3, n), mul = fbAbnMul(null, 0.2, n), R = 160 * (1 + 0.1 * st), t = e.grabbed || (a.vt && !a.vt.dead ? a.vt : null), x = t ? t.x : e.x + e.face * 60, y = t ? t.y : e.y;
+        e.play('fbSlam', true); sfx.boom(1.0 + st * 0.1); cam.shake = Math.max(cam.shake, 7 + st * 2); fxShock(x, y, R * 1.3, '#8ac8ff'); fxShock(x, y, R, '#e0f0ff'); fxBurst(x, y, 30, R * 1.2, '#8ac8ff'); fxSpr('spark', x, y, 20, { w: 140, dur: 0.3, col: '#bfe0ff' });
+        if (st > 0) { fxShock(x, y, R * 1.5, '#ff60b8'); fxText('狂霸 ×' + st, x, y, 70, { col: '#ffb0e8', size: 12, dur: 0.55 }); }
+        for (let i = 0; i < 6; i++) fxSpr('rock', x + rnd(-R * 0.4, R * 0.4), y + rnd(-18, 18), 16, { w: rnd(16, 26), dur: 0.45, add: false, spin: rnd(-6, 6) });
+        if (e.grabbed) throwGrab(e, { dmg: skillDmg(2.4, 0.24, lv) * mul, down: true, downLift: 180, knock: 40, hs: 0.12 + st * 0.015, big: 1.8 + st * 0.15, type: 'mag', shake: 5 });
+        else if (t) applyHit(e, t, { dmg: skillDmg(2.4, 0.24, lv) * mul, sure: true, stun: 0.5, knock: 40, hs: 0.1 + st * 0.015, big: 1.8 + st * 0.15, type: 'mag', snd: 'blunt' }, { proj: true });
         fbArea(e, x, y, R, { dmg: skillDmg(5.2, 0.52, lv) * mul, launch: 300, knock: 100, hs: 0.1, big: 1.6, col: '#8ac8ff', downHit: true }, { zMax: 160 }); })] };
 }
 defSkill('fb_mount', { name: '伏虎霸王拳', cls: 'fighter', job: FB_JOB, lvReq: 18, mp: 40, cd: 15, type: 'mag', col: '#d8a030', speed: 'aspd', grab: true,
@@ -478,12 +484,12 @@ defSkill('fb_mine', { name: '毒雷引爆', cls: 'fighter', job: FB_JOB, lvReq: 
     events: [evAt(0.1, e => { sfx.swing(false); const x0 = e.x + e.face * 18, x1 = e.x + e.face * 58, z0 = e.z + 70; e.act.mx = x1; e.act.my = e.y;
         addFx({ x: x1, y: e.y + 0.5, z: 0, dur: 0.44, draw(c) { const k = Math.min(1, this.t / 0.22), x = lerp(x0, x1, k), z = z0 + Math.sin(k * Math.PI) * 30 + (k >= 1 ? Math.sin(game.t * 12) * 2 : 0) - k * 10; fbDrawMine(c, sx(x), sy(this.y, z), 1.3); } }); }),
       evAt(0.36, e => e.play('fbKick', true)),
-      evAt(0.5, e => { const big = e.buffs.fb_backstreet ? 1.25 : 1, x = e.act.mx, y = e.act.my, L = 300 * big; sfx.boom(0.8); cam.shake = Math.max(cam.shake, 5);
-        fxBurst(x, y, 60, 110, FB_COL.pink); fxShock(x, y, 120, FB_COL.poison);
+      evAt(0.5, e => { const big = e.buffs.fb_backstreet ? 1.25 : 1, x = e.act.mx, y = e.act.my, L = 300 * big; sfx.boom(0.85); cam.shake = Math.max(cam.shake, 6);
+        fxBurst(x, y, 60, 125 * big, FB_COL.pink); fxShock(x, y, 160 * big, FB_COL.pink); fxShock(x, y, 120 * big, FB_COL.poison);
         fbArea(e, x, y, 80, { dmg: skillDmg(2.4, 0.24, lv), stun: 0.4, knock: 60, hs: 0.05, col: FB_COL.pink }, { zMax: 160 });
         for (let i = 0; i < 6; i++) game.after(i * 0.04, () => fxSpr('poison', x + e.face * (40 + i * (L - 40) / 5), y + rnd(-6, 6), 30 + rnd(0, 40), { w: 110 * big, dur: 0.55, grow: [0.5, 1.2] }));
         addFx({ x: x + e.face * L / 2, y: y + 1, z: 0, dur: 0.5, draw(c) { const k = this.t / this.dur, X0 = sx(x), X1 = sx(x + e.face * L), Y = sy(y, 70); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.6 * (1 - k); const g = c.createLinearGradient(X0, 0, X1, 0); g.addColorStop(0, '#ff9ae8'); g.addColorStop(1, 'rgba(160,80,220,0)'); c.fillStyle = g; c.beginPath(); c.ellipse((X0 + X1) / 2, Y, Math.abs(X1 - X0) / 2, 36 * big * (1 - k * 0.4), 0, 0, TAU); c.fill(); c.restore(); } });
-        fbBox(e, [0, (x - e.x) * e.face + L, 46 * big, 0, 150], { dmg: skillDmg(6.6, 0.66, lv), down: true, downLift: 200, knock: 150, hs: 0.08, big: 1.5, col: FB_COL.gas, snd: 'crit', onHit: (a, t) => fbAbn(a, t, 'poison', 3, 0.3 * lvMul(lv)) }); })] }) });
+        fbBox(e, [0, (x - e.x) * e.face + L, 46 * big, 0, 150], { dmg: skillDmg(6.6, 0.66, lv), down: true, downLift: 200, knock: 150, hs: 0.09, big: 1.6, col: FB_COL.gas, snd: 'crit', onHit: (a, t) => fbAbn(a, t, 'poison', 3, 0.3 * lvMul(lv)) }); })] }) });
 function fbRbLinks(p) { return p && hasSkill(p, 'fb_rulebreak') ? FB_RB_TO : undefined; }
 
 /* ---- 极恶飞锁（→←→+Z，官方 45 级锁链技能，取代旧的血色风暴）：挥锁链扫周围 8 次（出血）→ 终结把打中的敌人拉到身前；按 X 加快、按跳跃直接终结；霸体 ---- */
@@ -501,9 +507,9 @@ defSkill('fb_lariat', { name: '极恶飞锁', cls: 'fighter', job: FB_JOB, lvReq
       return false; },
     onEnd: (e, cut) => { if (cut) e._fbRB = game.t; },
     update: e => { const a = e.act; if (e.actT < FB_LARIAT_FIN && Math.floor(e.actT / 0.18) !== a.sw) { a.sw = Math.floor(e.actT / 0.18); sfx.swing(false); fxDust(e.x + e.face * rnd(-200, 200), e.y + rnd(-20, 20), 2, 10); } },
-    events: [evAt(FB_LARIAT_FIN, e => { const a = e.act; a.spd = 1; e.play('fbSlam', true); sfx.swing(true); cam.shake = Math.max(cam.shake, 4);
-      fbChainSweep(e, 0.3, { r: 250, a0: Math.PI, a1: -0.2 });
-      const hit = fbBox(e, [-250, 250, 50, 0, 120], { dmg: skillDmg(2.6, 0.26, lv), stun: 0.6, knock: 0, hs: 0.08, big: 1.4, col: '#dfe4ee', snd: 'blunt', onHit: (q, t) => fbAbn(q, t, 'bleed', 3, 0.25 * lvMul(lv)) });
+    events: [evAt(FB_LARIAT_FIN, e => { const a = e.act; a.spd = 1; e.play('fbSlam', true); sfx.swing(true); cam.shake = Math.max(cam.shake, 6);
+      fbChainSweep(e, 0.3, { r: 250, a0: Math.PI, a1: -0.2 }); fxShock(e.x + e.face * 64, e.y, 180, '#dfe4ee');
+      const hit = fbBox(e, [-250, 250, 50, 0, 120], { dmg: skillDmg(2.6, 0.26, lv), stun: 0.6, knock: 0, hs: 0.09, big: 1.5, col: '#dfe4ee', snd: 'blunt', onHit: (q, t) => fbAbn(q, t, 'bleed', 3, 0.25 * lvMul(lv)) });
       for (const t of new Set([...a.hitSet, ...hit])) if (!t.dead && !t.boss && !t.fixed) { const R = game.room, x = e.x + e.face * 64; t.x = R ? clamp(x, R.x0 + t.w, R.x1 - t.w) : x; t.y = clamp(lerp(t.y, e.y, 0.7), 4, DEPTH - 4); fxDust(t.x, t.y, 3, 8); } })] }) });
 
 /* ---- 转职登记（J.ready 保持 false：等 B1 出帧、主线程开放）---- */
